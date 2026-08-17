@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grihani Cosmetic - Smart App</title>
+    
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, get, child } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
+            authDomain: "grihanicosmeticapp.firebaseapp.com",
+            databaseURL: "https://grihanicosmeticapp-default-rtdb.firebaseio.com",
+            projectId: "grihanicosmeticapp",
+            storageBucket: "grihanicosmeticapp.firebasestorage.app",
+            messagingSenderId: "921623248962",
+            appId: "1:921623248962:web:413b6e003eca864b7caddb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let cart = [];
+        let currentCategory = 'All';
+
+        window.loadCategories = function() {
+            onValue(ref(db, 'categories'), (snapshot) => {
+                const data = snapshot.val();
+                let filterDiv = document.getElementById('categoryFilters');
+                filterDiv.innerHTML = `<button class="cat-filter-btn active" onclick="filterCategory('All', this)">सभी</button>`;
+                let categories = data ? data : { "Bridal": "ब्राइडल", "Gifts": "गिफ्ट्स", "Daily": "डेली वियर" };
+                Object.keys(categories).forEach((catKey) => {
+                    filterDiv.innerHTML += `<button class="cat-filter-btn" onclick="filterCategory('${catKey}', this)">${categories[catKey]}</button>`;
+                });
+            });
+        }
+
+        window.loadProducts = function() {
+            onValue(ref(db, 'products'), (snapshot) => {
+                const data = snapshot.val();
+                let appDiv = document.getElementById('appProducts');
+                appDiv.innerHTML = '';
+                if (!data) {
+                    appDiv.innerHTML = '<p style="grid-column: span 2; text-align:center; color:#777; margin-top:20px;">कोई प्रोडक्ट उपलब्ध नहीं है।</p>';
+                    return;
+                }
+                Object.keys(data).forEach((key) => {
+                    let item = data[key];
+                    if (currentCategory === 'All' || item.category === currentCategory) {
+                        appDiv.innerHTML += `
+                            <div class="product-card">
+                                <span class="cat-tag">${item.category}</span>
+                                <img src="${item.image}" class="product-img">
+                                <div class="product-title">${item.name}</div>
+                                <div class="product-price">₹${item.price}</div>
+                                <button class="cart-btn" onclick='addToCart(${JSON.stringify(item)})'>Add to Cart</button>
+                            </div>
+                        `;
+                    }
+                });
+            });
+        }
+
+        window.loadReels = function() {
+            onValue(ref(db, 'reels'), (snapshot) => {
+                const data = snapshot.val();
+                let reelFeed = document.getElementById('appReelsFeed');
+                reelFeed.innerHTML = '';
+                if(!data) {
+                    reelFeed.innerHTML = '<p style="font-size:10px; color:#777; padding:10px;">कोई रील उपलब्ध नहीं है।</p>';
+                    return;
+                }
+                Object.keys(data).forEach(key => {
+                    let r = data[key];
+                    let instaButton = (r.instaUrl && r.instaUrl !== '#') ? `<a href="${r.instaUrl}" target="_blank" class="insta-link-btn">📷 Instagram</a>` : '';
+                    reelFeed.innerHTML += `
+                        <div class="reel-card">
+                            <video class="reel-video" autoplay muted loop playsinline><source src="${r.url}" type="video/mp4"></video>
+                            <div class="reel-title">${r.title}</div>
+                            ${instaButton}
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        window.onload = function() {
+            loadCategories();
+            loadProducts();
+            loadReels();
+            let savedPhone = localStorage.getItem('grihani_user_phone');
+            if(savedPhone) {
+                document.getElementById('userDisplay').innerText = "👤 " + localStorage.getItem('grihani_user_name') + " (" + savedPhone + ")";
+            }
+        }
+
+        window.openLoginModal = function() { document.getElementById('loginModal').style.display = 'flex'; }
+        window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; }
+
+        window.saveCustomerLogin = function() {
+            let name = document.getElementById('regName').value, phone = document.getElementById('regPhone').value, address = document.getElementById('regAddress').value;
+            if(!name || phone.length < 10 || !address) return alert("कृपया सही जानकारी दर्ज करें!");
+            let cleanPhone = phone.replace(/[^0-9]/g, '');
+            set(ref(db, 'customers/' + cleanPhone), { name, phone, address, date: new Date().toLocaleString() }).then(() => {
+                localStorage.setItem('grihani_user_name', name); localStorage.setItem('grihani_user_phone', phone); localStorage.setItem('grihani_user_address', address);
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('userDisplay').innerText = "👤 " + name + " (" + phone + ")";
+                alert("✨ रजिस्ट्रेशन सफल रहा!");
+            });
+        }
+
+        window.existingCustomerLogin = function() {
+            let phone = document.getElementById('regPhone').value.trim();
+            if(phone.length < 10) return alert("सही मोबाइल नंबर दर्ज करें!");
+            get(child(ref(db), `customers/${phone.replace(/[^0-9]/g, '')}`)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    let cData = snapshot.val();
+                    localStorage.setItem('grihani_user_name', cData.name); localStorage.setItem('grihani_user_phone', cData.phone); localStorage.setItem('grihani_user_address', cData.address);
+                    document.getElementById('loginModal').style.display = 'none';
+                    document.getElementById('userDisplay').innerText = "👤 " + cData.name + " (" + cData.phone + ")";
+                    alert("🎉 स्वागत है " + cData.name + "!");
+                } else alert("यह नंबर रजिस्टर्ड नहीं है। कृपया नया रजिस्ट्रेशन करें!");
+            });
+        }
+
+        window.logoutUser = function() { if(confirm("क्या आप लॉग आउट करना चाहते हैं?")) { localStorage.clear(); location.reload(); } }
+        window.filterCategory = function(cat, btnElement) { currentCategory = cat; document.querySelectorAll('.cat-filter-btn').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); loadProducts(); }
+        window.addToCart = function(product) { let existingItem = cart.find(item => item.name === product.name); if(existingItem) existingItem.qty += 1; else cart.push({ ...product, qty: 1 }); alert(product.name + " कार्ट में जुड़ गया!"); updateCartCount(); }
+        window.updateCartCount = function() { let total = 0; cart.forEach(item => total += item.qty); document.getElementById('cartCount').innerText = total; }
+        window.increaseQty = function(index) { cart[index].qty += 1; updateCartCount(); renderCartItems(); }
+        window.decreaseQty = function(index) { cart[index].qty -= 1; if(cart[index].qty === 0) cart.splice(index, 1); updateCartCount(); renderCartItems(); }
+        window.openCart = function() { document.getElementById('homePage').style.display = 'none'; document.getElementById('cartPage').style.display = 'flex'; renderCartItems(); }
+        window.closeCart = function() { document.getElementById('cartPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; }
+
+        window.renderCartItems = function() {
+            let cartDiv = document.getElementById('cartItemsList'); cartDiv.innerHTML = ''; let total = 0;
+            if(cart.length === 0) cartDiv.innerHTML = '<p style="text-align:center; color:#777;">आपका कार्ट खाली है।</p>';
+            else cart.forEach((item, index) => {
+                let itemTotal = parseInt(item.price) * item.qty; total += itemTotal;
+                cartDiv.innerHTML += `
+                    <div class="cart-item"><img src="${item.image}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div><div class="cart-item-price">₹${item.price}</div>
+                    <div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div>
+                    <div class="item-total">₹${itemTotal}</div></div>`;
+            });
+            document.getElementById('totalAmount').innerText = "₹" + total;
+        }
+
+        window.openCheckoutForm = function() {
+            if(cart.length === 0) return alert("कार्ट खाली है!");
+            if(!localStorage.getItem('grihani_user_phone')) return document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('confirmName').innerText = localStorage.getItem('grihani_user_name');
+            document.getElementById('confirmPhone').innerText = localStorage.getItem('grihani_user_phone');
+            document.getElementById('confirmAddress').innerText = localStorage.getItem('grihani_user_address');
+            document.getElementById('checkoutModal').style.display = 'flex';
+        }
+        window.closeCheckoutForm = function() { document.getElementById('checkoutModal').style.display = 'none'; }
+
+        window.confirmOrder = function() {
+            let name = localStorage.getItem('grihani_user_name'), phone = localStorage.getItem('grihani_user_phone'), address = localStorage.getItem('grihani_user_address');
+            let payMode = document.getElementById('payMode').value, totalAmountNum = parseInt(document.getElementById('totalAmount').innerText.replace('₹', '')) * 100; 
+            closeCheckoutForm();
+            if(payMode === 'Online UPI') {
+                var rzp1 = new Razorpay({ "key": "rzp_test_123456789abcdef", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic",
+                    "handler": function (response){ saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum); },
+                    "prefill": { "name": name, "contact": phone }, "theme": { "color": "#800020" }
+                }); rzp1.open();
+            } else { saveOrderData("Cash on Delivery (COD)", "N/A", totalAmountNum); }
+        }
+
+        function saveOrderData(paymentMode, paymentId, totalAmountNum) {
+            set(push(ref(db, 'orders')), {
+                customerName: localStorage.getItem('grihani_user_name'), customerPhone: localStorage.getItem('grihani_user_phone'),
+                customerAddress: localStorage.getItem('grihani_user_address'), paymentMode, paymentId, items: cart, 
+                total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New'
+            }).then(() => { alert("🎉 आपका ऑर्डर सफलतापूलव दर्ज हो गया है!"); cart = []; updateCartCount(); closeCart(); });
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #2c3e50; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .app-container { width: 360px; height: 640px; background-color: white; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 8px solid #333; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .app-header { background-color: #800020; color: white; padding: 10px 12px; text-align: center; font-size: 16px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .cart-icon { font-size: 15px; position: relative; cursor: pointer; }
+        #cartCount { background-color: #f1c40f; color: #800020; font-size: 10px; font-weight: bold; padding: 2px 4px; border-radius: 50%; position: absolute; top: -6px; right: -6px; }
+        #homePage { overflow-y: auto; flex-grow: 1; padding-bottom: 15px; }
+        .user-profile-bar { background: #fdf2f2; padding: 6px 12px; display: flex; justify-content: space-between; font-size: 11px; border-bottom: 1px solid #ddd; color: #800020; font-weight: bold; cursor: pointer; }
+        .reels-section { padding: 8px 12px; background: #fff5f5; border-bottom: 1px solid #ddd; }
+        .reels-section h4 { font-size: 12px; color: #800020; margin-bottom: 6px; }
+        .reels-container { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+        .reel-card { min-width: 90px; height: 130px; background: #000; border-radius: 6px; overflow: hidden; position: relative; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+        .reel-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        .reel-title { position: relative; z-index: 2; background: rgba(0,0,0,0.6); color: white; font-size: 8px; padding: 2px; text-align: center; }
+        .insta-link-btn { position: relative; z-index: 2; background: #E1306C; color: white; font-size: 7px; padding: 2px; text-align: center; text-decoration: none; font-weight: bold; display: block; }
+        .category-filters { display: flex; gap: 6px; padding: 10px 12px; overflow-x: auto; scrollbar-width: none; }
+        .cat-filter-btn { padding: 5px 10px; border: 1px solid #800020; background: white; color: #800020; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .cat-filter-btn.active { background: #800020; color: white; }
+        .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 12px 15px; }
+        .product-card { border: 1px solid #eee; border-radius: 8px; padding: 6px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; background: #fff; }
+        .cat-tag { position: absolute; top: 4px; left: 4px; background: rgba(0,0,0,0.6); color: white; font-size: 8px; padding: 2px 4px; border-radius: 3px; }
+        .product-img { width: 100%; height: 100px; object-fit: cover; border-radius: 5px; margin-bottom: 6px; }
+        .product-title { font-size: 12px; font-weight: bold; color: #333; margin-bottom: 3px; }
+        .product-price { font-size: 13px; color: #800020; font-weight: bold; margin-bottom: 6px; }
+        .cart-btn { background-color: #fff; color: #800020; border: 1px solid #800020; padding: 4px 0; width: 100%; border-radius: 12px; cursor: pointer; font-size: 10px; font-weight: bold; }
+        #cartPage { display: none; flex-direction: column; height: 100%; background-color: #f9f9f9; flex-grow: 1; }
+        .back-btn { padding: 10px; background: white; font-weight: bold; cursor: pointer; border-bottom: 1px solid #ddd; color: #800020; font-size: 13px; }
+        .cart-items-container { padding: 10px; overflow-y: auto; flex-grow: 1; }
+        .cart-item { display: flex; align-items: center; background: white; padding: 8px; border-radius: 6px; margin-bottom: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .cart-item img { width: 45px; height: 45px; border-radius: 4px; object-fit: cover; margin-right: 8px; }
+        .cart-item-info { flex-grow: 1; }
+        .cart-item-title { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+        .cart-item-price { font-size: 11px; color: #888; margin-bottom: 4px; }
+        .qty-controls { display: flex; align-items: center; background: #f1f2f6; border-radius: 12px; width: fit-content; }
+        .qty-btn { background: none; border: none; padding: 2px 6px; font-size: 13px; font-weight: bold; cursor: pointer; color: #800020; }
+        .qty-display { font-size: 12px; font-weight: bold; padding: 0 6px; min-width: 15px; text-align: center; }
+        .item-total { font-weight: bold; color: #800020; font-size: 12px; }
+        .checkout-footer { background: white; padding: 12px; border-top: 1px solid #ddd; text-align: center; }
+        .total-bill { font-size: 15px; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .checkout-btn { background-color: #27ae60; color: white; padding: 8px; width: 100%; border: none; border-radius: 15px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 90%; padding: 15px; border-radius: 15px; }
+        .modal-content h3 { color: #800020; margin-bottom: 10px; text-align: center; font-size: 15px; }
+        .modal-input { width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; }
+        .confirm-order-btn, .login-existing-btn { color: white; border: none; padding: 8px; width: 100%; border-radius: 15px; font-size: 14px; font-weight: bold; cursor: pointer; margin-bottom: 6px; }
+        .confirm-order-btn { background: #800020; } .login-existing-btn { background: #2980b9; font-size: 12px; }
+        .cancel-order-btn { background: #ecf0f1; color: #333; border: none; padding: 8px; width: 100%; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header"><span>Grihani Cosmetic</span><span class="cart-icon" onclick="openCart()">🛒 <span id="cartCount">0</span></span></div>
+        <div class="user-profile-bar" onclick="openLoginModal()"><span id="userDisplay">👤 गेस्ट यूजर (लॉगिन करें)</span><span style="color:#c0392b;" onclick="event.stopPropagation(); logoutUser()">लॉग आउट</span></div>
+        <div id="homePage">
+            <div class="reels-section"><h4>🔥 ट्रेंडिंग रील्स</h4><div class="reels-container" id="appReelsFeed"></div></div>
+            <div class="category-filters" id="categoryFilters"></div>
+            <div class="products-grid" id="appProducts"></div>
+        </div>
+        <div id="cartPage">
+            <div class="back-btn" onclick="closeCart()">← वापस खरीदारी करें</div>
+            <div class="cart-items-container" id="cartItemsList"></div>
+            <div class="checkout-footer">
+                <div class="total-bill"><span>कुल बिल:</span><span id="totalAmount">₹0</span></div>
+                <button class="checkout-btn" onclick="openCheckoutForm()">ऑर्डर करें (Checkout)</button>
+            </div>
+        </div>
+        <div id="loginModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3>✨ Grihani Cosmetic में स्वागत है</h3>
+                <input type="text" id="regName" class="modal-input" placeholder="पूरा नाम (सिर्फ नए के लिए)">
+                <input type="tel" id="regPhone" class="modal-input" placeholder="मोबाइल नंबर (10 अंक)">
+                <textarea id="regAddress" class="modal-input" placeholder="पूरा पता (सिर्फ नए के लिए)" rows="2"></textarea>
+                <button class="confirm-order-btn" onclick="saveCustomerLogin()">🚀 नया रजिस्ट्रेशन करें</button>
+                <button class="login-existing-btn" onclick="existingCustomerLogin()">🔑 पहले से रजिस्टर्ड हैं? लॉगिन करें</button>
+                <button class="cancel-order-btn" onclick="closeLoginModal()">❌ बाद में करें / बंद करें</button>
+            </div>
+        </div>
+        <div id="checkoutModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3>ऑर्डर की पुष्टि करें</h3>
+                <div style="background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 12px; border: 1px solid #ddd;">
+                    <p><strong>नाम:</strong> <span id="confirmName" style="color: #800020;"></span></p>
+                    <p><strong>मोबाइल:</strong> <span id="confirmPhone" style="color: #800020;"></span></p>
+                    <p><strong>पता:</strong> <span id="confirmAddress" style="color: #800020;"></span></p>
+                </div>
+                <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">पेमेंट का तरीका चुनें:</label>
+                <select id="payMode" class="modal-input"><option value="Cash on Delivery (COD)">कैश ऑन डिलीवरी (COD)</option><option value="Online UPI">ऑनलाइन पेमेंट</option></select>
+                <button class="confirm-order-btn" onclick="confirmOrder()">✅ पेमेंट और ऑर्डर पक्का करें</button>
+                <button class="cancel-order-btn" onclick="closeCheckoutForm()">❌ रद्द करें</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

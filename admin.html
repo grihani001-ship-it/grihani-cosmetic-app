@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grihani Admin Panel</title>
+    
+    <script>
+        // एडमिन पासवर्ड प्रोटेक्शन
+        window.onload = function() {
+            let pass = prompt("कृपया एडमिन पासवर्ड दर्ज करें:");
+            if (pass !== "admin123") {
+                alert("गलत पासवर्ड! आपको मेन वेबसाइट पर भेजा जा रहा है।");
+                window.location.href = "index.html"; // गलत पासवर्ड पर ऐप में वापस भेज देगा
+            } else {
+                // सही पासवर्ड होने पर ही डेटा लोड होगा
+                loadCategoriesAdmin();
+                loadProductsAdmin();
+                loadOrdersAdmin();
+                loadReelsAdmin();
+                loadCustomersListAdmin();
+            }
+        };
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
+            authDomain: "grihanicosmeticapp.firebaseapp.com",
+            databaseURL: "https://grihanicosmeticapp-default-rtdb.firebaseio.com",
+            projectId: "grihanicosmeticapp",
+            storageBucket: "grihanicosmeticapp.firebasestorage.app",
+            messagingSenderId: "921623248962",
+            appId: "1:921623248962:web:413b6e003eca864b7caddb"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.loadCategoriesAdmin = function() {
+            onValue(ref(db, 'categories'), (snapshot) => {
+                const data = snapshot.val();
+                let selectBox = document.getElementById('pCategory');
+                let adminCatList = document.getElementById('adminCatList');
+                selectBox.innerHTML = ''; adminCatList.innerHTML = '';
+                let categories = data ? data : { "Bridal": "ब्राइडल", "Gifts": "गिफ्ट्स", "Daily": "डेली वियर" };
+                Object.keys(categories).forEach((catKey) => {
+                    selectBox.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
+                    adminCatList.innerHTML += `<div class="admin-item"><span>📁 ${categories[catKey]} (${catKey})</span><button class="delete-btn" onclick="deleteCategory('${catKey}')">❌</button></div>`;
+                });
+            });
+        }
+
+        window.addNewCategory = function() {
+            let catKey = document.getElementById('catKeyInput').value.trim(), catName = document.getElementById('catNameInput').value.trim();
+            if(!catKey || !catName) return alert("कृपया कैटेगरी का कोड और नाम दोनों भरें!");
+            set(ref(db, 'categories/' + catKey), catName).then(() => { alert("कैटेगरी जुड़ गई!"); document.getElementById('catKeyInput').value = ''; document.getElementById('catNameInput').value = ''; });
+        }
+        window.deleteCategory = function(catKey) { if(confirm("क्या आप इसे हटाना चाहते हैं?")) remove(ref(db, 'categories/' + catKey)); }
+
+        window.loadProductsAdmin = function() {
+            onValue(ref(db, 'products'), (snapshot) => {
+                const data = snapshot.val();
+                let adminListDiv = document.getElementById('adminProductList'); adminListDiv.innerHTML = '';
+                if (!data) return adminListDiv.innerHTML = '<p style="color: #bdc3c7;">अभी कोई प्रोडक्ट नहीं है।</p>';
+                Object.keys(data).forEach((key) => {
+                    adminListDiv.innerHTML += `<div class="admin-item"><span>${data[key].name} <small>(₹${data[key].price})</small></span><button class="delete-btn" onclick="deleteProduct('${key}')">❌</button></div>`;
+                });
+            });
+        }
+
+        window.addNewProductToFirebase = function() {
+            let name = document.getElementById('pName').value, category = document.getElementById('pCategory').value, price = document.getElementById('pPrice').value, fileInput = document.getElementById('pImage');
+            if(name === '' || price === '' || fileInput.files.length === 0) return alert("सभी बॉक्स भरें और फोटो चुनें!");
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                set(push(ref(db, 'products')), { name, category, price, image: e.target.result }).then(() => { alert("प्रोडक्ट जुड़ गया!"); document.getElementById('pName').value = ''; document.getElementById('pPrice').value = ''; });
+            }; reader.readAsDataURL(fileInput.files[0]);
+        }
+        window.deleteProduct = function(key) { if(confirm("हटाना चाहते हैं?")) remove(ref(db, 'products/' + key)); }
+
+        window.addNewReelToFirebase = function() {
+            let title = document.getElementById('rTitle').value, videoUrl = document.getElementById('rVideoUrl').value, instaUrl = document.getElementById('rInstaUrl').value;
+            if(!title || !videoUrl) return alert("टाइटल और वीडियो लिंक भरें!");
+            set(push(ref(db, 'reels')), { title, url: videoUrl, instaUrl: instaUrl || '#' }).then(() => { alert("रील पब्लिश हो गई!"); document.getElementById('rTitle').value = ''; document.getElementById('rVideoUrl').value = ''; });
+        }
+        window.deleteReel = function(key) { if(confirm("हटाना चाहते हैं?")) remove(ref(db, 'reels/' + key)); }
+
+        window.loadReelsAdmin = function() {
+            onValue(ref(db, 'reels'), (snapshot) => {
+                const data = snapshot.val();
+                let adminReelList = document.getElementById('adminReelList'); adminReelList.innerHTML = '';
+                if(!data) return adminReelList.innerHTML = '<p style="color: #bdc3c7; font-size:13px;">अभी कोई रील नहीं है।</p>';
+                Object.keys(data).forEach(key => { adminReelList.innerHTML += `<div class="admin-item"><span>🎥 ${data[key].title}</span><button class="delete-btn" onclick="deleteReel('${key}')">❌</button></div>`; });
+            });
+        }
+
+        window.loadOrdersAdmin = function() {
+            onValue(ref(db, 'orders'), (snapshot) => {
+                const data = snapshot.val();
+                let newOrdersDiv = document.getElementById('adminNewOrders'), dispatchedDiv = document.getElementById('adminDispatchedOrders');
+                newOrdersDiv.innerHTML = ''; dispatchedDiv.innerHTML = '';
+                if (!data) return;
+                Object.keys(data).forEach((key) => {
+                    let order = data[key], itemsList = '';
+                    if(order.items) order.items.forEach(item => itemsList += `${item.name}(x${item.qty}), `);
+                    let cardHtml = `<div class="order-card"><p>👤 ${order.customerName} (${order.customerPhone})</p><p>📍 ${order.customerAddress}</p><p>🛍️ ${itemsList}</p><p>💳 ${order.paymentMode} | 💰 ${order.total}</p><p style="font-size:11px; color:#7f8c8d;">📅 ${order.date}</p>`;
+                    if (order.status === 'Dispatched') dispatchedDiv.innerHTML += cardHtml + `<button class="complete-order-btn" onclick="markDelivered('${key}')">✨ डिलीवर (समाप्त करें)</button></div>`;
+                    else newOrdersDiv.innerHTML += cardHtml + `<button class="dispatch-btn" onclick="markDispatched('${key}')">🚚 डिस्पैच करें</button></div>`;
+                });
+            });
+        }
+
+        window.loadCustomersListAdmin = function() {
+            onValue(ref(db, 'customers'), (snapshot) => {
+                const data = snapshot.val();
+                let custDiv = document.getElementById('adminCustomerList'); custDiv.innerHTML = '';
+                if(!data) return;
+                Object.keys(data).forEach((key) => {
+                    let c = data[key];
+                    custDiv.innerHTML += `<div class="order-card" style="border-left-color: #800020;"><p>👤 ${c.name} | 📞 ${c.phone}</p><p>📍 ${c.address}</p><p style="font-size:11px; color:#7f8c8d;">📅 ${c.date}</p></div>`;
+                });
+            });
+        }
+        window.markDispatched = function(key) { update(ref(db, 'orders/' + key), { status: 'Dispatched' }); }
+        window.markDelivered = function(key) { if(confirm("सफलतापूर्वक डिलीवर हो गया?")) remove(ref(db, 'orders/' + key)); }
+    </script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #1e272e; color: white; display: flex; justify-content: center; padding: 20px; }
+        .admin-panel { width: 100%; max-width: 800px; padding: 25px; background-color: #2c3e50; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .admin-panel h2 { text-align: center; color: #f1c40f; margin-bottom: 20px; }
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media(max-width: 768px) { .grid-layout { grid-template-columns: 1fr; } }
+        .manage-section { background-color: #34495e; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .manage-section h3 { margin-bottom: 10px; border-bottom: 1px solid #7f8c8d; padding-bottom: 5px; color: #fff; font-size: 16px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: none; border-radius: 4px; font-size: 13px; }
+        .form-group input[type="file"] { background-color: #fff; color: #333; }
+        .add-btn { background-color: #27ae60; color: white; border: none; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; }
+        .admin-item { display: flex; justify-content: space-between; align-items: center; background: #ecf0f1; color: #333; padding: 8px; margin-bottom: 6px; border-radius: 4px; font-size: 13px; font-weight: bold; }
+        .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .order-card { background-color: #ecf0f1; color: #2c3e50; padding: 10px; border-radius: 6px; margin-bottom: 10px; border-left: 5px solid #e67e22; }
+        .order-card p { margin-bottom: 4px; font-size: 13px; font-weight: bold; }
+        .dispatch-btn { background-color: #d35400; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; width: 100%; }
+        .complete-order-btn { background-color: #27ae60; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="admin-panel">
+        <h2>🛠️ Grihani Admin Dashboard</h2>
+        <div class="grid-layout">
+            <div class="column">
+                <div class="manage-section" style="border-left: 4px solid #3498db;">
+                    <h3>📥 नए ऑर्डर्स (New Orders)</h3><div id="adminNewOrders"></div>
+                </div>
+                <div class="manage-section" style="border-left: 4px solid #27ae60;">
+                    <h3>🚚 रास्ते में हैं (Dispatched)</h3><div id="adminDispatchedOrders"></div>
+                </div>
+                <div class="manage-section" style="border-left: 4px solid #9b59b6;">
+                    <h3>👥 रजिस्टर्ड कस्टमर्स</h3><div id="adminCustomerList"></div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="manage-section" style="border-left: 4px solid #f1c40f;">
+                    <h3>📁 कैटेगरीज</h3>
+                    <div class="form-group"><input type="text" id="catKeyInput" placeholder="कोड (English)"></div>
+                    <div class="form-group"><input type="text" id="catNameInput" placeholder="नाम (Hindi)"></div>
+                    <button class="add-btn" onclick="addNewCategory()">➕ जोड़ें</button>
+                    <div id="adminCatList" style="margin-top: 10px;"></div>
+                </div>
+                <div class="manage-section" style="border-left: 4px solid #e67e22;">
+                    <h3>🛍️ प्रोडक्ट जोड़ें</h3>
+                    <div class="form-group"><input type="text" id="pName" placeholder="नाम"></div>
+                    <div class="form-group"><select id="pCategory"></select></div>
+                    <div class="form-group"><input type="number" id="pPrice" placeholder="कीमत (₹)"></div>
+                    <div class="form-group"><input type="file" id="pImage" accept="image/*"></div>
+                    <button class="add-btn" onclick="addNewProductToFirebase()">➕ पब्लिश करें</button>
+                    <div id="adminProductList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div>
+                </div>
+                <div class="manage-section" style="border-left: 4px solid #e74c3c;">
+                    <h3>🎥 रील जोड़ें</h3>
+                    <div class="form-group"><input type="text" id="rTitle" placeholder="टाइटल"></div>
+                    <div class="form-group"><input type="text" id="rVideoUrl" placeholder="MP4 लिंक"></div>
+                    <div class="form-group"><input type="text" id="rInstaUrl" placeholder="Instagram लिंक (वैकल्पिक)"></div>
+                    <button class="add-btn" onclick="addNewReelToFirebase()">🎬 पब्लिश करें</button>
+                    <div id="adminReelList" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
