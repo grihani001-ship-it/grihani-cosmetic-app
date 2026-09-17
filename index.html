@@ -176,7 +176,7 @@
             let payMode = document.getElementById('payMode').value, totalAmountNum = parseInt(document.getElementById('totalAmount').innerText.replace('₹', '')) * 100; 
             closeCheckoutForm();
             if(payMode === 'Online UPI') {
-                var rzp1 = new Razorpay({ "key": "rzp_test_123456789abcdef", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic",
+                var rzp1 = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic",
                     "handler": function (response){ saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum); },
                     "prefill": { "name": name, "contact": phone }, "theme": { "color": "#800020" }
                 }); rzp1.open();
