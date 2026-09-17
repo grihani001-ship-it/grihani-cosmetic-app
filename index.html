@@ -107,7 +107,7 @@
             let savedPhone = localStorage.getItem('grihani_user_phone');
             if(savedPhone) {
                 document.getElementById('userDisplay').innerText = "👤 " + localStorage.getItem('grihani_user_name');
-                document.getElementById('userDisplay').onclick = null; // लॉगिन होने पर मॉडल नहीं खुलेगा
+                document.getElementById('userDisplay').onclick = null;
                 document.getElementById('myOrdersBtn').style.display = 'inline-block';
                 document.getElementById('logoutBtn').style.display = 'inline-block';
             }
@@ -169,55 +169,78 @@
         }
         window.closeOrdersPage = function() { document.getElementById('ordersPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; }
 
-        // Fetch Order History
+        // Fetch Order History (Active + Deleted/Completed)
         window.fetchMyOrders = function() {
             let phone = localStorage.getItem('grihani_user_phone');
             let ordersDiv = document.getElementById('myOrdersList');
             ordersDiv.innerHTML = '<p style="text-align:center; padding: 20px;">आपके ऑर्डर लोड हो रहे हैं...</p>';
             
-            get(ref(db, 'orders')).then((snapshot) => {
+            // दोनों फोल्डर से ऑर्डर लाएंगे (Current और History)
+            Promise.all([
+                get(ref(db, 'orders')),
+                get(ref(db, 'order_history'))
+            ]).then(([snapOrders, snapHistory]) => {
                 ordersDiv.innerHTML = '';
-                if(snapshot.exists()) {
-                    let data = snapshot.val();
-                    let myOrders = [];
-                    Object.keys(data).forEach(key => {
-                        if(data[key].customerPhone === phone) {
-                            myOrders.push({...data[key], id: key});
-                        }
-                    });
-                    
-                    if(myOrders.length === 0) {
-                        ordersDiv.innerHTML = '<p style="text-align:center; color:#777; padding: 20px;">आपने अभी तक कोई ऑर्डर नहीं किया है।</p>';
-                        return;
-                    }
-                    
-                    // Show latest orders first
-                    myOrders.reverse().forEach(order => {
-                        let statusColor = 'status-new';
-                        let statusText = order.status || 'New';
-                        let displayStatus = "नया ऑर्डर 🕒";
-                        
-                        // Status translation and coloring
-                        if(statusText.toLowerCase().includes('ship') || statusText.toLowerCase() === 'shipping') { statusColor = 'status-shipping'; displayStatus = "रास्ते में है (Shipping) 🚚"; }
-                        else if(statusText.toLowerCase().includes('deliver') || statusText.toLowerCase() === 'delivered') { statusColor = 'status-delivered'; displayStatus = "डिलीवर हो गया ✅"; }
-                        else if(statusText.toLowerCase().includes('cancel') || statusText.toLowerCase() === 'cancelled') { statusColor = 'status-cancelled'; displayStatus = "रद्द (Cancelled) ❌"; }
-
-                        let itemsHtml = order.items.map(i => `• ${i.name} (x${i.qty})`).join('<br>');
-                        
-                        ordersDiv.innerHTML += `
-                            <div class="order-history-card">
-                                <div class="order-history-header">
-                                    <span>📅 ${order.date.split(',')[0]}</span>
-                                    <span class="order-status ${statusColor}">${displayStatus}</span>
-                                </div>
-                                <div class="order-history-items">${itemsHtml}</div>
-                                <div class="order-history-total">भुगतान: ${order.paymentMode} | कुल: ${order.total}</div>
-                            </div>
-                        `;
-                    });
-                } else {
-                    ordersDiv.innerHTML = '<p style="text-align:center; color:#777; padding: 20px;">आपने अभी तक कोई ऑर्डर नहीं किया है।</p>';
+                let myOrders = [];
+                
+                if(snapOrders.exists()) {
+                    let data = snapOrders.val();
+                    Object.keys(data).forEach(key => { if(data[key].customerPhone === phone) myOrders.push({...data[key], id: key}); });
                 }
+                if(snapHistory.exists()) {
+                    let data = snapHistory.val();
+                    Object.keys(data).forEach(key => { if(data[key].customerPhone === phone) myOrders.push({...data[key], id: key}); });
+                }
+                
+                if(myOrders.length === 0) {
+                    ordersDiv.innerHTML = '<div style="text-align:center; padding:30px;"><h3 style="color:#777; margin-bottom:10px;">📦 कोई ऑर्डर नहीं मिला</h3><p style="font-size:13px; color:#999;">आपने अभी तक कुछ भी नहीं खरीदा है।</p></div>';
+                    return;
+                }
+                
+                // नए ऑर्डर सबसे ऊपर दिखाएं
+                myOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                myOrders.forEach(order => {
+                    let statusColor = 'status-new';
+                    let statusText = (order.status || 'New').toLowerCase();
+                    let displayStatus = "नया ऑर्डर 🕒";
+                    
+                    if(statusText.includes('ship')) { statusColor = 'status-shipping'; displayStatus = "रास्ते में है (Shipping) 🚚"; }
+                    else if(statusText.includes('deliver')) { statusColor = 'status-delivered'; displayStatus = "डिलीवर हो गया ✅"; }
+                    else if(statusText.includes('cancel')) { statusColor = 'status-cancelled'; displayStatus = "रद्द (Cancelled) ❌"; }
+
+                    // खरीदे गए सामान की लिस्ट (Quantity और Price के साथ)
+                    let itemsHtml = order.items.map(i => `
+                        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #ddd;">
+                            <span>🛍️ ${i.name} <b>(x${i.qty})</b></span> 
+                            <span style="font-weight:bold; color:#333;">₹${i.price * i.qty}</span>
+                        </div>
+                    `).join('');
+                    
+                    // डिलीवरी का समय अगर सेव किया गया हो
+                    let deliveryTimeHtml = '';
+                    if(statusColor === 'status-delivered' && order.deliveredAt) {
+                        deliveryTimeHtml = `<div style="font-size:12px; color:#27ae60; font-weight:bold; margin-top:10px; background:#e8f8f5; padding:6px; border-radius:4px;">✅ डिलीवरी का समय: ${order.deliveredAt}</div>`;
+                    }
+
+                    ordersDiv.innerHTML += `
+                        <div class="order-history-card">
+                            <div class="order-history-header">
+                                <span>📅 ऑर्डर: ${order.date.split(',')[0]} <span style="font-size:10px; color:#888;">${order.date.split(',')[1]}</span></span>
+                                <span class="order-status ${statusColor}">${displayStatus}</span>
+                            </div>
+                            <div class="order-history-items" style="background:#f9f9f9; padding:10px; border-radius:6px; margin-bottom:12px; border:1px solid #eee;">
+                                <strong style="font-size:11px; color:#800020; display:block; margin-bottom:8px; text-transform:uppercase;">खरीदे गए आइटम:</strong>
+                                ${itemsHtml}
+                            </div>
+                            <div class="order-history-total" style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-size:11px; color:#555;">पेमेंट: <b>${order.paymentMode}</b></span>
+                                <span>कुल बिल: <b>${order.total}</b></span>
+                            </div>
+                            ${deliveryTimeHtml}
+                        </div>
+                    `;
+                });
             });
         }
 
@@ -312,7 +335,7 @@
 
         /* कार्ट और ऑर्डर पेज कॉमन स्टाइल */
         #cartPage, #ordersPage { display: none; padding: 25px; flex-grow: 1; }
-        .back-btn { padding: 8px 15px; background: #f1f2f6; font-weight: bold; cursor: pointer; border-radius: 5px; display: inline-block; color: #800020; font-size: 13px; margin-bottom: 20px; }
+        .back-btn { padding: 8px 15px; background: #f1f2f6; font-weight: bold; cursor: pointer; border-radius: 5px; display: inline-block; color: #800020; font-size: 13px; margin-bottom: 20px; border:1px solid #ddd; }
         .cart-items-container, #myOrdersList { max-width: 600px; margin: 0 auto; }
         
         .cart-item { display: flex; align-items: center; background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #eee; }
@@ -329,15 +352,14 @@
         .checkout-btn { background-color: #27ae60; color: white; padding: 12px; width: 100%; border: none; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
         /* ऑर्डर हिस्ट्री कार्ड स्टाइल */
-        .order-history-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-left: 5px solid #800020; }
-        .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 8px; color: #555; }
-        .order-status { padding: 4px 10px; border-radius: 20px; font-size: 11px; color: white; font-weight: bold; }
+        .order-history-card { background: white; padding: 18px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 6px solid #800020; border-top: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee; }
+        .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #444; }
+        .order-status { padding: 5px 12px; border-radius: 20px; font-size: 11px; color: white; font-weight: bold; }
         .status-new { background: #f39c12; }
         .status-shipping { background: #3498db; }
         .status-delivered { background: #27ae60; }
         .status-cancelled { background: #e74c3c; }
-        .order-history-items { font-size: 13px; color: #444; margin-bottom: 12px; line-height: 1.6; }
-        .order-history-total { font-size: 14px; font-weight: bold; color: #800020; text-align: right; background: #fdf2f2; padding: 8px; border-radius: 5px; }
+        .order-history-total { font-size: 15px; font-weight: bold; color: #800020; text-align: right; background: #fdf2f2; padding: 10px 15px; border-radius: 6px; margin-top:5px; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -373,8 +395,8 @@
         <div class="user-profile-bar">
             <span id="userDisplay" onclick="openLoginModal()">👤 गेस्ट यूजर (लॉगिन करें)</span>
             <div class="user-actions">
-                <span id="myOrdersBtn" style="display:none; color:#2980b9; cursor:pointer;" onclick="openOrdersPage()">📦 मेरे ऑर्डर</span>
-                <span id="logoutBtn" style="display:none; color:#c0392b; cursor:pointer;" onclick="logoutUser()">लॉग आउट</span>
+                <span id="myOrdersBtn" style="display:none; color:#2980b9; cursor:pointer; background:#e8f4f8; padding:4px 8px; border-radius:4px;" onclick="openOrdersPage()">📦 मेरे ऑर्डर</span>
+                <span id="logoutBtn" style="display:none; color:#c0392b; cursor:pointer; padding:4px 8px;" onclick="logoutUser()">लॉग आउट</span>
             </div>
         </div>
         
