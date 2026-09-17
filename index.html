@@ -106,7 +106,10 @@
             startBannerSlider();
             let savedPhone = localStorage.getItem('grihani_user_phone');
             if(savedPhone) {
-                document.getElementById('userDisplay').innerText = "👤 " + localStorage.getItem('grihani_user_name') + " (" + savedPhone + ")";
+                document.getElementById('userDisplay').innerText = "👤 " + localStorage.getItem('grihani_user_name');
+                document.getElementById('userDisplay').onclick = null; // लॉगिन होने पर मॉडल नहीं खुलेगा
+                document.getElementById('myOrdersBtn').style.display = 'inline-block';
+                document.getElementById('logoutBtn').style.display = 'inline-block';
             }
         }
 
@@ -120,7 +123,7 @@
             set(ref(db, 'customers/' + cleanPhone), { name, phone, address, date: new Date().toLocaleString() }).then(() => {
                 localStorage.setItem('grihani_user_name', name); localStorage.setItem('grihani_user_phone', phone); localStorage.setItem('grihani_user_address', address);
                 document.getElementById('loginModal').style.display = 'none';
-                document.getElementById('userDisplay').innerText = "👤 " + name + " (" + phone + ")";
+                updateUserUI(name);
                 alert("✨ रजिस्ट्रेशन सफल रहा!");
             });
         }
@@ -133,20 +136,90 @@
                     let cData = snapshot.val();
                     localStorage.setItem('grihani_user_name', cData.name); localStorage.setItem('grihani_user_phone', cData.phone); localStorage.setItem('grihani_user_address', cData.address);
                     document.getElementById('loginModal').style.display = 'none';
-                    document.getElementById('userDisplay').innerText = "👤 " + cData.name + " (" + cData.phone + ")";
+                    updateUserUI(cData.name);
                     alert("🎉 स्वागत है " + cData.name + "!");
                 } else alert("यह नंबर रजिस्टर्ड नहीं है। कृपया नया रजिस्ट्रेशन करें!");
             });
         }
 
+        function updateUserUI(name) {
+            document.getElementById('userDisplay').innerText = "👤 " + name;
+            document.getElementById('userDisplay').onclick = null;
+            document.getElementById('myOrdersBtn').style.display = 'inline-block';
+            document.getElementById('logoutBtn').style.display = 'inline-block';
+        }
+
         window.logoutUser = function() { if(confirm("क्या आप लॉग आउट करना चाहते हैं?")) { localStorage.clear(); location.reload(); } }
+        
         window.filterCategory = function(cat, btnElement) { currentCategory = cat; document.querySelectorAll('.cat-filter-btn').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); loadProducts(); }
         window.addToCart = function(product) { let existingItem = cart.find(item => item.name === product.name); if(existingItem) existingItem.qty += 1; else cart.push({ ...product, qty: 1 }); alert(product.name + " कार्ट में जुड़ गया!"); updateCartCount(); }
         window.updateCartCount = function() { let total = 0; cart.forEach(item => total += item.qty); document.getElementById('cartCount').innerText = total; }
         window.increaseQty = function(index) { cart[index].qty += 1; updateCartCount(); renderCartItems(); }
         window.decreaseQty = function(index) { cart[index].qty -= 1; if(cart[index].qty === 0) cart.splice(index, 1); updateCartCount(); renderCartItems(); }
-        window.openCart = function() { document.getElementById('homePage').style.display = 'none'; document.getElementById('cartPage').style.display = 'block'; renderCartItems(); }
+        
+        // Navigation Functions
+        window.openCart = function() { document.getElementById('homePage').style.display = 'none'; document.getElementById('ordersPage').style.display = 'none'; document.getElementById('cartPage').style.display = 'block'; renderCartItems(); }
         window.closeCart = function() { document.getElementById('cartPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; }
+        
+        window.openOrdersPage = function() {
+            document.getElementById('homePage').style.display = 'none';
+            document.getElementById('cartPage').style.display = 'none';
+            document.getElementById('ordersPage').style.display = 'block';
+            fetchMyOrders();
+        }
+        window.closeOrdersPage = function() { document.getElementById('ordersPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; }
+
+        // Fetch Order History
+        window.fetchMyOrders = function() {
+            let phone = localStorage.getItem('grihani_user_phone');
+            let ordersDiv = document.getElementById('myOrdersList');
+            ordersDiv.innerHTML = '<p style="text-align:center; padding: 20px;">आपके ऑर्डर लोड हो रहे हैं...</p>';
+            
+            get(ref(db, 'orders')).then((snapshot) => {
+                ordersDiv.innerHTML = '';
+                if(snapshot.exists()) {
+                    let data = snapshot.val();
+                    let myOrders = [];
+                    Object.keys(data).forEach(key => {
+                        if(data[key].customerPhone === phone) {
+                            myOrders.push({...data[key], id: key});
+                        }
+                    });
+                    
+                    if(myOrders.length === 0) {
+                        ordersDiv.innerHTML = '<p style="text-align:center; color:#777; padding: 20px;">आपने अभी तक कोई ऑर्डर नहीं किया है।</p>';
+                        return;
+                    }
+                    
+                    // Show latest orders first
+                    myOrders.reverse().forEach(order => {
+                        let statusColor = 'status-new';
+                        let statusText = order.status || 'New';
+                        let displayStatus = "नया ऑर्डर 🕒";
+                        
+                        // Status translation and coloring
+                        if(statusText.toLowerCase().includes('ship') || statusText.toLowerCase() === 'shipping') { statusColor = 'status-shipping'; displayStatus = "रास्ते में है (Shipping) 🚚"; }
+                        else if(statusText.toLowerCase().includes('deliver') || statusText.toLowerCase() === 'delivered') { statusColor = 'status-delivered'; displayStatus = "डिलीवर हो गया ✅"; }
+                        else if(statusText.toLowerCase().includes('cancel') || statusText.toLowerCase() === 'cancelled') { statusColor = 'status-cancelled'; displayStatus = "रद्द (Cancelled) ❌"; }
+
+                        let itemsHtml = order.items.map(i => `• ${i.name} (x${i.qty})`).join('<br>');
+                        
+                        ordersDiv.innerHTML += `
+                            <div class="order-history-card">
+                                <div class="order-history-header">
+                                    <span>📅 ${order.date.split(',')[0]}</span>
+                                    <span class="order-status ${statusColor}">${displayStatus}</span>
+                                </div>
+                                <div class="order-history-items">${itemsHtml}</div>
+                                <div class="order-history-total">भुगतान: ${order.paymentMode} | कुल: ${order.total}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    ordersDiv.innerHTML = '<p style="text-align:center; color:#777; padding: 20px;">आपने अभी तक कोई ऑर्डर नहीं किया है।</p>';
+                }
+            });
+        }
 
         window.renderCartItems = function() {
             let cartDiv = document.getElementById('cartItemsList'); cartDiv.innerHTML = ''; let total = 0;
@@ -188,14 +261,13 @@
                 customerName: localStorage.getItem('grihani_user_name'), customerPhone: localStorage.getItem('grihani_user_phone'),
                 customerAddress: localStorage.getItem('grihani_user_address'), paymentMode, paymentId, items: cart, 
                 total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New'
-            }).then(() => { alert("🎉 आपका ऑर्डर सफलतापूलवक दर्ज हो गया है!"); cart = []; updateCartCount(); closeCart(); });
+            }).then(() => { alert("🎉 आपका ऑर्डर सफलतापूलवक दर्ज हो गया है!"); cart = []; updateCartCount(); closeCart(); openOrdersPage(); });
         }
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body { background-color: #f4f6f7; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
         
-        /* फुल-स्क्रीन वेबसाइट कंटेनर और हेडर */
         .website-container { width: 100%; max-width: 1200px; margin: 0 auto; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.1); min-height: 100vh; display: flex; flex-direction: column; }
         .app-header { background-color: #800020; color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .logo-title-container { display: flex; align-items: center; gap: 12px; }
@@ -205,11 +277,12 @@
         .cart-icon { font-size: 18px; position: relative; cursor: pointer; background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; }
         #cartCount { background-color: #f1c40f; color: #800020; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 50%; position: absolute; top: -5px; right: -5px; }
         
-        .user-profile-bar { background: #fdf2f2; padding: 8px 25px; display: flex; justify-content: space-between; font-size: 13px; border-bottom: 1px solid #ddd; color: #800020; font-weight: bold; cursor: pointer; }
+        .user-profile-bar { background: #fdf2f2; padding: 8px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; border-bottom: 1px solid #ddd; font-weight: bold; }
+        #userDisplay { color: #800020; cursor: pointer; }
+        .user-actions { display: flex; gap: 15px; }
         
         #homePage { flex-grow: 1; padding-bottom: 30px; }
         
-        /* ऑटो-स्लाइडिंग मास्टर बैनर (फुल स्क्रीन) */
         .banner-container { width: 100%; height: 320px; position: relative; overflow: hidden; background: #000; }
         .banner-slide { width: 100%; height: 100%; display: none; position: absolute; top: 0; left: 0; }
         .banner-slide img { width: 100%; height: 100%; object-fit: cover; }
@@ -227,7 +300,6 @@
         .cat-filter-btn { padding: 8px 18px; border: 1px solid #800020; background: white; color: #800020; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.2s; }
         .cat-filter-btn.active, .cat-filter-btn:hover { background: #800020; color: white; }
         
-        /* प्रोडक्ट्स ग्रिड (लैपटॉप पर 4 कॉलम, मोबाइल पर 2 कॉलम) */
         .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 20px 25px; }
         .product-card { border: 1px solid #eee; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; background: #fff; transition: 0.3s; }
         .product-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
@@ -238,10 +310,11 @@
         .cart-btn { background-color: #fff; color: #800020; border: 1px solid #800020; padding: 8px 0; width: 100%; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; }
         .cart-btn:hover { background-color: #800020; color: #fff; }
 
-        /* कार्ट पेज स्टाइल */
-        #cartPage { display: none; padding: 25px; flex-grow: 1; }
+        /* कार्ट और ऑर्डर पेज कॉमन स्टाइल */
+        #cartPage, #ordersPage { display: none; padding: 25px; flex-grow: 1; }
         .back-btn { padding: 8px 15px; background: #f1f2f6; font-weight: bold; cursor: pointer; border-radius: 5px; display: inline-block; color: #800020; font-size: 13px; margin-bottom: 20px; }
-        .cart-items-container { max-width: 600px; margin: 0 auto; }
+        .cart-items-container, #myOrdersList { max-width: 600px; margin: 0 auto; }
+        
         .cart-item { display: flex; align-items: center; background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #eee; }
         .cart-item img { width: 60px; height: 60px; border-radius: 6px; object-fit: cover; margin-right: 15px; }
         .cart-item-info { flex-grow: 1; }
@@ -255,7 +328,17 @@
         .total-bill { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; color: #800020; }
         .checkout-btn { background-color: #27ae60; color: white; padding: 12px; width: 100%; border: none; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
-        /* मोडल (पॉप-अप) स्टाइल */
+        /* ऑर्डर हिस्ट्री कार्ड स्टाइल */
+        .order-history-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-left: 5px solid #800020; }
+        .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 8px; color: #555; }
+        .order-status { padding: 4px 10px; border-radius: 20px; font-size: 11px; color: white; font-weight: bold; }
+        .status-new { background: #f39c12; }
+        .status-shipping { background: #3498db; }
+        .status-delivered { background: #27ae60; }
+        .status-cancelled { background: #e74c3c; }
+        .order-history-items { font-size: 13px; color: #444; margin-bottom: 12px; line-height: 1.6; }
+        .order-history-total { font-size: 14px; font-weight: bold; color: #800020; text-align: right; background: #fdf2f2; padding: 8px; border-radius: 5px; }
+
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         .modal-content h3 { color: #800020; margin-bottom: 15px; text-align: center; font-size: 18px; }
@@ -264,14 +347,14 @@
         .confirm-order-btn { background: #800020; } .login-existing-btn { background: #2980b9; }
         .cancel-order-btn { background: #ecf0f1; color: #333; border: none; padding: 10px; width: 100%; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; }
 
-        /* मोबाइल के लिए ऑटो-एडजेस्ट (Responsive Media Query) */
         @media(max-width: 768px) {
             .website-container { max-width: 100%; box-shadow: none; }
             .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; }
             .banner-container { height: 180px; }
             .app-header { padding: 10px 15px; }
-            .user-profile-bar { padding: 6px 15px; font-size: 11px; }
+            .user-profile-bar { padding: 8px 15px; font-size: 11px; }
             .product-img { height: 120px; }
+            #cartPage, #ordersPage { padding: 15px; }
         }
     </style>
 </head>
@@ -286,9 +369,13 @@
             <span class="cart-icon" onclick="openCart()">🛒 कार्ट <span id="cartCount">0</span></span>
         </div>
         
-        <div class="user-profile-bar" onclick="openLoginModal()">
-            <span id="userDisplay">👤 गेस्ट यूजर (लॉगिन करें)</span>
-            <span style="color:#c0392b;" onclick="event.stopPropagation(); logoutUser()">लॉग आउट</span>
+        <!-- यूजर प्रोफाइल बार -->
+        <div class="user-profile-bar">
+            <span id="userDisplay" onclick="openLoginModal()">👤 गेस्ट यूजर (लॉगिन करें)</span>
+            <div class="user-actions">
+                <span id="myOrdersBtn" style="display:none; color:#2980b9; cursor:pointer;" onclick="openOrdersPage()">📦 मेरे ऑर्डर</span>
+                <span id="logoutBtn" style="display:none; color:#c0392b; cursor:pointer;" onclick="logoutUser()">लॉग आउट</span>
+            </div>
         </div>
         
         <div id="homePage">
@@ -315,7 +402,7 @@
         </div>
 
         <!-- कार्ट पेज -->
-        <div id="cartPage" style="display:none;">
+        <div id="cartPage">
             <div class="back-btn" onclick="closeCart()">← वापस स्टोर पर जाएं</div>
             <h2 style="color: #800020; margin-bottom: 15px; font-size: 20px;">आपकी शॉपिंग कार्ट</h2>
             <div class="cart-items-container" id="cartItemsList"></div>
@@ -323,6 +410,13 @@
                 <div class="total-bill"><span>कुल बिल:</span><span id="totalAmount">₹0</span></div>
                 <button class="checkout-btn" onclick="openCheckoutForm()">ऑर्डर करें (Checkout)</button>
             </div>
+        </div>
+
+        <!-- मेरे ऑर्डर (Order History) पेज -->
+        <div id="ordersPage">
+            <div class="back-btn" onclick="closeOrdersPage()">← वापस स्टोर पर जाएं</div>
+            <h2 style="color: #800020; margin-bottom: 15px; font-size: 20px;">📦 मेरे ऑर्डर्स (Order History)</h2>
+            <div id="myOrdersList"></div>
         </div>
 
         <!-- लॉगिन मॉडल -->
