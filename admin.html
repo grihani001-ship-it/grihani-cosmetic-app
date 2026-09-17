@@ -11,9 +11,8 @@
             let pass = prompt("कृपया एडमिन पासवर्ड दर्ज करें:");
             if (pass !== "admin123") {
                 alert("गलत पासवर्ड! आपको मेन वेबसाइट पर भेजा जा रहा है।");
-                window.location.href = "index.html"; // गलत पासवर्ड पर ऐप में वापस भेज देगा
+                window.location.href = "index.html";
             } else {
-                // सही पासवर्ड होने पर ही डेटा लोड होगा
                 loadCategoriesAdmin();
                 loadProductsAdmin();
                 loadOrdersAdmin();
@@ -25,7 +24,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
@@ -103,12 +102,31 @@
                 let newOrdersDiv = document.getElementById('adminNewOrders'), dispatchedDiv = document.getElementById('adminDispatchedOrders');
                 newOrdersDiv.innerHTML = ''; dispatchedDiv.innerHTML = '';
                 if (!data) return;
+                
                 Object.keys(data).forEach((key) => {
                     let order = data[key], itemsList = '';
                     if(order.items) order.items.forEach(item => itemsList += `${item.name}(x${item.qty}), `);
-                    let cardHtml = `<div class="order-card"><p>👤 ${order.customerName} (${order.customerPhone})</p><p>📍 ${order.customerAddress}</p><p>🛍️ ${itemsList}</p><p>💳 ${order.paymentMode} | 💰 ${order.total}</p><p style="font-size:11px; color:#7f8c8d;">📅 ${order.date}</p>`;
-                    if (order.status === 'Dispatched') dispatchedDiv.innerHTML += cardHtml + `<button class="complete-order-btn" onclick="markDelivered('${key}')">✨ डिलीवर (समाप्त करें)</button></div>`;
-                    else newOrdersDiv.innerHTML += cardHtml + `<button class="dispatch-btn" onclick="markDispatched('${key}')">🚚 डिस्पैच करें</button></div>`;
+                    
+                    let cardHtml = `
+                        <div class="order-card">
+                            <p>👤 ${order.customerName} (${order.customerPhone})</p>
+                            <p>📍 ${order.customerAddress}</p>
+                            <p style="color:#800020; font-size:12px; margin:6px 0;">🛍️ ${itemsList}</p>
+                            <p>💳 ${order.paymentMode} | 💰 ${order.total}</p>
+                            <p style="font-size:11px; color:#7f8c8d;">📅 ${order.date}</p>
+                    `;
+                    
+                    if (order.status === 'Dispatched') {
+                        dispatchedDiv.innerHTML += cardHtml + `
+                            <button class="complete-order-btn" onclick="markDelivered('${key}')">✨ डिलीवर (समाप्त करें)</button>
+                            <button class="cancel-order-btn" onclick="markCancelled('${key}')">❌ रद्द करें (Cancel)</button>
+                        </div>`;
+                    } else {
+                        newOrdersDiv.innerHTML += cardHtml + `
+                            <button class="dispatch-btn" onclick="markDispatched('${key}')">🚚 डिस्पैच करें</button>
+                            <button class="cancel-order-btn" onclick="markCancelled('${key}')">❌ रद्द करें (Cancel)</button>
+                        </div>`;
+                    }
                 });
             });
         }
@@ -124,8 +142,46 @@
                 });
             });
         }
+        
         window.markDispatched = function(key) { update(ref(db, 'orders/' + key), { status: 'Dispatched' }); }
-        window.markDelivered = function(key) { if(confirm("सफलतापूर्वक डिलीवर हो गया?")) remove(ref(db, 'orders/' + key)); }
+        
+        // NEW FEATURE: डिलीट होने की जगह अब हिस्ट्री में सेव होगा!
+        window.markDelivered = function(key) { 
+            if(confirm("क्या यह ऑर्डर सफलतापूर्वक डिलीवर हो गया है?")) {
+                let deliveryTime = new Date().toLocaleString(); // डिलीवरी का समय निकालें
+                get(child(ref(db), `orders/${key}`)).then((snapshot) => {
+                    if(snapshot.exists()) {
+                        let orderData = snapshot.val();
+                        orderData.status = 'Delivered';
+                        orderData.deliveredAt = deliveryTime; // समय सेव करें
+                        
+                        // इसे 'order_history' वाले फोल्डर में डालें
+                        set(ref(db, 'order_history/' + key), orderData).then(() => {
+                            // फिर इसे एक्टिव 'orders' लिस्ट से हटा दें
+                            remove(ref(db, 'orders/' + key));
+                        });
+                    }
+                });
+            } 
+        }
+
+        // NEW FEATURE: ऑर्डर कैंसिल करने पर भी वह हिस्ट्री में जाएगा
+        window.markCancelled = function(key) { 
+            if(confirm("क्या आप इस ऑर्डर को रद्द (Cancel) करना चाहते हैं?")) {
+                let cancelTime = new Date().toLocaleString(); 
+                get(child(ref(db), `orders/${key}`)).then((snapshot) => {
+                    if(snapshot.exists()) {
+                        let orderData = snapshot.val();
+                        orderData.status = 'Cancelled';
+                        orderData.deliveredAt = "Cancelled on " + cancelTime;
+                        
+                        set(ref(db, 'order_history/' + key), orderData).then(() => {
+                            remove(ref(db, 'orders/' + key));
+                        });
+                    }
+                });
+            } 
+        }
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
@@ -142,10 +198,12 @@
         .add-btn { background-color: #27ae60; color: white; border: none; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; }
         .admin-item { display: flex; justify-content: space-between; align-items: center; background: #ecf0f1; color: #333; padding: 8px; margin-bottom: 6px; border-radius: 4px; font-size: 13px; font-weight: bold; }
         .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        .order-card { background-color: #ecf0f1; color: #2c3e50; padding: 10px; border-radius: 6px; margin-bottom: 10px; border-left: 5px solid #e67e22; }
+        
+        .order-card { background-color: #ecf0f1; color: #2c3e50; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 5px solid #e67e22; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .order-card p { margin-bottom: 4px; font-size: 13px; font-weight: bold; }
-        .dispatch-btn { background-color: #d35400; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; width: 100%; }
-        .complete-order-btn { background-color: #27ae60; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; width: 100%; }
+        .dispatch-btn { background-color: #3498db; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; width: 100%; }
+        .complete-order-btn { background-color: #27ae60; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; width: 100%; }
+        .cancel-order-btn { background-color: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; width: 100%; font-size:12px; }
     </style>
 </head>
 <body>
@@ -168,11 +226,11 @@
                     <h3>📁 कैटेगरीज</h3>
                     <div class="form-group"><input type="text" id="catKeyInput" placeholder="कोड (English)"></div>
                     <div class="form-group"><input type="text" id="catNameInput" placeholder="नाम (Hindi)"></div>
-                    <button class="add-btn" onclick="addNewCategory()">➕ जोड़ें</button>
+                    <button class="add-btn" onclick="addNewCategory()">➕ जोड़ें</button>
                     <div id="adminCatList" style="margin-top: 10px;"></div>
                 </div>
                 <div class="manage-section" style="border-left: 4px solid #e67e22;">
-                    <h3>🛍️ प्रोडक्ट जोड़ें</h3>
+                    <h3>🛍️ प्रोडक्ट जोड़ें</h3>
                     <div class="form-group"><input type="text" id="pName" placeholder="नाम"></div>
                     <div class="form-group"><select id="pCategory"></select></div>
                     <div class="form-group"><input type="number" id="pPrice" placeholder="कीमत (₹)"></div>
@@ -181,7 +239,7 @@
                     <div id="adminProductList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div>
                 </div>
                 <div class="manage-section" style="border-left: 4px solid #e74c3c;">
-                    <h3>🎥 रील जोड़ें</h3>
+                    <h3>🎥 रील जोड़ें</h3>
                     <div class="form-group"><input type="text" id="rTitle" placeholder="टाइटल"></div>
                     <div class="form-group"><input type="text" id="rVideoUrl" placeholder="MP4 लिंक"></div>
                     <div class="form-group"><input type="text" id="rInstaUrl" placeholder="Instagram लिंक (वैकल्पिक)"></div>
