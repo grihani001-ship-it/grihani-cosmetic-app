@@ -27,18 +27,22 @@
         let currentLang = localStorage.getItem('grihani_lang') || 'en'; 
         
         const dict = {
+            "deliver_to": { hi: "डिलीवर करें", en: "Deliver to" },
+            "update_loc": { hi: "पटना 800025", en: "Patna 800025" },
+            "hello_sign_in": { hi: "नमस्ते, साइन इन करें", en: "Hello, sign in" },
+            "account_lists": { hi: "अकाउंट और लिस्ट", en: "Account & Lists" },
+            "returns": { hi: "रिटर्न्स", en: "Returns" },
+            "and_orders": { hi: "और ऑर्डर्स", en: "& Orders" },
+            "cart_txt": { hi: "कार्ट", en: "Cart" },
+            "all_txt": { hi: "सभी (All)", en: "All" },
             "title_reels": { hi: "🔥 ट्रेंडिंग रील्स", en: "🔥 Trending Reels" },
-            "btn_all_products": { hi: "सभी प्रोडक्ट्स", en: "All Products" },
             "cart_title": { hi: "आपकी शॉपिंग कार्ट", en: "Your Shopping Cart" },
             "btn_back_store": { hi: "← वापस स्टोर पर जाएं", en: "← Back to Store" },
             "empty_cart": { hi: "आपका कार्ट खाली है।", en: "Your cart is empty." },
             "total_bill": { hi: "कुल बिल:", en: "Total Bill:" },
-            "btn_checkout": { hi: "ऑर्डर करें (Checkout)", en: "Checkout Now" },
+            "btn_checkout": { hi: "ऑर्डर करें (Checkout)", en: "Proceed to Buy" },
             "order_history_title": { hi: "📦 मेरे ऑर्डर्स (Order History)", en: "📦 My Order History" },
-            "guest_user": { hi: "👤 गेस्ट यूजर (लॉगिन करें)", en: "👤 Guest User (Login)" },
-            "my_orders_btn": { hi: "📦 मेरे ऑर्डर", en: "📦 My Orders" },
-            "logout_btn": { hi: "लॉग आउट", en: "Logout" },
-            "login_title": { hi: "✨ Grihani Cosmetic में स्वागत है", en: "✨ Welcome to Grihani Cosmetic" },
+            "login_title": { hi: "✨ Grihani Cosmetic में स्वागत है", en: "✨ Welcome to Grihani" },
             "login_new": { hi: "🚀 नया रजिस्ट्रेशन करें", en: "🚀 Register New Account" },
             "login_exist": { hi: "🔑 पहले से रजिस्टर्ड हैं? लॉगिन करें", en: "🔑 Already Registered? Login" },
             "close_btn": { hi: "❌ बंद करें", en: "❌ Close" },
@@ -46,8 +50,7 @@
             "pay_mode_title": { hi: "पेमेंट का तरीका चुनें:", en: "Select Payment Mode:" },
             "cod_opt": { hi: "कैश ऑन डिलीवरी (COD)", en: "Cash on Delivery (COD)" },
             "online_opt": { hi: "ऑनलाइन पेमेंट", en: "Pay Online (UPI/Card)" },
-            "confirm_order_btn": { hi: "✅ पेमेंट और ऑर्डर पक्का करें", en: "✅ Confirm Order & Pay" },
-            "btn_view_details": { hi: "विवरण देखें", en: "View Details" },
+            "confirm_order_btn": { hi: "✅ पेमेंट और ऑर्डर पक्का करें", en: "✅ Place Your Order" },
             "prod_desc": { hi: "विवरण:", en: "Description:" },
             "select_color": { hi: "रंग चुनें:", en: "Select Color:" },
             "select_size": { hi: "साइज चुनें:", en: "Select Size:" }
@@ -56,7 +59,7 @@
         window.toggleLanguage = function() {
             currentLang = currentLang === 'en' ? 'hi' : 'en';
             localStorage.setItem('grihani_lang', currentLang);
-            document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🌐 हिंदी' : '🌐 English';
+            document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
             applyLanguage(); loadProducts(); fetchMyOrders(); renderCartItems(); 
         }
 
@@ -65,8 +68,8 @@
                 let key = el.getAttribute('data-lang-key');
                 if(dict[key]) el.innerText = dict[key][currentLang];
             });
-            if(!localStorage.getItem('grihani_user_phone')) {
-                document.getElementById('userDisplay').innerText = dict["guest_user"][currentLang];
+            if(localStorage.getItem('grihani_user_name')) {
+                document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + localStorage.getItem('grihani_user_name').split(" ")[0];
             }
         }
 
@@ -98,15 +101,23 @@
                 slides.forEach(s => s.style.display = 'none');
                 currentSlide = (currentSlide + 1) % slides.length; 
                 slides[currentSlide].style.display = 'block'; 
-            }, 3000);
+            }, 4000);
         }
 
         window.loadCategories = function() {
             onValue(ref(window.db, 'categories'), (snapshot) => {
-                const data = snapshot.val(); let filterDiv = document.getElementById('categoryFilters');
-                filterDiv.innerHTML = `<button class="cat-filter-btn active" onclick="filterCategory('All', this)">${currentLang === 'hi' ? 'सभी प्रोडक्ट्स' : 'All Products'}</button>`;
+                const data = snapshot.val(); 
+                let filterDiv = document.getElementById('categoryFilters');
+                let searchSelect = document.getElementById('amzCategorySelect');
+                
+                filterDiv.innerHTML = '';
+                searchSelect.innerHTML = `<option value="All">All</option>`;
+                
                 let categories = data ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
-                Object.keys(categories).forEach((catKey) => { filterDiv.innerHTML += `<button class="cat-filter-btn" onclick="filterCategory('${catKey}', this)">${categories[catKey]}</button>`; });
+                Object.keys(categories).forEach((catKey) => { 
+                    filterDiv.innerHTML += `<button onclick="filterCategory('${catKey}', this)">${categories[catKey]}</button>`; 
+                    searchSelect.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
+                });
             });
         }
 
@@ -117,48 +128,63 @@
                 Object.keys(data).forEach((key) => {
                     let item = data[key];
                     if (currentCategory === 'All' || item.category === currentCategory) {
-                        let btnText = currentLang === 'hi' ? 'विवरण देखें' : 'View Details';
+                        let btnText = currentLang === 'hi' ? 'कार्ट में डालें' : 'Add to Cart';
                         let safeProduct = encodeURIComponent(JSON.stringify(item));
-                        // Changed click to open product Modal
-                        appDiv.innerHTML += `<div class="product-card" onclick="openProductModal('${safeProduct}')"><span class="cat-tag">${item.category}</span><img src="${item.image}" class="product-img"><div class="product-title">${item.name}</div><div class="product-price">₹${item.price}</div><button class="cart-btn">${btnText}</button></div>`;
+                        appDiv.innerHTML += `
+                            <div class="product-card" onclick="openProductModal('${safeProduct}')">
+                                <span class="cat-tag">${item.category}</span>
+                                <img src="${item.image}" class="product-img">
+                                <div class="product-title">${item.name}</div>
+                                <div class="product-price"><span style="font-size:14px; vertical-align:top;">₹</span>${item.price}</div>
+                                <button class="cart-btn">${btnText}</button>
+                            </div>`;
                     }
                 });
             });
         }
 
-        // --- NEW FEATURE: PRODUCT DETAILS MODAL ---
+        // --- NEW SEARCH FEATURE ---
+        window.searchProducts = function() {
+            let input = document.getElementById('searchInput').value.toLowerCase();
+            let cards = document.querySelectorAll('.product-card');
+            cards.forEach(card => {
+                let title = card.querySelector('.product-title').innerText.toLowerCase();
+                let cat = card.querySelector('.cat-tag').innerText.toLowerCase();
+                if(title.includes(input) || cat.includes(input)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
         window.openProductModal = function(prodStr) {
             let p = JSON.parse(decodeURIComponent(prodStr));
             document.getElementById('pmImg').src = p.image;
             document.getElementById('pmTitle').innerText = p.name;
-            document.getElementById('pmPrice').innerText = "₹" + p.price;
-            document.getElementById('pmDescText').innerText = p.desc || (currentLang === 'hi' ? 'इस प्रोडक्ट का कोई विवरण नहीं है।' : 'No description available for this product.');
+            document.getElementById('pmPrice').innerHTML = `<span style="font-size:16px; vertical-align:top;">₹</span>${p.price}`;
+            document.getElementById('pmDescText').innerText = p.desc || (currentLang === 'hi' ? 'इस प्रोडक्ट का कोई विवरण नहीं है।' : 'No description available.');
             
             let colorDiv = document.getElementById('pmColorDiv');
             if(p.color) {
                 let opts = p.color.split(',').map(c => `<option value="${c.trim()}">${c.trim()}</option>`).join('');
-                document.getElementById('pmColorSelect').innerHTML = opts;
-                colorDiv.style.display = 'block';
+                document.getElementById('pmColorSelect').innerHTML = opts; colorDiv.style.display = 'block';
             } else { colorDiv.style.display = 'none'; }
 
             let sizeDiv = document.getElementById('pmSizeDiv');
             if(p.size) {
                 let opts = p.size.split(',').map(s => `<option value="${s.trim()}">${s.trim()}</option>`).join('');
-                document.getElementById('pmSizeSelect').innerHTML = opts;
-                sizeDiv.style.display = 'block';
+                document.getElementById('pmSizeSelect').innerHTML = opts; sizeDiv.style.display = 'block';
             } else { sizeDiv.style.display = 'none'; }
 
             document.getElementById('pmAddToCartBtn').onclick = function() {
                 let selectedColor = p.color ? document.getElementById('pmColorSelect').value : null;
                 let selectedSize = p.size ? document.getElementById('pmSizeSelect').value : null;
-                addToCart(p, selectedColor, selectedSize);
-                closeProductModal();
+                addToCart(p, selectedColor, selectedSize); closeProductModal();
             };
-
             document.getElementById('productDetailModal').style.display = 'flex';
         }
         window.closeProductModal = function() { document.getElementById('productDetailModal').style.display = 'none'; }
-        // ------------------------------------------
 
         window.loadReels = function() {
             onValue(ref(window.db, 'reels'), (snapshot) => {
@@ -172,13 +198,16 @@
         }
 
         window.onload = function() {
-            document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🌐 हिंदी' : '🌐 English';
+            document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
             applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
-            let savedPhone = localStorage.getItem('grihani_user_phone');
-            if(savedPhone) { updateUserUI(localStorage.getItem('grihani_user_name')); }
+            let savedName = localStorage.getItem('grihani_user_name');
+            if(savedName) { updateUserUI(savedName); }
         }
 
-        window.openLoginModal = function() { document.getElementById('loginModal').style.display = 'flex'; }
+        window.openLoginModal = function() { 
+            if(localStorage.getItem('grihani_user_phone')) { openOrdersPage(); } 
+            else { document.getElementById('loginModal').style.display = 'flex'; }
+        }
         window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; }
 
         window.saveCustomerLogin = function() {
@@ -203,11 +232,19 @@
             });
         }
 
-        function updateUserUI(name) { document.getElementById('userDisplay').innerText = "👤 " + name; document.getElementById('userDisplay').onclick = null; document.getElementById('myOrdersBtn').style.display = 'inline-block'; document.getElementById('logoutBtn').style.display = 'inline-block'; fetchMyOrders(); }
+        function updateUserUI(name) { 
+            let firstName = name.split(" ")[0];
+            document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + firstName;
+            fetchMyOrders(); 
+        }
         window.logoutUser = function() { if(confirm(currentLang === 'hi' ? "क्या आप लॉग आउट करना चाहते हैं?" : "Do you want to logout?")) { localStorage.clear(); location.reload(); } }
-        window.filterCategory = function(cat, btnElement) { currentCategory = cat; document.querySelectorAll('.cat-filter-btn').forEach(btn => btn.classList.remove('active')); btnElement.classList.add('active'); loadProducts(); }
         
-        // Updated addToCart to handle variations
+        window.filterCategory = function(cat, btnElement) { 
+            currentCategory = cat; loadProducts(); 
+            // Optional: reset search box
+            document.getElementById('searchInput').value = '';
+        }
+        
         window.addToCart = function(product, sColor, sSize) { 
             let existingItem = cart.find(item => item.name === product.name && item.selectedColor === sColor && item.selectedSize === sSize); 
             if(existingItem) existingItem.qty += 1; 
@@ -222,7 +259,10 @@
         
         window.openCart = function() { document.getElementById('homePage').style.display = 'none'; document.getElementById('ordersPage').style.display = 'none'; document.getElementById('cartPage').style.display = 'block'; renderCartItems(); }
         window.closeCart = function() { document.getElementById('cartPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; }
-        window.openOrdersPage = function() { document.getElementById('homePage').style.display = 'none'; document.getElementById('cartPage').style.display = 'none'; document.getElementById('ordersPage').style.display = 'block'; }
+        window.openOrdersPage = function() { 
+            if(!localStorage.getItem('grihani_user_phone')) return openLoginModal();
+            document.getElementById('homePage').style.display = 'none'; document.getElementById('cartPage').style.display = 'none'; document.getElementById('ordersPage').style.display = 'block'; 
+        }
         window.closeOrdersPage = function() { document.getElementById('ordersPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; }
 
         let liveActiveOrders = {}; let liveHistoryOrders = {};
@@ -267,31 +307,29 @@
                     trackingHtml += '</div>';
                 }
 
-                // Render Item Details including variations
                 let itemsHtml = order.items.map(i => {
-                    let varText = '';
-                    if(i.selectedColor) varText += i.selectedColor + ' ';
-                    if(i.selectedSize) varText += i.selectedSize;
-                    let varDisplay = varText ? `<span style="color:#e67e22; font-size:10px;">(${varText})</span>` : '';
+                    let varText = ''; if(i.selectedColor) varText += i.selectedColor + ' '; if(i.selectedSize) varText += i.selectedSize;
+                    let varDisplay = varText ? `<span style="color:#e67e22; font-size:10px;">(${varText.trim()})</span>` : '';
                     return `<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #ddd;"><span>🛍️ ${i.name} ${varDisplay} <b>(x${i.qty})</b></span> <span style="font-weight:bold; color:#333;">₹${i.price * i.qty}</span></div>`;
                 }).join('');
                 
                 let payOnlineLaterBtn = '';
                 if(order.paymentMode === 'Cash on Delivery (COD)' && !isDel && !isCan) {
-                    payOnlineLaterBtn = `<button onclick="payCodOnline('${order.id}', '${order.total}', '${order.customerName}', '${order.customerPhone}')" style="background:#27ae60; color:white; border:none; padding:8px 12px; border-radius:4px; font-size:12px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px; border:2px solid #2ecc71; animation: pulse 2s infinite;">💳 ${currentLang === 'hi' ? 'अभी ऑनलाइन पेमेंट करें (Pay Now)' : 'Pay Online Now'}</button>`;
+                    payOnlineLaterBtn = `<button onclick="payCodOnline('${order.id}', '${order.total}', '${order.customerName}', '${order.customerPhone}')" style="background:#ffd814; color:#0f1111; border:1px solid #fcd200; padding:8px 12px; border-radius:100px; font-size:12px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px; box-shadow: 0 2px 5px rgba(213,217,217,.5); animation: pulse 2s infinite;">💳 ${currentLang === 'hi' ? 'अभी ऑनलाइन पेमेंट करें (Pay Now)' : 'Pay Online Now'}</button>`;
                 }
 
                 let safeOrderData = encodeURIComponent(JSON.stringify({...order, id: order.id}));
-                let invoiceBtnHtml = `<button onclick="downloadInvoice('${safeOrderData}')" style="background:#800020; color:white; border:none; padding:8px 12px; border-radius:4px; font-size:12px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">🧾 ${currentLang === 'hi' ? 'इनवॉइस / बिल डाउनलोड करें' : 'Download Invoice / Bill'}</button>`;
+                let invoiceBtnHtml = `<button onclick="downloadInvoice('${safeOrderData}')" style="background:#fff; color:#0f1111; border:1px solid #d5d9d9; padding:8px 12px; border-radius:100px; font-size:12px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px; box-shadow: 0 2px 5px rgba(213,217,217,.5);">🧾 ${currentLang === 'hi' ? 'इनवॉइस / बिल डाउनलोड करें' : 'Download Invoice / Bill'}</button>`;
 
                 htmlString += `
                     <div class="order-history-card">
                         <div class="order-history-header"><span>📅 ${currentLang === 'hi' ? 'ऑर्डर:' : 'Order:'} ${order.date.split(',')[0]} <span style="font-size:10px; color:#888;">${order.date.split(',')[1]}</span></span><span class="order-status ${statusColor}">${displayStatus}</span></div>
                         ${progressHtml}
-                        <div class="order-history-items" style="background:#f9f9f9; padding:10px; border-radius:6px; margin-bottom:12px; border:1px solid #eee;"><strong style="font-size:11px; color:#800020; display:block; margin-bottom:8px; text-transform:uppercase;">${currentLang === 'hi' ? 'खरीदे गए आइटम:' : 'Purchased Items:'}</strong>${itemsHtml}</div>
+                        <div class="order-history-items" style="background:#f9f9f9; padding:10px; border-radius:6px; margin-bottom:12px; border:1px solid #eee;"><strong style="font-size:11px; color:#111; display:block; margin-bottom:8px; text-transform:uppercase;">${currentLang === 'hi' ? 'खरीदे गए आइटम:' : 'Purchased Items:'}</strong>${itemsHtml}</div>
                         ${trackingHtml}
-                        <div class="order-history-total" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><span style="font-size:11px; color:#555;">${currentLang === 'hi' ? 'पेमेंट:' : 'Payment:'} <b>${order.paymentMode === 'Online Paid' ? '✅ Online Paid' : order.paymentMode}</b></span><span>${currentLang === 'hi' ? 'कुल बिल:' : 'Total:'} <b>${order.total}</b></span></div>
+                        <div class="order-history-total" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><span style="font-size:11px; color:#555;">${currentLang === 'hi' ? 'पेमेंट:' : 'Payment:'} <b>${order.paymentMode === 'Online Paid' ? '✅ Online Paid' : order.paymentMode}</b></span><span>${currentLang === 'hi' ? 'कुल बिल:' : 'Total:'} <b style="color:#B12704; font-size:16px;">${order.total}</b></span></div>
                         ${payOnlineLaterBtn}${invoiceBtnHtml}
+                        <div style="text-align:center; margin-top:10px;"><button onclick="logoutUser()" style="background:none; border:none; color:#007185; cursor:pointer; font-size:12px; text-decoration:underline;" data-lang-key="logout_btn">Logout</button></div>
                     </div>
                 `;
             });
@@ -300,7 +338,7 @@
 
         window.payCodOnline = function(orderId, amountStr, name, phone) {
             let amountNum = parseInt(amountStr.replace(/[^0-9]/g, '')) * 100;
-            var rzp = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": amountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response) { update(ref(window.db, 'orders/' + orderId), { paymentMode: "Online Paid", paymentId: response.razorpay_payment_id }).then(() => { alert(currentLang === 'hi' ? "✅ आपका ऑनलाइन पेमेंट सफल रहा!" : "✅ Payment Successful!"); }); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#800020" } });
+            var rzp = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": amountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response) { update(ref(window.db, 'orders/' + orderId), { paymentMode: "Online Paid", paymentId: response.razorpay_payment_id }).then(() => { alert(currentLang === 'hi' ? "✅ आपका ऑनलाइन पेमेंट सफल रहा!" : "✅ Payment Successful!"); }); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } });
             rzp.open();
         }
 
@@ -316,18 +354,18 @@
             let displayBillNo = order.billNumber ? order.billNumber : "N/A";
 
             let html = `<html><head><title>Invoice - ${displayBillNo}</title></head>
-            <body style="font-family:'Segoe UI', sans-serif; padding:40px; color:#333; max-width:800px; margin:auto;">
-                <h1 style="color:#800020; text-align:center; margin-bottom:5px;">GRIHANI COSMETIC</h1><p style="text-align:center; font-size:14px; color:#555; margin-top:0;">Ramkrishna Nagar, Patna, Bihar, India</p>
+            <body style="font-family: Arial, sans-serif; padding:40px; color:#0f1111; max-width:800px; margin:auto;">
+                <h1 style="color:#0f1111; text-align:center; margin-bottom:5px;">GRIHANI COSMETIC</h1><p style="text-align:center; font-size:14px; color:#555; margin-top:0;">Ramkrishna Nagar, Patna, Bihar, India</p>
                 <hr style="border:1px solid #eee; margin:20px 0;"><h2 style="text-align:center; background:#f4f4f4; padding:10px;">TAX INVOICE / BILL</h2>
                 <div style="display:flex; justify-content:space-between; margin-bottom:30px; font-size:14px; line-height:1.6;">
-                    <div><b style="color:#800020;">Billed To:</b><br>${order.customerName}<br>Phone: ${order.customerPhone}<br>Address: ${order.customerAddress}</div>
-                    <div style="text-align:right;"><b style="color:#800020;">Order Details:</b><br>Invoice No: <b>${displayBillNo}</b><br>Date: ${order.date}<br>Payment Mode: ${order.paymentMode}<br>Status: ${order.status}</div>
+                    <div><b style="color:#0f1111;">Billed To:</b><br>${order.customerName}<br>Phone: ${order.customerPhone}<br>Address: ${order.customerAddress}</div>
+                    <div style="text-align:right;"><b style="color:#0f1111;">Order Details:</b><br>Invoice No: <b>${displayBillNo}</b><br>Date: ${order.date}<br>Payment Mode: ${order.paymentMode}<br>Status: ${order.status}</div>
                 </div>
                 <table style="width:100%; border-collapse: collapse; margin-bottom:20px; font-size:14px;">
-                    <tr style="background:#800020; color:white;"><th style="padding:10px; border:1px solid #800020; text-align:left;">Item Name</th><th style="padding:10px; border:1px solid #800020;">Qty</th><th style="padding:10px; border:1px solid #800020; text-align:right;">Price</th><th style="padding:10px; border:1px solid #800020; text-align:right;">Total</th></tr>
+                    <tr style="background:#232f3e; color:white;"><th style="padding:10px; border:1px solid #232f3e; text-align:left;">Item Name</th><th style="padding:10px; border:1px solid #232f3e;">Qty</th><th style="padding:10px; border:1px solid #232f3e; text-align:right;">Price</th><th style="padding:10px; border:1px solid #232f3e; text-align:right;">Total</th></tr>
                     ${itemsHtml}
                 </table>
-                <h3 style="text-align:right; color:#800020; padding-top:10px; border-top:2px solid #eee;">Grand Total: ${order.total}</h3>
+                <h3 style="text-align:right; color:#B12704; padding-top:10px; border-top:2px solid #eee;">Grand Total: ${order.total}</h3>
                 <p style="text-align:center; margin-top:40px; font-size:13px; color:#777;">Thank you for shopping with Grihani Cosmetic!</p>
                 ${scrOpen}window.onload = function() { window.print(); }${scrClose}
             </body></html>`;
@@ -340,7 +378,7 @@
             else cart.forEach((item, index) => {
                 let itemTotal = parseInt(item.price) * item.qty; total += itemTotal;
                 let varText = ''; if(item.selectedColor) varText += item.selectedColor + ' '; if(item.selectedSize) varText += item.selectedSize;
-                let varDisplay = varText ? `<div style="font-size:11px; color:#e67e22;">(${varText.trim()})</div>` : '';
+                let varDisplay = varText ? `<div style="font-size:11px; color:#007185; margin-bottom:5px;">${varText.trim()}</div>` : '';
                 
                 cartDiv.innerHTML += `<div class="cart-item"><img src="${item.image}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div>${varDisplay}<div class="cart-item-price">₹${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div><div class="item-total">₹${itemTotal}</div></div>`;
             }); document.getElementById('totalAmount').innerText = "₹" + total;
@@ -358,7 +396,7 @@
             let payMode = document.getElementById('payMode').value, totalAmountNum = parseInt(document.getElementById('totalAmount').innerText.replace('₹', '')) * 100; 
             closeCheckoutForm();
             if(payMode === 'Online UPI') {
-                var rzp1 = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response){ saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#800020" } }); rzp1.open();
+                var rzp1 = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response){ saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } }); rzp1.open();
             } else { saveOrderData("Cash on Delivery (COD)", "N/A", totalAmountNum); }
         }
 
@@ -367,119 +405,214 @@
         }
     </script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background-color: #f4f6f7; color: #333; display: flex; flex-direction: column; min-height: 100vh; position: relative; }
-        .website-container { width: 100%; max-width: 1200px; margin: 0 auto; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.1); min-height: 100vh; display: flex; flex-direction: column; }
-        .app-header { background-color: #800020; color: white; padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .logo-title-container { display: flex; align-items: center; gap: 12px; }
-        .app-logo { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; background: #fff; }
-        .app-header span:nth-child(2) { font-size: 20px; font-weight: bold; }
-        .header-actions { display: flex; align-items: center; gap: 15px; }
-        .lang-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s; } .lang-btn:hover { background: white; color: #800020; }
-        .cart-icon { font-size: 18px; position: relative; cursor: pointer; background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; }
-        #cartCount { background-color: #f1c40f; color: #800020; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 50%; position: absolute; top: -5px; right: -5px; }
-        .user-profile-bar { background: #fdf2f2; padding: 8px 25px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; border-bottom: 1px solid #ddd; font-weight: bold; }
-        #userDisplay { color: #800020; cursor: pointer; } .user-actions { display: flex; gap: 15px; }
-        #homePage { flex-grow: 1; padding-bottom: 30px; }
-        .banner-container { width: 100%; height: 320px; position: relative; overflow: hidden; background: #000; } .banner-slide { width: 100%; height: 100%; display: none; position: absolute; top: 0; left: 0; } .banner-slide img { width: 100%; height: 100%; object-fit: cover; } .banner-slide:first-child { display: block; }
-        .reels-section { padding: 15px 25px; background: #fff5f5; border-bottom: 1px solid #ddd; } .reels-section h4 { font-size: 15px; color: #800020; margin-bottom: 10px; } .reels-container { display: flex; gap: 15px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 5px; } .reel-card { min-width: 130px; height: 200px; background: #000; border-radius: 8px; overflow: hidden; position: relative; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; } .reel-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; } .reel-title { position: relative; z-index: 2; background: rgba(0,0,0,0.6); color: white; font-size: 10px; padding: 4px; text-align: center; } .insta-link-btn { position: relative; z-index: 2; background: #E1306C; color: white; font-size: 9px; padding: 4px; text-align: center; text-decoration: none; font-weight: bold; display: block; }
-        .category-filters { display: flex; gap: 10px; padding: 15px 25px; overflow-x: auto; background: #fff; } .cat-filter-btn { padding: 8px 18px; border: 1px solid #800020; background: white; color: #800020; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; transition: 0.2s; } .cat-filter-btn.active, .cat-filter-btn:hover { background: #800020; color: white; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background-color: #eaeded; color: #0f1111; min-height: 100vh; position: relative; }
         
-        .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; padding: 20px 25px; } 
-        .product-card { border: 1px solid #eee; border-radius: 10px; padding: 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: relative; background: #fff; transition: 0.3s; cursor: pointer; } 
-        .product-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-color:#800020;} 
-        .cat-tag { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); color: white; font-size: 9px; padding: 3px 6px; border-radius: 4px; } 
-        .product-img { width: 100%; height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; } 
-        .product-title { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 5px; } 
-        .product-price { font-size: 15px; color: #800020; font-weight: bold; margin-bottom: 10px; } 
-        .cart-btn { background-color: #fff; color: #800020; border: 1px solid #800020; padding: 8px 0; width: 100%; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; } 
-        .cart-btn:hover { background: #800020; color: #fff; }
+        /* 🔥 NEW AMAZON STYLE HEADER 🔥 */
+        .amz-header { background-color: #131921; color: white; display: flex; flex-direction: column; width: 100%; position: sticky; top:0; z-index: 100; }
+        .amz-nav-top { display: flex; align-items: center; padding: 5px 10px; height: 60px; }
         
-        #cartPage, #ordersPage { display: none; padding: 25px; flex-grow: 1; } .back-btn { padding: 8px 15px; background: #f1f2f6; font-weight: bold; cursor: pointer; border-radius: 5px; display: inline-block; color: #800020; font-size: 13px; margin-bottom: 20px; border:1px solid #ddd; } .cart-items-container, #myOrdersList { max-width: 600px; margin: 0 auto; } .cart-item { display: flex; align-items: center; background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); border: 1px solid #eee; } .cart-item img { width: 60px; height: 60px; border-radius: 6px; object-fit: cover; margin-right: 15px; } .cart-item-info { flex-grow: 1; } .cart-item-title { font-size: 14px; font-weight: bold; margin-bottom: 3px; } .cart-item-price { font-size: 12px; color: #888; margin-bottom: 6px; } .qty-controls { display: flex; align-items: center; background: #f1f2f6; border-radius: 15px; width: fit-content; } .qty-btn { background: none; border: none; padding: 4px 10px; font-size: 14px; font-weight: bold; cursor: pointer; color: #800020; } .qty-display { font-size: 13px; font-weight: bold; padding: 0 8px; min-width: 20px; text-align: center; } .item-total { font-weight: bold; color: #800020; font-size: 14px; } .checkout-footer { max-width: 600px; margin: 20px auto 0; background: #fdf2f2; padding: 20px; border-radius: 10px; border: 1px solid #f5c6cb; } .total-bill { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; color: #800020; } .checkout-btn { background-color: #27ae60; color: white; padding: 12px; width: 100%; border: none; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .order-history-card { background: white; padding: 18px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border-left: 6px solid #800020; border: 1px solid #eee; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #444; } .order-status { padding: 5px 12px; border-radius: 20px; font-size: 11px; color: white; font-weight: bold; } .status-new { background: #f39c12; } .status-shipping { background: #3498db; } .status-delivered { background: #27ae60; } .status-cancelled { background: #e74c3c; } .order-history-total { font-size: 15px; font-weight: bold; color: #800020; text-align: right; background: #fdf2f2; padding: 10px 15px; border-radius: 6px; margin-top:5px; }
+        .amz-logo { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:10px;}
+        .amz-logo:hover { border: 1px solid white; }
+        .amz-logo img { width: 40px; height: 40px; border-radius: 4px; margin-right: 8px; background: white; padding:2px;}
+        .amz-logo span { font-size: 20px; font-weight: bold; }
+        
+        .amz-location { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:15px; }
+        .amz-location:hover { border: 1px solid white; }
+        .amz-loc-icon { font-size: 18px; margin-right:3px; margin-top:10px; }
+        .amz-loc-text { display: flex; flex-direction: column; }
+        .amz-loc-line1 { font-size: 12px; color: #ccc; }
+        .amz-loc-line2 { font-size: 14px; font-weight: bold; color: white; }
+
+        .amz-search-bar { display: flex; flex-grow: 1; border-radius: 4px; overflow: hidden; background: white; height: 40px; margin-right: 15px; }
+        .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 10px; color: #333; outline: none; cursor: pointer; font-size: 12px; max-width:120px; }
+        .amz-search-input { flex-grow: 1; border: none; padding: 0 10px; outline: none; font-size: 15px; }
+        .amz-search-btn { background: #febd69; border: none; width: 45px; cursor: pointer; font-size: 18px; color: #333; display:flex; justify-content:center; align-items:center; }
+        .amz-search-btn:hover { background: #f3a847; }
+
+        .amz-nav-right { display: flex; align-items: center; gap: 5px; }
+        .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 5px 8px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
+        .amz-nav-item:hover { border: 1px solid white; }
+        .amz-lang-text { font-weight: bold; font-size: 14px; padding-top:10px; }
+        .amz-line1 { font-size: 12px; color: #fff; }
+        .amz-line2 { font-size: 14px; font-weight: bold; color: white; }
+        
+        .amz-nav-cart { display: flex; align-items: flex-end; padding: 5px 8px; border: 1px solid transparent; cursor: pointer; position: relative; border-radius:2px; }
+        .amz-nav-cart:hover { border: 1px solid white; }
+        .amz-cart-icon { font-size: 28px; }
+        .amz-cart-count { color: #f08804; font-weight: bold; font-size: 16px; position: absolute; top: 0px; left: 22px; }
+        .amz-cart-text { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+
+        .amz-nav-bottom { background-color: #232f3e; display: flex; padding: 5px 15px; align-items: center; gap: 15px; font-size: 14px; color: white; }
+        .amz-menu-icon { font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid transparent; padding: 5px; border-radius:2px; }
+        .amz-menu-icon:hover { border: 1px solid white; }
+        .amz-nav-links { display: flex; gap: 15px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+        .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 14px; padding: 5px 8px; border-radius:2px; }
+        .amz-nav-links button:hover { border: 1px solid white; }
+
+        /* Banners */
+        .banner-container { width: 100%; height: 350px; position: relative; overflow: hidden; background: #eaeded; } 
+        .banner-slide { width: 100%; height: 100%; position: absolute; top: 0; left: 0; } 
+        /* Amazon style fade at the bottom of banner */
+        .banner-slide img { width: 100%; height: 100%; object-fit: cover; mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%); -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%); } 
+
+        .reels-section { padding: 15px 25px; background: transparent; z-index:5; position:relative; margin-top:-100px; } 
+        .reels-section h4 { font-size: 20px; color: #0f1111; margin-bottom: 10px; background:white; padding:10px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } 
+        .reels-container { display: flex; gap: 15px; overflow-x: auto; scrollbar-width: thin; padding: 10px; background:white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } 
+        .reel-card { min-width: 140px; height: 220px; background: #000; overflow: hidden; position: relative; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; cursor:pointer;} 
+        .reel-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; } 
+        .reel-title { position: relative; z-index: 2; background: rgba(0,0,0,0.7); color: white; font-size: 11px; padding: 6px; text-align: center; } 
+        .insta-link-btn { position: relative; z-index: 2; background: #E1306C; color: white; font-size: 10px; padding: 5px; text-align: center; text-decoration: none; font-weight: bold; display: block; }
+        
+        /* 🔥 AMAZON STYLE PRODUCT GRID 🔥 */
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; padding: 20px 25px; max-width: 1400px; margin: 0 auto; z-index: 5; position: relative; } 
+        .product-card { border: none; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; background: #fff; display:flex; flex-direction:column; cursor: pointer; z-index:5;} 
+        .cat-tag { display:none; } /* Hide category tag in Amazon view */
+        .product-img { width: 100%; height: 220px; object-fit: contain; margin-bottom: 15px; background:#f9f9f9; mix-blend-mode: multiply; } 
+        .product-title { font-size: 15px; color: #007185; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:20px; flex-grow:1;} 
+        .product-title:hover { color: #c45500; text-decoration: underline; }
+        .product-price { font-size: 26px; color: #B12704; margin-bottom: 15px; } 
+        .cart-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 8px 0; width: 100%; border-radius: 100px; cursor: pointer; font-size: 13px; box-shadow: 0 2px 5px rgba(213,217,217,.5); } 
+        .cart-btn:hover { background: #f7ca00; border-color: #f2c200; }
+        
+        /* Pages */
+        #cartPage, #ordersPage { display: none; padding: 25px; flex-grow: 1; max-width:1000px; margin:0 auto; background:white; margin-top:20px; box-shadow:0 1px 3px rgba(0,0,0,0.1); } 
+        .back-btn { color: #007185; cursor: pointer; display: inline-block; font-size: 14px; margin-bottom: 20px; } .back-btn:hover { text-decoration:underline; color:#c45500; }
+        
+        .cart-item { display: flex; align-items: center; background: white; padding: 15px 0; border-bottom: 1px solid #ddd; } .cart-item img { width: 80px; height: 80px; object-fit: contain; margin-right: 15px; } .cart-item-info { flex-grow: 1; } .cart-item-title { font-size: 16px; color:#007185; margin-bottom: 5px; } .cart-item-price { font-size: 16px; font-weight:bold; color: #B12704; margin-bottom: 6px; } .qty-controls { display: flex; align-items: center; background: #f0f2f2; border-radius: 8px; width: fit-content; border:1px solid #d5d9d9; box-shadow: 0 2px 5px rgba(213,217,217,.5); } .qty-btn { background: none; border: none; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #0f1111; } .qty-display { font-size: 14px; padding: 0 8px; min-width: 20px; text-align: center; background:white; height:100%; display:flex; align-items:center; border-left:1px solid #d5d9d9; border-right:1px solid #d5d9d9;} .item-total { font-weight: bold; color: #B12704; font-size: 16px; } 
+        .checkout-footer { background: #f3f3f3; padding: 20px; margin-top:20px; text-align:right;} .total-bill { font-size: 20px; margin-bottom: 15px; } .checkout-btn { background: #ffd814; color: #0f1111; padding: 10px 30px; border: 1px solid #fcd200; border-radius: 8px; font-size: 14px; cursor: pointer; box-shadow: 0 2px 5px rgba(213,217,217,.5); }
+        
+        .order-history-card { background: white; padding: 20px; margin-bottom: 20px; border: 1px solid #d5d9d9; border-radius:8px; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #eaeded; padding-bottom: 10px; color: #555; } .order-status { font-weight: bold; } .status-new { color: #e67e22; } .status-shipping { color: #007185; } .status-delivered { color: #067d62; } .status-cancelled { color: #B12704; } .order-history-total { font-size: 16px; color: #0f1111; background: #f0f2f2; padding: 15px; margin-top:15px; }
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding:20px; } 
-        .modal-content { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;} 
-        .modal-content h3 { color: #800020; margin-bottom: 15px; text-align: center; font-size: 18px; } 
-        .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; } 
-        .confirm-order-btn, .login-existing-btn { color: white; border: none; padding: 10px; width: 100%; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; margin-bottom: 8px; } .confirm-order-btn { background: #800020; } .login-existing-btn { background: #2980b9; } .cancel-order-btn { background: #ecf0f1; color: #333; border: none; padding: 10px; width: 100%; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; }
+        .modal-content { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 8px; max-height: 90vh; overflow-y: auto;} 
+        .modal-content h3 { font-weight:normal; font-size:24px; margin-bottom:20px;}
+        .modal-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #a6a6a6; border-radius: 4px; font-size: 14px; box-shadow: 0 1px 2px rgba(15,17,17,.15) inset; } 
+        .modal-input:focus { border-color: #e77600; box-shadow: 0 0 3px 2px rgba(228,121,17,.5); outline:none; }
+        .confirm-order-btn, .login-existing-btn { border: 1px solid; padding: 10px; width: 100%; border-radius: 8px; font-size: 13px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(213,217,217,.5); } 
+        .confirm-order-btn { background: #ffd814; border-color: #fcd200; color: #0f1111; } .confirm-order-btn:hover { background: #f7ca00; border-color: #f2c200; }
+        .login-existing-btn { background: #fff; border-color: #d5d9d9; color: #0f1111; } .login-existing-btn:hover { background:#f7fafa; }
+        .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 10px; width: 100%; font-size: 13px; cursor: pointer; text-decoration:underline; }
         
         /* Product Details Modal Styling */
-        .pd-img { width: 100%; height: 250px; object-fit: contain; background:#f9f9f9; border-radius: 10px; margin-bottom: 15px; }
-        .pd-title { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 5px; }
-        .pd-price { font-size: 22px; color: #800020; font-weight: bold; margin-bottom: 15px; }
-        .pd-desc-box { background: #fdf2f2; padding: 10px; border-radius: 6px; font-size: 13px; color: #555; margin-bottom: 15px; border-left: 3px solid #800020; line-height: 1.5; }
+        .pd-img { width: 100%; height: 300px; object-fit: contain; background:#fff; margin-bottom: 15px; mix-blend-mode:multiply; }
+        .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; line-height:24px;}
+        .pd-price { font-size: 28px; color: #B12704; margin-bottom: 15px; }
+        .pd-desc-box { padding: 10px 0; font-size: 14px; color: #0f1111; margin-bottom: 15px; border-top: 1px solid #eaeded; line-height: 1.5; }
         .pd-variant-group { margin-bottom: 15px; }
-        .pd-variant-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #333; }
-        .pd-variant-group select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 13px; }
+        .pd-variant-group label { display: block; font-size: 14px; margin-bottom: 5px; color: #555; }
+        .pd-variant-group select { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #d5d9d9; font-size: 14px; background:#f0f2f2; box-shadow: 0 2px 5px rgba(213,217,217,.5);}
         
-        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 3px #999; z-index: 100; display: flex; align-items: center; justify-content: center; width: 55px; height: 55px; transition: all 0.3s ease; }
-        .whatsapp-float:hover { transform: scale(1.1); box-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
+        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; transition: all 0.3s ease; }
+        .whatsapp-float:hover { transform: scale(1.1); box-shadow: 2px 2px 10px rgba(0,0,0,0.4); }
         .whatsapp-float img { width: 35px; height: 35px; filter: brightness(0) invert(1); }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 216, 20, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 216, 20, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 216, 20, 0); } }
         
-        @media(max-width: 768px) { .website-container { max-width: 100%; box-shadow: none; } .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; } .banner-container { height: 180px; } .app-header { padding: 10px 15px; } .user-profile-bar { padding: 8px 15px; font-size: 11px; } .product-img { height: 120px; } #cartPage, #ordersPage { padding: 15px; } .whatsapp-float { bottom: 20px; right: 20px; width: 50px; height: 50px; } .whatsapp-float img { width: 30px; height: 30px; } .header-actions { gap: 8px; } }
+        @media(max-width: 900px) { 
+            .amz-nav-top { flex-wrap: wrap; height: auto; padding: 10px 5px; }
+            .amz-location { display:none; }
+            .amz-search-bar { order: 3; width: 100%; margin: 10px 0 0 0; }
+            .amz-nav-right { margin-left: auto; }
+            .amz-logo img { width:30px; height:30px; } .amz-logo span { font-size:16px;}
+            .banner-container { height: 200px; } 
+            .products-grid { grid-template-columns: repeat(2, 1fr); padding: 10px; gap: 10px; margin-top:-30px;} 
+            .reels-section { margin-top:-30px; padding:10px; }
+            .product-img { height: 150px; } 
+            #cartPage, #ordersPage { padding: 15px; margin-top:0; } 
+            .whatsapp-float { bottom: 20px; right: 20px; width: 50px; height: 50px; } .whatsapp-float img { width: 30px; height: 30px; } 
+        }
     </style>
 </head>
 <body>
     <div class="website-container">
         <!-- Floating WhatsApp Button -->
-        <a href="https://wa.me/919955400139?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank">
-            <svg viewBox="0 0 32 32" width="30" height="30" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.2-.4.4-.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
+        <a href="https://wa.me/919876543210?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank">
+            <svg viewBox="0 0 32 32" width="35" height="35" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.2-.4.4-.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
-        <!-- Header -->
-        <div class="app-header">
-            <div class="logo-title-container"><img src="logo.png" alt="Logo" class="app-logo"><span>Grihani Cosmetic</span></div>
-            <div class="header-actions">
-                <button id="langToggleBtn" class="lang-btn" onclick="toggleLanguage()">🌐 हिंदी</button>
-                <span class="cart-icon" onclick="openCart()">🛒 <span id="cartCount">0</span></span>
+        <!-- 🔥 AMAZON STYLE HEADER 🔥 -->
+        <header class="amz-header">
+            <div class="amz-nav-top">
+                <div class="amz-logo" onclick="closeCart(); closeOrdersPage();">
+                    <img src="logo.png" alt="Logo">
+                    <span>Grihani</span>
+                </div>
+                
+                <div class="amz-location">
+                    <span class="amz-loc-icon">📍</span>
+                    <div class="amz-loc-text">
+                        <span class="amz-loc-line1" data-lang-key="deliver_to">Deliver to</span>
+                        <span class="amz-loc-line2" data-lang-key="update_loc">Patna 800025</span>
+                    </div>
+                </div>
+
+                <div class="amz-search-bar">
+                    <select id="amzCategorySelect" class="amz-search-select" onchange="filterCategory(this.value, null)">
+                        <option value="All">All</option>
+                    </select>
+                    <input type="text" id="searchInput" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
+                    <button class="amz-search-btn" onclick="searchProducts()">🔍</button>
+                </div>
+
+                <div class="amz-nav-right">
+                    <div class="amz-nav-item" onclick="toggleLanguage()">
+                        <span class="amz-lang-text" id="langToggleBtn">🇮🇳 EN</span>
+                    </div>
+                    <div class="amz-nav-item" onclick="openLoginModal()">
+                        <span class="amz-line1" id="userGreeting" data-lang-key="hello_sign_in">Hello, sign in</span>
+                        <span class="amz-line2" data-lang-key="account_lists">Account & Lists</span>
+                    </div>
+                    <div class="amz-nav-item" onclick="openOrdersPage()" style="display:none;" id="myOrdersBtn">
+                        <span class="amz-line1" data-lang-key="returns">Returns</span>
+                        <span class="amz-line2" data-lang-key="and_orders">& Orders</span>
+                    </div>
+                    <div class="amz-nav-cart" onclick="openCart()">
+                        <span class="amz-cart-icon">🛒</span>
+                        <span id="cartCount" class="amz-cart-count">0</span>
+                        <span class="amz-cart-text" data-lang-key="cart_txt">Cart</span>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <!-- User Profile Bar -->
-        <div class="user-profile-bar">
-            <span id="userDisplay" onclick="openLoginModal()" data-lang-key="guest_user">👤 Guest User (Login)</span>
-            <div class="user-actions">
-                <span id="myOrdersBtn" style="display:none; color:#2980b9; cursor:pointer; background:#e8f4f8; padding:4px 8px; border-radius:4px;" onclick="openOrdersPage()" data-lang-key="my_orders_btn">📦 My Orders</span>
-                <span id="logoutBtn" style="display:none; color:#c0392b; cursor:pointer; padding:4px 8px;" onclick="logoutUser()" data-lang-key="logout_btn">Logout</span>
+            <div class="amz-nav-bottom">
+                <div class="amz-menu-icon" onclick="filterCategory('All', null)">☰ <span data-lang-key="all_txt">All</span></div>
+                <div id="categoryFilters" class="amz-nav-links"></div>
             </div>
-        </div>
+        </header>
         
         <div id="homePage">
+            <!-- Dynamic Master Banner Slider -->
             <div class="banner-container" id="masterBannerSlider"></div>
             <div class="reels-section"><h4 data-lang-key="title_reels">🔥 Trending Reels</h4><div class="reels-container" id="appReelsFeed"></div></div>
-            <div class="category-filters" id="categoryFilters"></div>
             <div class="products-grid" id="appProducts"></div>
         </div>
 
         <div id="cartPage">
             <div class="back-btn" onclick="closeCart()" data-lang-key="btn_back_store">← Back to Store</div>
-            <h2 style="color: #800020; margin-bottom: 15px; font-size: 20px;" data-lang-key="cart_title">Your Shopping Cart</h2>
+            <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 24px;" data-lang-key="cart_title">Your Shopping Cart</h2>
             <div class="cart-items-container" id="cartItemsList"></div>
             <div class="checkout-footer">
-                <div class="total-bill"><span data-lang-key="total_bill">Total Bill:</span><span id="totalAmount">₹0</span></div>
-                <button class="checkout-btn" onclick="openCheckoutForm()" data-lang-key="btn_checkout">Checkout Now</button>
+                <div class="total-bill"><span data-lang-key="total_bill">Total Bill:</span> <span id="totalAmount" style="color:#B12704; font-weight:bold;">₹0</span></div>
+                <button class="checkout-btn" onclick="openCheckoutForm()" data-lang-key="btn_checkout">Proceed to Buy</button>
             </div>
         </div>
 
         <div id="ordersPage">
             <div class="back-btn" onclick="closeOrdersPage()" data-lang-key="btn_back_store">← Back to Store</div>
-            <h2 style="color: #800020; margin-bottom: 15px; font-size: 20px;" data-lang-key="order_history_title">📦 My Order History</h2>
+            <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 24px;" data-lang-key="order_history_title">📦 My Order History</h2>
             <div id="myOrdersList"></div>
         </div>
 
-        <!-- NEW: AMAZON STYLE PRODUCT DETAILS MODAL -->
+        <!-- AMAZON STYLE PRODUCT DETAILS MODAL -->
         <div id="productDetailModal" class="modal-overlay">
-            <div class="modal-content" style="padding: 15px;">
-                <div style="text-align: right;"><span onclick="closeProductModal()" style="font-size: 20px; cursor: pointer; color: #777;">&times;</span></div>
+            <div class="modal-content" style="padding: 20px;">
+                <div style="text-align: right;"><span onclick="closeProductModal()" style="font-size: 24px; cursor: pointer; color: #555;">&times;</span></div>
                 <img id="pmImg" src="" class="pd-img">
                 <div id="pmTitle" class="pd-title">Product Name</div>
                 <div id="pmPrice" class="pd-price">₹0</div>
                 
                 <div class="pd-desc-box">
                     <strong data-lang-key="prod_desc">Description:</strong><br>
-                    <span id="pmDescText"></span>
+                    <span id="pmDescText" style="margin-top:5px; display:block;"></span>
                 </div>
 
                 <div id="pmColorDiv" class="pd-variant-group" style="display: none;">
@@ -492,14 +625,14 @@
                     <select id="pmSizeSelect"></select>
                 </div>
 
-                <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 10px;">🛒 <span data-lang-key="btn_checkout">Add to Cart</span></button>
+                <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 15px;">🛒 <span data-lang-key="btn_checkout">Add to Cart</span></button>
             </div>
         </div>
 
         <!-- Login Modal -->
         <div id="loginModal" class="modal-overlay">
             <div class="modal-content">
-                <h3 data-lang-key="login_title">✨ Welcome to Grihani Cosmetic</h3>
+                <h3 data-lang-key="login_title">✨ Welcome to Grihani</h3>
                 <input type="text" id="regName" class="modal-input" placeholder="Full Name">
                 <input type="tel" id="regPhone" class="modal-input" placeholder="Mobile (10 digits)">
                 <textarea id="regAddress" class="modal-input" placeholder="Full Delivery Address" rows="3"></textarea>
@@ -513,13 +646,13 @@
         <div id="checkoutModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 data-lang-key="confirm_title">Confirm Your Order</h3>
-                <div style="background: #f9f9f9; padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; border: 1px solid #ddd;"><p><strong>Name:</strong> <span id="confirmName" style="color: #800020;"></span></p><p><strong>Mobile:</strong> <span id="confirmPhone" style="color: #800020;"></span></p><p><strong>Address:</strong> <span id="confirmAddress" style="color: #800020;"></span></p></div>
-                <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;" data-lang-key="pay_mode_title">Select Payment Mode:</label>
-                <select id="payMode" class="modal-input">
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border: 1px solid #d5d9d9;"><p style="margin-bottom:5px;"><strong>Name:</strong> <span id="confirmName" style="color: #007185;"></span></p><p style="margin-bottom:5px;"><strong>Mobile:</strong> <span id="confirmPhone" style="color: #007185;"></span></p><p><strong>Address:</strong> <span id="confirmAddress" style="color: #007185;"></span></p></div>
+                <label style="font-size: 14px; font-weight: bold; margin-bottom: 8px; display:block;" data-lang-key="pay_mode_title">Select Payment Mode:</label>
+                <select id="payMode" class="modal-input" style="background:#f0f2f2;">
                     <option value="Cash on Delivery (COD)" data-lang-key="cod_opt">Cash on Delivery (COD)</option>
                     <option value="Online UPI" data-lang-key="online_opt">Pay Online (UPI/Card)</option>
                 </select>
-                <button class="confirm-order-btn" onclick="confirmOrder()" data-lang-key="confirm_order_btn">✅ Confirm Order & Pay</button>
+                <button class="confirm-order-btn" onclick="confirmOrder()" data-lang-key="confirm_order_btn">✅ Place Your Order</button>
                 <button class="cancel-order-btn" onclick="closeCheckoutForm()" data-lang-key="close_btn">❌ Close</button>
             </div>
         </div>
