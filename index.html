@@ -80,30 +80,18 @@
             }
         }
 
-        // --- NEW UPDATE LOCATION FEATURE WITH AUTO GPS ---
-        window.openLocationModal = function() {
-            document.getElementById('locationModal').style.display = 'flex';
-        }
-        window.closeLocationModal = function() {
-            document.getElementById('locationModal').style.display = 'none';
-        }
+        window.openLocationModal = function() { document.getElementById('locationModal').style.display = 'flex'; }
+        window.closeLocationModal = function() { document.getElementById('locationModal').style.display = 'none'; }
         window.saveManualLocation = function() {
             let loc = document.getElementById('manualLocationInput').value;
-            if(loc && loc.trim() !== '') {
-                updateLocationUI(loc.trim());
-                closeLocationModal();
-            }
+            if(loc && loc.trim() !== '') { updateLocationUI(loc.trim()); closeLocationModal(); }
         }
         window.fetchCurrentLocation = function() {
             if (navigator.geolocation) {
                 document.getElementById('userLocationText').innerText = currentLang === 'hi' ? "खोज रहे हैं..." : "Detecting...";
                 closeLocationModal();
-                
                 navigator.geolocation.getCurrentPosition(function(position) {
-                    let lat = position.coords.latitude;
-                    let lon = position.coords.longitude;
-                    
-                    // Fetch city and pincode using OpenStreetMap API (Free & No Key required)
+                    let lat = position.coords.latitude; let lon = position.coords.longitude;
                     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
                     .then(res => res.json())
                     .then(data => {
@@ -111,36 +99,24 @@
                         let pin = data.address.postcode || "";
                         let finalLoc = city + (pin ? " " + pin : "");
                         updateLocationUI(finalLoc);
-                    }).catch(e => {
-                        alert(currentLang === 'hi' ? "लोकेशन नहीं मिल सकी!" : "Could not fetch location!");
-                        checkSavedLocation();
-                    });
+                    }).catch(e => { alert(currentLang === 'hi' ? "लोकेशन नहीं मिल सकी!" : "Could not fetch location!"); checkSavedLocation(); });
                 }, function(error) {
                     alert(currentLang === 'hi' ? "कृपया मोबाइल की लोकेशन/GPS चालू करें!" : "Please enable Location/GPS permission!");
                     checkSavedLocation();
                 });
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
+            } else { alert("Geolocation is not supported."); }
         }
         function updateLocationUI(loc) {
             localStorage.setItem('grihani_user_location', loc);
             let locEl = document.getElementById('userLocationText');
-            locEl.innerText = loc;
-            locEl.removeAttribute('data-lang-key');
+            locEl.innerText = loc; locEl.removeAttribute('data-lang-key');
         }
         function checkSavedLocation() {
             let savedLoc = localStorage.getItem('grihani_user_location');
             let locEl = document.getElementById('userLocationText');
-            if(savedLoc) {
-                locEl.innerText = savedLoc;
-                locEl.removeAttribute('data-lang-key');
-            } else {
-                locEl.innerText = currentLang === 'hi' ? dict["update_loc"]["hi"] : dict["update_loc"]["en"];
-                locEl.setAttribute('data-lang-key', 'update_loc');
-            }
+            if(savedLoc) { locEl.innerText = savedLoc; locEl.removeAttribute('data-lang-key'); } 
+            else { locEl.innerText = currentLang === 'hi' ? dict["update_loc"]["hi"] : dict["update_loc"]["en"]; locEl.setAttribute('data-lang-key', 'update_loc'); }
         }
-        // -----------------------------------
 
         window.sliderInterval = null;
         window.loadBanners = function() {
@@ -178,9 +154,7 @@
                 const data = snapshot.val(); 
                 let filterDiv = document.getElementById('categoryFilters');
                 let searchSelect = document.getElementById('amzCategorySelect');
-                
-                filterDiv.innerHTML = '';
-                searchSelect.innerHTML = `<option value="All">All</option>`;
+                filterDiv.innerHTML = ''; searchSelect.innerHTML = `<option value="All">All</option>`;
                 
                 let categories = data ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
                 Object.keys(categories).forEach((catKey) => { 
@@ -218,11 +192,8 @@
             cards.forEach(card => {
                 let title = card.querySelector('.product-title').innerText.toLowerCase();
                 let cat = card.querySelector('.cat-tag').innerText.toLowerCase();
-                if(title.includes(input) || cat.includes(input)) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
+                if(title.includes(input) || cat.includes(input)) card.style.display = 'flex';
+                else card.style.display = 'none';
             });
         }
 
@@ -265,12 +236,28 @@
             });
         }
 
+        // --- NEW DATA SYNC FUNCTION ---
+        window.syncUserData = function(phone) {
+            get(child(ref(window.db), `customers/${phone.replace(/[^0-9]/g, '')}`)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    let cData = snapshot.val();
+                    let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
+                    localStorage.setItem('grihani_user_name', cData.name); 
+                    localStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
+                    updateUserUI(cData.name);
+                }
+            });
+        }
+
         window.onload = function() {
             document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
             applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
             checkSavedLocation(); 
-            let savedName = localStorage.getItem('grihani_user_name');
-            if(savedName) { updateUserUI(savedName); }
+            
+            let savedPhone = localStorage.getItem('grihani_user_phone');
+            if(savedPhone) { 
+                syncUserData(savedPhone); // Auto-syncs data on every app open
+            }
         }
 
         window.openLoginModal = function() { 
@@ -490,12 +477,10 @@
             }); document.getElementById('totalAmount').innerText = "₹" + total;
         }
 
+        // --- FIXED CHECKOUT BUTTON ERROR ---
         window.openCheckoutForm = function() {
             if(cart.length === 0) return alert(currentLang === 'hi' ? "कार्ट खाली है!" : "Cart is empty!");
             if(!localStorage.getItem('grihani_user_phone')) return document.getElementById('loginModal').style.display = 'flex';
-            
-            document.getElementById('confirmName').innerText = localStorage.getItem('grihani_user_name'); 
-            document.getElementById('confirmPhone').innerText = localStorage.getItem('grihani_user_phone'); 
             
             let addrs = JSON.parse(localStorage.getItem('grihani_user_addresses') || "[]");
             let sel = document.getElementById('checkoutAddressSelect');
@@ -534,7 +519,6 @@
         .amz-logo img { width: 40px; height: 40px; border-radius: 4px; margin-right: 8px; background: white; padding:2px;}
         .amz-logo span { font-size: 20px; font-weight: bold; }
         
-        /* 🔥 LOCATION CSS 🔥 */
         .amz-location { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:15px; }
         .amz-location:hover { border: 1px solid white; }
         .amz-loc-icon { font-size: 18px; margin-right:3px; margin-top:10px; }
@@ -651,12 +635,10 @@
 </head>
 <body>
     <div class="website-container">
-        <!-- Floating WhatsApp Button -->
         <a href="https://wa.me/919955400139?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank">
             <svg viewBox="0 0 32 32" width="35" height="35" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.2-.4.4-.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
-        <!-- HEADER -->
         <header class="amz-header">
             <div class="amz-nav-top">
                 <div class="amz-logo" onclick="closeCart(); closeOrdersPage();">
@@ -664,7 +646,6 @@
                     <span>Grihani</span>
                 </div>
                 
-                <!-- NEW LOCATION BLOCK -->
                 <div class="amz-location" onclick="openLocationModal()">
                     <span class="amz-loc-icon">📍</span>
                     <div class="amz-loc-text">
@@ -762,7 +743,6 @@
             </div>
         </div>
 
-        <!-- NEW LOCATION POPUP MODAL -->
         <div id="locationModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 data-lang-key="update_loc">Update location</h3>
