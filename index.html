@@ -29,6 +29,8 @@
         const dict = {
             "deliver_to": { hi: "डिलीवर करें", en: "Deliver to" },
             "update_loc": { hi: "लोकेशन अपडेट करें", en: "Update location" },
+            "use_current_loc": { hi: "वर्तमान लोकेशन का उपयोग करें", en: "Use Current Location" },
+            "save_btn": { hi: "सेव करें", en: "Save" },
             "hello_sign_in": { hi: "नमस्ते, साइन इन करें", en: "Hello, sign in" },
             "account_lists": { hi: "अकाउंट और लिस्ट", en: "Account & Lists" },
             "returns": { hi: "रिटर्न्स", en: "Returns" },
@@ -78,23 +80,64 @@
             }
         }
 
-        // --- NEW UPDATE LOCATION FEATURE ---
-        window.updateUserLocation = function() {
-            let loc = prompt(currentLang === 'hi' ? "अपना शहर या पिनकोड दर्ज करें:" : "Enter your City or Pincode:");
+        // --- NEW UPDATE LOCATION FEATURE WITH AUTO GPS ---
+        window.openLocationModal = function() {
+            document.getElementById('locationModal').style.display = 'flex';
+        }
+        window.closeLocationModal = function() {
+            document.getElementById('locationModal').style.display = 'none';
+        }
+        window.saveManualLocation = function() {
+            let loc = document.getElementById('manualLocationInput').value;
             if(loc && loc.trim() !== '') {
-                localStorage.setItem('grihani_user_location', loc.trim());
-                let locEl = document.getElementById('userLocationText');
-                locEl.innerText = loc.trim();
-                locEl.removeAttribute('data-lang-key'); // Stop language toggle from resetting it
+                updateLocationUI(loc.trim());
+                closeLocationModal();
             }
         }
-
+        window.fetchCurrentLocation = function() {
+            if (navigator.geolocation) {
+                document.getElementById('userLocationText').innerText = currentLang === 'hi' ? "खोज रहे हैं..." : "Detecting...";
+                closeLocationModal();
+                
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    let lat = position.coords.latitude;
+                    let lon = position.coords.longitude;
+                    
+                    // Fetch city and pincode using OpenStreetMap API (Free & No Key required)
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        let city = data.address.city || data.address.town || data.address.village || data.address.county || data.address.state || "Unknown";
+                        let pin = data.address.postcode || "";
+                        let finalLoc = city + (pin ? " " + pin : "");
+                        updateLocationUI(finalLoc);
+                    }).catch(e => {
+                        alert(currentLang === 'hi' ? "लोकेशन नहीं मिल सकी!" : "Could not fetch location!");
+                        checkSavedLocation();
+                    });
+                }, function(error) {
+                    alert(currentLang === 'hi' ? "कृपया मोबाइल की लोकेशन/GPS चालू करें!" : "Please enable Location/GPS permission!");
+                    checkSavedLocation();
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+        function updateLocationUI(loc) {
+            localStorage.setItem('grihani_user_location', loc);
+            let locEl = document.getElementById('userLocationText');
+            locEl.innerText = loc;
+            locEl.removeAttribute('data-lang-key');
+        }
         function checkSavedLocation() {
             let savedLoc = localStorage.getItem('grihani_user_location');
+            let locEl = document.getElementById('userLocationText');
             if(savedLoc) {
-                let locEl = document.getElementById('userLocationText');
                 locEl.innerText = savedLoc;
                 locEl.removeAttribute('data-lang-key');
+            } else {
+                locEl.innerText = currentLang === 'hi' ? dict["update_loc"]["hi"] : dict["update_loc"]["en"];
+                locEl.setAttribute('data-lang-key', 'update_loc');
             }
         }
         // -----------------------------------
@@ -225,7 +268,7 @@
         window.onload = function() {
             document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
             applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
-            checkSavedLocation(); // Load saved Pincode/City on load
+            checkSavedLocation(); 
             let savedName = localStorage.getItem('grihani_user_name');
             if(savedName) { updateUserUI(savedName); }
         }
@@ -590,7 +633,7 @@
         
         @media(max-width: 900px) { 
             .amz-nav-top { flex-wrap: wrap; height: auto; padding: 10px 5px; }
-            .amz-location { padding:5px; margin-right:5px; } /* Update location style for mobile */
+            .amz-location { padding:5px; margin-right:5px; } 
             .amz-loc-line2 { max-width:80px; font-size:12px;}
             .amz-search-bar { order: 3; width: 100%; margin: 10px 0 0 0; }
             .amz-nav-right { margin-left: auto; }
@@ -621,8 +664,8 @@
                     <span>Grihani</span>
                 </div>
                 
-                <!-- CLICKABLE LOCATION BLOCK -->
-                <div class="amz-location" onclick="updateUserLocation()">
+                <!-- NEW LOCATION BLOCK -->
+                <div class="amz-location" onclick="openLocationModal()">
                     <span class="amz-loc-icon">📍</span>
                     <div class="amz-loc-text">
                         <span class="amz-loc-line1" data-lang-key="deliver_to">Deliver to</span>
@@ -716,6 +759,18 @@
                 <div id="pmColorDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_color">Select Color:</label><select id="pmColorSelect"></select></div>
                 <div id="pmSizeDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_size">Select Size:</label><select id="pmSizeSelect"></select></div>
                 <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 15px;">🛒 <span data-lang-key="btn_checkout">Add to Cart</span></button>
+            </div>
+        </div>
+
+        <!-- NEW LOCATION POPUP MODAL -->
+        <div id="locationModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 data-lang-key="update_loc">Update location</h3>
+                <button class="confirm-order-btn" onclick="fetchCurrentLocation()" style="background:#f0f2f2; color:#0f1111; border-color:#d5d9d9; margin-bottom:15px; font-size:15px;">📍 <span data-lang-key="use_current_loc">Use Current Location</span></button>
+                <div style="text-align:center; margin-bottom:10px; color:#777; font-size:12px;">OR</div>
+                <input type="text" id="manualLocationInput" class="modal-input" placeholder="Enter City or Pincode">
+                <button class="confirm-order-btn" onclick="saveManualLocation()" data-lang-key="save_btn">Save</button>
+                <button class="cancel-order-btn" onclick="closeLocationModal()" data-lang-key="close_btn">❌ Close</button>
             </div>
         </div>
 
