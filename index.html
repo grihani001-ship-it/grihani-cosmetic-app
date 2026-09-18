@@ -28,7 +28,7 @@
         
         const dict = {
             "deliver_to": { hi: "डिलीवर करें", en: "Deliver to" },
-            "update_loc": { hi: "पटना 800025", en: "Patna 800025" },
+            "update_loc": { hi: "लोकेशन अपडेट करें", en: "Update location" },
             "hello_sign_in": { hi: "नमस्ते, साइन इन करें", en: "Hello, sign in" },
             "account_lists": { hi: "अकाउंट और लिस्ट", en: "Account & Lists" },
             "returns": { hi: "रिटर्न्स", en: "Returns" },
@@ -77,6 +77,27 @@
                 document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + localStorage.getItem('grihani_user_name').split(" ")[0];
             }
         }
+
+        // --- NEW UPDATE LOCATION FEATURE ---
+        window.updateUserLocation = function() {
+            let loc = prompt(currentLang === 'hi' ? "अपना शहर या पिनकोड दर्ज करें:" : "Enter your City or Pincode:");
+            if(loc && loc.trim() !== '') {
+                localStorage.setItem('grihani_user_location', loc.trim());
+                let locEl = document.getElementById('userLocationText');
+                locEl.innerText = loc.trim();
+                locEl.removeAttribute('data-lang-key'); // Stop language toggle from resetting it
+            }
+        }
+
+        function checkSavedLocation() {
+            let savedLoc = localStorage.getItem('grihani_user_location');
+            if(savedLoc) {
+                let locEl = document.getElementById('userLocationText');
+                locEl.innerText = savedLoc;
+                locEl.removeAttribute('data-lang-key');
+            }
+        }
+        // -----------------------------------
 
         window.sliderInterval = null;
         window.loadBanners = function() {
@@ -204,6 +225,7 @@
         window.onload = function() {
             document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
             applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
+            checkSavedLocation(); // Load saved Pincode/City on load
             let savedName = localStorage.getItem('grihani_user_name');
             if(savedName) { updateUserUI(savedName); }
         }
@@ -214,7 +236,6 @@
         }
         window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; }
 
-        // --- UPDATED LOGIN (ARRAY OF ADDRESSES) ---
         window.saveCustomerLogin = function() {
             let name = document.getElementById('regName').value, phone = document.getElementById('regPhone').value, address = document.getElementById('regAddress').value;
             if(!name || phone.length < 10 || !address) return alert(currentLang === 'hi' ? "कृपया सही जानकारी दर्ज करें!" : "Please enter valid details!");
@@ -247,7 +268,6 @@
             });
         }
 
-        // --- NEW ADDRESS FUNCTION ---
         window.addNewAddress = function() {
             let newAdd = prompt(currentLang === 'hi' ? "अपना नया पूरा पता दर्ज करें:" : "Enter your new full address:");
             if(newAdd && newAdd.trim() !== "") {
@@ -271,7 +291,6 @@
             let addrsHtml = addrs.map((a, i) => `<div class="address-box"><b>${i+1}.</b> ${a}</div>`).join('');
             document.getElementById('profileAddresses').innerHTML = addrsHtml;
         }
-        // -----------------------------
 
         function updateUserUI(name) { 
             let firstName = name.split(" ")[0];
@@ -428,7 +447,6 @@
             }); document.getElementById('totalAmount').innerText = "₹" + total;
         }
 
-        // --- UPDATED CHECKOUT FORM (ADDRESS DROPDOWN) ---
         window.openCheckoutForm = function() {
             if(cart.length === 0) return alert(currentLang === 'hi' ? "कार्ट खाली है!" : "Cart is empty!");
             if(!localStorage.getItem('grihani_user_phone')) return document.getElementById('loginModal').style.display = 'flex';
@@ -436,7 +454,6 @@
             document.getElementById('confirmName').innerText = localStorage.getItem('grihani_user_name'); 
             document.getElementById('confirmPhone').innerText = localStorage.getItem('grihani_user_phone'); 
             
-            // Populate Address Dropdown
             let addrs = JSON.parse(localStorage.getItem('grihani_user_addresses') || "[]");
             let sel = document.getElementById('checkoutAddressSelect');
             sel.innerHTML = addrs.map(a => `<option value="${a}">${a}</option>`).join('');
@@ -448,7 +465,7 @@
         window.confirmOrder = function() {
             let name = localStorage.getItem('grihani_user_name');
             let phone = localStorage.getItem('grihani_user_phone');
-            let address = document.getElementById('checkoutAddressSelect').value; // Get selected address
+            let address = document.getElementById('checkoutAddressSelect').value; 
             let payMode = document.getElementById('payMode').value;
             let totalAmountNum = parseInt(document.getElementById('totalAmount').innerText.replace('₹', '')) * 100; 
             
@@ -474,12 +491,13 @@
         .amz-logo img { width: 40px; height: 40px; border-radius: 4px; margin-right: 8px; background: white; padding:2px;}
         .amz-logo span { font-size: 20px; font-weight: bold; }
         
+        /* 🔥 LOCATION CSS 🔥 */
         .amz-location { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:15px; }
         .amz-location:hover { border: 1px solid white; }
         .amz-loc-icon { font-size: 18px; margin-right:3px; margin-top:10px; }
         .amz-loc-text { display: flex; flex-direction: column; }
         .amz-loc-line1 { font-size: 12px; color: #ccc; }
-        .amz-loc-line2 { font-size: 14px; font-weight: bold; color: white; }
+        .amz-loc-line2 { font-size: 14px; font-weight: bold; color: white; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 
         .amz-search-bar { display: flex; flex-grow: 1; border-radius: 4px; overflow: hidden; background: white; height: 40px; margin-right: 15px; }
         .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 10px; color: #333; outline: none; cursor: pointer; font-size: 12px; max-width:120px; }
@@ -535,7 +553,6 @@
         .cart-item { display: flex; align-items: center; background: white; padding: 15px 0; border-bottom: 1px solid #ddd; } .cart-item img { width: 80px; height: 80px; object-fit: contain; margin-right: 15px; } .cart-item-info { flex-grow: 1; } .cart-item-title { font-size: 16px; color:#007185; margin-bottom: 5px; } .cart-item-price { font-size: 16px; font-weight:bold; color: #B12704; margin-bottom: 6px; } .qty-controls { display: flex; align-items: center; background: #f0f2f2; border-radius: 8px; width: fit-content; border:1px solid #d5d9d9; box-shadow: 0 2px 5px rgba(213,217,217,.5); } .qty-btn { background: none; border: none; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #0f1111; } .qty-display { font-size: 14px; padding: 0 8px; min-width: 20px; text-align: center; background:white; height:100%; display:flex; align-items:center; border-left:1px solid #d5d9d9; border-right:1px solid #d5d9d9;} .item-total { font-weight: bold; color: #B12704; font-size: 16px; } 
         .checkout-footer { background: #f3f3f3; padding: 20px; margin-top:20px; text-align:right;} .total-bill { font-size: 20px; margin-bottom: 15px; } .checkout-btn { background: #ffd814; color: #0f1111; padding: 10px 30px; border: 1px solid #fcd200; border-radius: 8px; font-size: 14px; cursor: pointer; box-shadow: 0 2px 5px rgba(213,217,217,.5); }
         
-        /* 🔥 NEW TWO-COLUMN ACCOUNT LAYOUT 🔥 */
         .account-layout { display: flex; gap: 30px; align-items: flex-start; }
         .account-sidebar { flex: 0 0 300px; background: #f9f9f9; padding: 20px; border: 1px solid #d5d9d9; border-radius: 8px; }
         .account-orders { flex-grow: 1; }
@@ -545,7 +562,6 @@
         .address-box { background: white; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #d5d9d9; font-size: 13px; line-height: 1.4; color: #333; }
         .add-address-btn { background: white; border: 1px dashed #007185; color: #007185; padding: 8px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
         .add-address-btn:hover { background: #f0f8ff; }
-        /* ------------------------------------ */
 
         .order-history-card { background: white; padding: 20px; margin-bottom: 20px; border: 1px solid #d5d9d9; border-radius:8px; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #eaeded; padding-bottom: 10px; color: #555; } .order-status { font-weight: bold; } .status-new { color: #e67e22; } .status-shipping { color: #007185; } .status-delivered { color: #067d62; } .status-cancelled { color: #B12704; } .order-history-total { font-size: 16px; color: #0f1111; background: #f0f2f2; padding: 15px; margin-top:15px; }
         
@@ -574,7 +590,8 @@
         
         @media(max-width: 900px) { 
             .amz-nav-top { flex-wrap: wrap; height: auto; padding: 10px 5px; }
-            .amz-location { display:none; }
+            .amz-location { padding:5px; margin-right:5px; } /* Update location style for mobile */
+            .amz-loc-line2 { max-width:80px; font-size:12px;}
             .amz-search-bar { order: 3; width: 100%; margin: 10px 0 0 0; }
             .amz-nav-right { margin-left: auto; }
             .amz-logo img { width:30px; height:30px; } .amz-logo span { font-size:16px;}
@@ -604,11 +621,12 @@
                     <span>Grihani</span>
                 </div>
                 
-                <div class="amz-location">
+                <!-- CLICKABLE LOCATION BLOCK -->
+                <div class="amz-location" onclick="updateUserLocation()">
                     <span class="amz-loc-icon">📍</span>
                     <div class="amz-loc-text">
                         <span class="amz-loc-line1" data-lang-key="deliver_to">Deliver to</span>
-                        <span class="amz-loc-line2" data-lang-key="update_loc">Patna 800025</span>
+                        <span class="amz-loc-line2" id="userLocationText" data-lang-key="update_loc">Update location</span>
                     </div>
                 </div>
 
@@ -661,12 +679,10 @@
             </div>
         </div>
 
-        <!-- NEW: PROFILE & ORDERS PAGE LAYOUT -->
         <div id="ordersPage">
             <div class="back-btn" onclick="closeOrdersPage()" data-lang-key="btn_back_store">← Back to Store</div>
             
             <div class="account-layout">
-                <!-- LEFT SIDE: Profile & Addresses -->
                 <div class="account-sidebar">
                     <h3 style="color: #800020; margin-bottom: 15px;" data-lang-key="profile_title">👤 My Profile</h3>
                     <div class="profile-info">
@@ -683,7 +699,6 @@
                     <button onclick="logoutUser()" style="width:100%; margin-top:20px; padding:10px; background:#fff; border:1px solid #d5d9d9; border-radius:4px; font-weight:bold; cursor:pointer; color:#0f1111;" data-lang-key="logout_btn">Logout</button>
                 </div>
 
-                <!-- RIGHT SIDE: Order History -->
                 <div class="account-orders">
                     <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 24px;" data-lang-key="order_history_title">📦 My Order History</h2>
                     <div id="myOrdersList"></div>
@@ -691,7 +706,6 @@
             </div>
         </div>
 
-        <!-- PRODUCT DETAILS MODAL -->
         <div id="productDetailModal" class="modal-overlay">
             <div class="modal-content" style="padding: 20px;">
                 <div style="text-align: right;"><span onclick="closeProductModal()" style="font-size: 24px; cursor: pointer; color: #555;">&times;</span></div>
@@ -705,7 +719,6 @@
             </div>
         </div>
 
-        <!-- Login Modal -->
         <div id="loginModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 data-lang-key="login_title">✨ Welcome to Grihani</h3>
@@ -718,12 +731,10 @@
             </div>
         </div>
 
-        <!-- Checkout Modal (WITH ADDRESS DROPDOWN) -->
         <div id="checkoutModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 data-lang-key="confirm_title">Confirm Your Order</h3>
                 
-                <!-- NEW: Address Selection Dropdown -->
                 <label style="font-size: 14px; font-weight: bold; margin-bottom: 8px; display:block;" data-lang-key="select_delivery_addr">Select Delivery Address:</label>
                 <select id="checkoutAddressSelect" class="modal-input" style="background:#fff; border-color:#800020;"></select>
                 
