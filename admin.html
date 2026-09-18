@@ -24,7 +24,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-        // यहाँ हमने 'get' कमांड जोड़ा है ताकि वह ऑर्डर का डेटा पहले पढ़ सके
         import { getDatabase, ref, set, push, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -146,7 +145,6 @@
         
         window.markDispatched = function(key) { update(ref(db, 'orders/' + key), { status: 'Dispatched' }); }
         
-        // फिक्स्ड फंक्शन: डिलीवर करने पर हिस्ट्री में सेव करेगा!
         window.markDelivered = function(key) { 
             if(confirm("क्या यह ऑर्डर सफलतापूर्वक डिलीवर हो गया है?")) {
                 let deliveryTime = new Date().toLocaleString(); 
@@ -154,11 +152,9 @@
                     if(snapshot.exists()) {
                         let orderData = snapshot.val();
                         orderData.status = 'Delivered';
-                        orderData.deliveredAt = deliveryTime; // समय सेव करें
+                        orderData.deliveredAt = deliveryTime;
                         
-                        // इसे 'order_history' वाले फोल्डर में डालें
                         set(ref(db, 'order_history/' + key), orderData).then(() => {
-                            // फिर इसे एक्टिव 'orders' लिस्ट से हटा दें
                             remove(ref(db, 'orders/' + key));
                             alert("✅ ऑर्डर हिस्ट्री में सेव हो गया!");
                         });
@@ -167,7 +163,6 @@
             } 
         }
 
-        // फिक्स्ड फंक्शन: रद्द (Cancel) करने पर भी हिस्ट्री में सेव करेगा!
         window.markCancelled = function(key) { 
             if(confirm("क्या आप इस ऑर्डर को रद्द (Cancel) करना चाहते हैं?")) {
                 let cancelTime = new Date().toLocaleString(); 
