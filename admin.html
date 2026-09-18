@@ -33,7 +33,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 🌐 Admin Language System (Default: English)
         window.currentLangAdmin = localStorage.getItem('grihani_admin_lang') || 'en';
         const adminDict = {
             "dash_title": { hi: "🛠️ Grihani Admin Dashboard", en: "🛠️ Grihani Admin Dashboard" },
@@ -54,8 +53,7 @@
             window.currentLangAdmin = window.currentLangAdmin === 'en' ? 'hi' : 'en';
             localStorage.setItem('grihani_admin_lang', window.currentLangAdmin);
             document.getElementById('langToggleBtnAdmin').innerText = window.currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
-            applyAdminLanguage();
-            loadOrdersAdmin(); 
+            applyAdminLanguage(); loadOrdersAdmin(); 
         }
 
         window.applyAdminLanguage = function() {
@@ -65,7 +63,6 @@
             });
         }
 
-        // --- NEW FEATURE: BANNERS ---
         window.loadBannersAdmin = function() {
             onValue(ref(db, 'banners'), (snapshot) => {
                 const data = snapshot.val(); let adminListDiv = document.getElementById('adminBannerList'); adminListDiv.innerHTML = '';
@@ -77,17 +74,12 @@
         }
         window.addNewBannerToFirebase = function() { 
             let fileInput = document.getElementById('bImage'); 
-            if(fileInput.files.length === 0) return alert("Please select an image! / कृपया इमेज चुनें!"); 
+            if(fileInput.files.length === 0) return alert("Please select an image!"); 
             let reader = new FileReader(); 
-            reader.onload = function(e) { 
-                set(push(ref(db, 'banners')), { image: e.target.result }).then(() => { 
-                    alert("Banner Added! / बैनर जुड़ गया!"); fileInput.value = ''; 
-                }); 
-            }; 
+            reader.onload = function(e) { set(push(ref(db, 'banners')), { image: e.target.result }).then(() => { alert("Banner Added!"); fileInput.value = ''; }); }; 
             reader.readAsDataURL(fileInput.files[0]); 
         }
-        window.deleteBanner = function(key) { if(confirm("Delete Banner? / बैनर हटाना है?")) remove(ref(db, 'banners/' + key)); }
-        // ------------------------------
+        window.deleteBanner = function(key) { if(confirm("Delete Banner?")) remove(ref(db, 'banners/' + key)); }
 
         window.loadCategoriesAdmin = function() {
             onValue(ref(db, 'categories'), (snapshot) => {
@@ -106,7 +98,29 @@
                 Object.keys(data).forEach((key) => { adminListDiv.innerHTML += `<div class="admin-item"><span>${data[key].name} <small>(₹${data[key].price})</small></span><button class="delete-btn" onclick="deleteProduct('${key}')">❌</button></div>`; });
             });
         }
-        window.addNewProductToFirebase = function() { let name = document.getElementById('pName').value, category = document.getElementById('pCategory').value, price = document.getElementById('pPrice').value, fileInput = document.getElementById('pImage'); if(!name || !price || fileInput.files.length === 0) return alert("Fill all fields!"); let reader = new FileReader(); reader.onload = function(e) { set(push(ref(db, 'products')), { name, category, price, image: e.target.result }).then(() => { alert("Product Added!"); document.getElementById('pName').value = ''; document.getElementById('pPrice').value = ''; }); }; reader.readAsDataURL(fileInput.files[0]); }
+        
+        // --- NEW PRODUCT FUNCTION WITH DETAILS, COLOR & SIZE ---
+        window.addNewProductToFirebase = function() { 
+            let name = document.getElementById('pName').value, category = document.getElementById('pCategory').value, price = document.getElementById('pPrice').value, fileInput = document.getElementById('pImage'); 
+            let desc = document.getElementById('pDesc').value.trim();
+            let color = document.getElementById('pColor').value.trim();
+            let size = document.getElementById('pSize').value.trim();
+
+            if(!name || !price || fileInput.files.length === 0) return alert("Fill name, price and image! / नाम, कीमत और फोटो ज़रूर डालें!"); 
+            
+            let reader = new FileReader(); 
+            reader.onload = function(e) { 
+                set(push(ref(db, 'products')), { 
+                    name, category, price, desc, color, size, image: e.target.result 
+                }).then(() => { 
+                    alert("Product Added! / प्रोडक्ट जुड़ गया!"); 
+                    document.getElementById('pName').value = ''; document.getElementById('pPrice').value = ''; document.getElementById('pDesc').value = ''; document.getElementById('pColor').value = ''; document.getElementById('pSize').value = '';
+                }); 
+            }; 
+            reader.readAsDataURL(fileInput.files[0]); 
+        }
+        // --------------------------------------------------------
+
         window.deleteProduct = function(key) { if(confirm("Delete?")) remove(ref(db, 'products/' + key)); }
 
         window.addNewReelToFirebase = function() { let title = document.getElementById('rTitle').value, videoUrl = document.getElementById('rVideoUrl').value, instaUrl = document.getElementById('rInstaUrl').value; if(!title || !videoUrl) return alert("Fill fields!"); set(push(ref(db, 'reels')), { title, url: videoUrl, instaUrl: instaUrl || '#' }).then(() => { alert("Reel Published!"); document.getElementById('rTitle').value = ''; document.getElementById('rVideoUrl').value = ''; }); }
@@ -124,7 +138,12 @@
                 
                 Object.keys(data).forEach((key) => {
                     let order = data[key], itemsList = '';
-                    if(order.items) order.items.forEach(item => itemsList += `${item.name}(x${item.qty}), `);
+                    // Added Color/Size variants to Admin View
+                    if(order.items) order.items.forEach(item => {
+                        let variant = '';
+                        if(item.selectedColor || item.selectedSize) variant = ` (${item.selectedColor || ''} ${item.selectedSize || ''})`;
+                        itemsList += `${item.name}${variant}(x${item.qty}), `;
+                    });
                     
                     let trackingInfo = order.courierLink ? `<p style="font-size:11px; color:#2980b9; margin-top:4px;">🔗 Link Added</p>` : '';
                     let billInfo = order.billNumber ? `<p style="font-size:11px; color:#27ae60; margin-top:2px;">🧾 Bill: ${order.billNumber}</p>` : '';
@@ -138,16 +157,9 @@
                     let btnDisp = window.currentLangAdmin === 'hi' ? '🚚 डिस्पैच करें' : '🚚 Dispatch';
 
                     if (order.status === 'Dispatched') {
-                        dispatchedDiv.innerHTML += cardHtml + `
-                            <button class="track-btn" onclick="addTrackingUpdate('${key}')">${btnLoc}</button>
-                            <button class="complete-order-btn" onclick="markDelivered('${key}')">${btnDel}</button>
-                            <button class="cancel-order-btn" onclick="markCancelled('${key}')">${btnCan}</button>
-                        </div>`;
+                        dispatchedDiv.innerHTML += cardHtml + `<button class="track-btn" onclick="addTrackingUpdate('${key}')">${btnLoc}</button><button class="complete-order-btn" onclick="markDelivered('${key}')">${btnDel}</button><button class="cancel-order-btn" onclick="markCancelled('${key}')">${btnCan}</button></div>`;
                     } else {
-                        newOrdersDiv.innerHTML += cardHtml + `
-                            <button class="dispatch-btn" onclick="markDispatched('${key}')">${btnDisp}</button>
-                            <button class="cancel-order-btn" onclick="markCancelled('${key}')">${btnCan}</button>
-                        </div>`;
+                        newOrdersDiv.innerHTML += cardHtml + `<button class="dispatch-btn" onclick="markDispatched('${key}')">${btnDisp}</button><button class="cancel-order-btn" onclick="markCancelled('${key}')">${btnCan}</button></div>`;
                     }
                 });
             });
@@ -156,7 +168,6 @@
         window.markDispatched = function(key) { 
             let courierLink = prompt("Paste Courier Tracking Link (Leave empty if none):");
             let billNumber = prompt("Enter Tohands Bill Number:");
-            
             let updateData = { status: 'Dispatched' };
             if(courierLink && courierLink.trim() !== '') updateData.courierLink = courierLink.trim();
             if(billNumber && billNumber.trim() !== '') updateData.billNumber = billNumber.trim();
@@ -166,40 +177,9 @@
             }); 
         }
         
-        window.addTrackingUpdate = function(key) {
-            let msg = prompt("Enter tracking location/status:");
-            if(msg) {
-                push(ref(db, `orders/${key}/tracking`), { msg: msg, time: new Date().toLocaleString() }).then(() => { alert("📍 Tracking Updated!"); });
-            }
-        }
-        
-        window.markDelivered = function(key) { 
-            if(confirm("Successfully Delivered?")) {
-                let deliveryTime = new Date().toLocaleString(); 
-                get(ref(db, 'orders/' + key)).then((snapshot) => {
-                    if(snapshot.exists()) {
-                        let orderData = snapshot.val(); orderData.status = 'Delivered'; orderData.deliveredAt = deliveryTime;
-                        if(!orderData.tracking) orderData.tracking = {};
-                        let newKey = push(ref(db, 'dummy')).key;
-                        orderData.tracking[newKey] = { msg: "Delivered Successfully!", time: deliveryTime };
-                        
-                        set(ref(db, 'order_history/' + key), orderData).then(() => { remove(ref(db, 'orders/' + key)); alert("✅ Delivered!"); });
-                    }
-                });
-            } 
-        }
-
-        window.markCancelled = function(key) { 
-            if(confirm("Cancel this order?")) {
-                let cancelTime = new Date().toLocaleString(); 
-                get(ref(db, 'orders/' + key)).then((snapshot) => {
-                    if(snapshot.exists()) {
-                        let orderData = snapshot.val(); orderData.status = 'Cancelled'; orderData.deliveredAt = "Cancelled on " + cancelTime;
-                        set(ref(db, 'order_history/' + key), orderData).then(() => { remove(ref(db, 'orders/' + key)); alert("❌ Cancelled!"); });
-                    }
-                });
-            } 
-        }
+        window.addTrackingUpdate = function(key) { let msg = prompt("Enter tracking location/status:"); if(msg) { push(ref(db, `orders/${key}/tracking`), { msg: msg, time: new Date().toLocaleString() }).then(() => { alert("📍 Tracking Updated!"); }); } }
+        window.markDelivered = function(key) { if(confirm("Successfully Delivered?")) { let deliveryTime = new Date().toLocaleString(); get(ref(db, 'orders/' + key)).then((snapshot) => { if(snapshot.exists()) { let orderData = snapshot.val(); orderData.status = 'Delivered'; orderData.deliveredAt = deliveryTime; if(!orderData.tracking) orderData.tracking = {}; let newKey = push(ref(db, 'dummy')).key; orderData.tracking[newKey] = { msg: "Delivered Successfully!", time: deliveryTime }; set(ref(db, 'order_history/' + key), orderData).then(() => { remove(ref(db, 'orders/' + key)); alert("✅ Delivered!"); }); } }); } }
+        window.markCancelled = function(key) { if(confirm("Cancel this order?")) { let cancelTime = new Date().toLocaleString(); get(ref(db, 'orders/' + key)).then((snapshot) => { if(snapshot.exists()) { let orderData = snapshot.val(); orderData.status = 'Cancelled'; orderData.deliveredAt = "Cancelled on " + cancelTime; set(ref(db, 'order_history/' + key), orderData).then(() => { remove(ref(db, 'orders/' + key)); alert("❌ Cancelled!"); }); } }); } }
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
@@ -210,7 +190,7 @@
         .admin-panel h2 { text-align: center; color: #f1c40f; margin-bottom: 20px; }
         .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; } @media(max-width: 768px) { .grid-layout { grid-template-columns: 1fr; } }
         .manage-section { background-color: #34495e; padding: 15px; border-radius: 8px; margin-bottom: 15px; } .manage-section h3 { margin-bottom: 10px; border-bottom: 1px solid #7f8c8d; padding-bottom: 5px; color: #fff; font-size: 16px; }
-        .form-group { margin-bottom: 10px; } .form-group input, .form-group select { width: 100%; padding: 8px; border: none; border-radius: 4px; font-size: 13px; } .form-group input[type="file"] { background-color: #fff; color: #333; }
+        .form-group { margin-bottom: 10px; } .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: none; border-radius: 4px; font-size: 13px; } .form-group input[type="file"] { background-color: #fff; color: #333; }
         .add-btn { background-color: #27ae60; color: white; border: none; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; }
         .admin-item { display: flex; justify-content: space-between; align-items: center; background: #ecf0f1; color: #333; padding: 8px; margin-bottom: 6px; border-radius: 4px; font-size: 13px; font-weight: bold; } .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
         .order-card { background-color: #ecf0f1; color: #2c3e50; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 5px solid #e67e22; box-shadow: 0 2px 5px rgba(0,0,0,0.2); } .order-card p { margin-bottom: 4px; font-size: 13px; font-weight: bold; }
@@ -233,16 +213,24 @@
                 <div class="manage-section" style="border-left: 4px solid #9b59b6;"><h3 data-lang-key="reg_customers">👥 Registered Customers</h3><div id="adminCustomerList"></div></div>
             </div>
             <div class="column">
-                <!-- NEW BANNER SECTION -->
-                <div class="manage-section" style="border-left: 4px solid #1abc9c;">
-                    <h3 data-lang-key="manage_banners">🖼️ Master Banners</h3>
-                    <div class="form-group"><input type="file" id="bImage" accept="image/*"></div>
-                    <button class="add-btn" onclick="addNewBannerToFirebase()" data-lang-key="btn_publish_banner">🖼️ Upload Banner</button>
-                    <div id="adminBannerList" style="margin-top: 10px; max-height: 120px; overflow-y: auto;"></div>
-                </div>
-
+                <div class="manage-section" style="border-left: 4px solid #1abc9c;"><h3 data-lang-key="manage_banners">🖼️ Master Banners</h3><div class="form-group"><input type="file" id="bImage" accept="image/*"></div><button class="add-btn" onclick="addNewBannerToFirebase()" data-lang-key="btn_publish_banner">🖼️ Upload Banner</button><div id="adminBannerList" style="margin-top: 10px; max-height: 120px; overflow-y: auto;"></div></div>
                 <div class="manage-section" style="border-left: 4px solid #f1c40f;"><h3 data-lang-key="categories">📁 Manage Categories</h3><div class="form-group"><input type="text" id="catKeyInput" placeholder="Code (e.g. Bridal)"></div><div class="form-group"><input type="text" id="catNameInput" placeholder="Name to Display"></div><button class="add-btn" onclick="addNewCategory()" data-lang-key="btn_add">➕ Add</button><div id="adminCatList" style="margin-top: 10px;"></div></div>
-                <div class="manage-section" style="border-left: 4px solid #e67e22;"><h3 data-lang-key="add_product">🛍️ Add Product</h3><div class="form-group"><input type="text" id="pName" placeholder="Product Name"></div><div class="form-group"><select id="pCategory"></select></div><div class="form-group"><input type="number" id="pPrice" placeholder="Price (₹)"></div><div class="form-group"><input type="file" id="pImage" accept="image/*"></div><button class="add-btn" onclick="addNewProductToFirebase()" data-lang-key="btn_publish">➕ Publish</button><div id="adminProductList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div></div>
+                
+                <!-- NEW DETAILED PRODUCT ADDITION FORM -->
+                <div class="manage-section" style="border-left: 4px solid #e67e22;">
+                    <h3 data-lang-key="add_product">🛍️ Add Product</h3>
+                    <div class="form-group"><input type="text" id="pName" placeholder="Product Name / नाम *"></div>
+                    <div class="form-group"><select id="pCategory"></select></div>
+                    <div class="form-group"><input type="number" id="pPrice" placeholder="Price (₹) *"></div>
+                    <div class="form-group"><textarea id="pDesc" placeholder="Description / प्रोडक्ट का विवरण" rows="2"></textarea></div>
+                    <div class="form-group"><input type="text" id="pColor" placeholder="Colors (ex: Red, Blue) / रंग (वैकल्पिक)"></div>
+                    <div class="form-group"><input type="text" id="pSize" placeholder="Sizes (ex: S, M, L) / साइज़ (वैकल्पिक)"></div>
+                    <div class="form-group"><input type="file" id="pImage" accept="image/*"></div>
+                    <button class="add-btn" onclick="addNewProductToFirebase()" data-lang-key="btn_publish">➕ Publish Product</button>
+                    <div id="adminProductList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div>
+                </div>
+                <!-- --------------------------------------- -->
+
                 <div class="manage-section" style="border-left: 4px solid #e74c3c;"><h3 data-lang-key="add_reel">🎥 Add Reel</h3><div class="form-group"><input type="text" id="rTitle" placeholder="Title"></div><div class="form-group"><input type="text" id="rVideoUrl" placeholder="MP4 Video Link"></div><div class="form-group"><input type="text" id="rInstaUrl" placeholder="Instagram Link (Optional)"></div><button class="add-btn" onclick="addNewReelToFirebase()" data-lang-key="btn_publish_reel">🎬 Publish Reel</button><div id="adminReelList" style="margin-top: 10px;"></div></div>
             </div>
         </div>
