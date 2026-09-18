@@ -66,17 +66,20 @@
                     let order = data[key], itemsList = '';
                     if(order.items) order.items.forEach(item => itemsList += `${item.name}(x${item.qty}), `);
                     
-                    let cardHtml = `<div class="order-card"><p>👤 ${order.customerName} (${order.customerPhone})</p><p>📍 ${order.customerAddress}</p><p style="color:#800020; font-size:12px; margin:6px 0;">🛍️ ${itemsList}</p><p>💳 ${order.paymentMode} | 💰 ${order.total}</p><p style="font-size:11px; color:#7f8c8d;">📅 ${order.date}</p>`;
+                    // अगर ट्रैकिंग लिंक है, तो दिखाएं
+                    let trackingInfo = order.courierLink ? `<p style="font-size:11px; color:#2980b9; margin-top:4px;">🔗 कूरियर लिंक जुड़ा है</p>` : '';
+
+                    let cardHtml = `<div class="order-card"><p>👤 ${order.customerName} (${order.customerPhone})</p><p>📍 ${order.customerAddress}</p><p style="color:#800020; font-size:12px; margin:6px 0;">🛍️ ${itemsList}</p><p>💳 ${order.paymentMode} | 💰 ${order.total}</p><p style="font-size:11px; color:#7f8c8d;">📅 ${order.date}</p>${trackingInfo}`;
                     
                     if (order.status === 'Dispatched') {
                         dispatchedDiv.innerHTML += cardHtml + `
-                            <button class="track-btn" onclick="addTrackingUpdate('${key}')">📍 लोकेशन अपडेट करें (Tracking)</button>
+                            <button class="track-btn" onclick="addTrackingUpdate('${key}')">📍 लोकेशन अपडेट करें (Manual)</button>
                             <button class="complete-order-btn" onclick="markDelivered('${key}')">✨ डिलीवर (समाप्त करें)</button>
                             <button class="cancel-order-btn" onclick="markCancelled('${key}')">❌ रद्द करें (Cancel)</button>
                         </div>`;
                     } else {
                         newOrdersDiv.innerHTML += cardHtml + `
-                            <button class="dispatch-btn" onclick="markDispatched('${key}')">🚚 डिस्पैच करें</button>
+                            <button class="dispatch-btn" onclick="markDispatched('${key}')">🚚 डिस्पैच करें (लिंक डालें)</button>
                             <button class="cancel-order-btn" onclick="markCancelled('${key}')">❌ रद्द करें (Cancel)</button>
                         </div>`;
                     }
@@ -84,14 +87,20 @@
             });
         }
 
+        // NEW FEATURE: डिस्पैच करते समय ट्रैकिंग लिंक मांगना
         window.markDispatched = function(key) { 
-            update(ref(db, 'orders/' + key), { status: 'Dispatched' }).then(() => {
-                // ऑटोमैटिक पहली ट्रैकिंग जोड़ दें
+            let courierLink = prompt("कूरियर का ट्रैकिंग लिंक यहाँ पेस्ट करें (अगर कोई लिंक नहीं है, तो इसे खाली छोड़कर OK दबा दें):");
+            
+            let updateData = { status: 'Dispatched' };
+            if(courierLink && courierLink.trim() !== '') {
+                updateData.courierLink = courierLink.trim();
+            }
+
+            update(ref(db, 'orders/' + key), updateData).then(() => {
                 push(ref(db, `orders/${key}/tracking`), { msg: "सामान डिस्पैच (पैक होकर निकल) चुका है।", time: new Date().toLocaleString() });
             }); 
         }
         
-        // NEW FEATURE: लोकेशन अपडेट करने का फंक्शन
         window.addTrackingUpdate = function(key) {
             let msg = prompt("लोकेशन या स्टेटस लिखें (जैसे: 'सामान दिल्ली ऑफिस पहुँच गया है'):");
             if(msg) {
@@ -108,7 +117,6 @@
                 get(ref(db, 'orders/' + key)).then((snapshot) => {
                     if(snapshot.exists()) {
                         let orderData = snapshot.val(); orderData.status = 'Delivered'; orderData.deliveredAt = deliveryTime;
-                        // डिलीवरी की लास्ट ट्रैकिंग
                         if(!orderData.tracking) orderData.tracking = {};
                         let newKey = push(ref(db, 'dummy')).key;
                         orderData.tracking[newKey] = { msg: "सफलतापूर्वक डिलीवर हो गया!", time: deliveryTime };
