@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,12 +7,12 @@
     
     <script>
         window.onload = function() {
-            let pass = prompt("कृपया एडमिन पासवर्ड दर्ज करें / Please enter Admin Password:");
-            if (pass !== "admin123") { alert("गलत पासवर्ड! / Wrong Password!"); window.location.href = "index.html"; } 
+            let pass = prompt("Please enter Admin Password / कृपया एडमिन पासवर्ड दर्ज करें:");
+            if (pass !== "admin123") { alert("Wrong Password! / गलत पासवर्ड!"); window.location.href = "index.html"; } 
             else { 
-                document.getElementById('langToggleBtnAdmin').innerText = currentLangAdmin === 'hi' ? '🌐 English' : '🌐 हिंदी';
+                document.getElementById('langToggleBtnAdmin').innerText = currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
                 applyAdminLanguage();
-                loadCategoriesAdmin(); loadProductsAdmin(); loadOrdersAdmin(); loadReelsAdmin(); loadCustomersListAdmin(); 
+                loadCategoriesAdmin(); loadProductsAdmin(); loadOrdersAdmin(); loadReelsAdmin(); loadCustomersListAdmin(); loadBannersAdmin();
             }
         };
     </script>
@@ -33,27 +33,29 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // 🌐 Admin Language System
-        window.currentLangAdmin = localStorage.getItem('grihani_admin_lang') || 'hi';
+        // 🌐 Admin Language System (Default: English)
+        window.currentLangAdmin = localStorage.getItem('grihani_admin_lang') || 'en';
         const adminDict = {
             "dash_title": { hi: "🛠️ Grihani Admin Dashboard", en: "🛠️ Grihani Admin Dashboard" },
             "new_orders": { hi: "📥 नए ऑर्डर्स (New Orders)", en: "📥 New Orders" },
             "dispatch_orders": { hi: "🚚 रास्ते में हैं (Dispatched)", en: "🚚 Dispatched Orders" },
             "reg_customers": { hi: "👥 रजिस्टर्ड कस्टमर्स", en: "👥 Registered Customers" },
-            "categories": { hi: "📁 कैटेगरीज", en: "📁 Categories" },
+            "categories": { hi: "📁 कैटेगरीज", en: "📁 Manage Categories" },
             "add_product": { hi: "🛍️ प्रोडक्ट जोड़ें", en: "🛍️ Add Product" },
             "add_reel": { hi: "🎥 रील जोड़ें", en: "🎥 Add Reel" },
+            "manage_banners": { hi: "🖼️ मास्टर बैनर", en: "🖼️ Master Banners" },
             "btn_add": { hi: "➕ जोड़ें", en: "➕ Add" },
             "btn_publish": { hi: "➕ पब्लिश करें", en: "➕ Publish" },
-            "btn_publish_reel": { hi: "🎬 पब्लिश करें", en: "🎬 Publish Reel" }
+            "btn_publish_reel": { hi: "🎬 पब्लिश करें", en: "🎬 Publish Reel" },
+            "btn_publish_banner": { hi: "🖼️ अपलोड बैनर", en: "🖼️ Upload Banner" }
         };
 
         window.toggleLanguageAdmin = function() {
-            window.currentLangAdmin = window.currentLangAdmin === 'hi' ? 'en' : 'hi';
+            window.currentLangAdmin = window.currentLangAdmin === 'en' ? 'hi' : 'en';
             localStorage.setItem('grihani_admin_lang', window.currentLangAdmin);
-            document.getElementById('langToggleBtnAdmin').innerText = window.currentLangAdmin === 'hi' ? '🌐 English' : '🌐 हिंदी';
+            document.getElementById('langToggleBtnAdmin').innerText = window.currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
             applyAdminLanguage();
-            loadOrdersAdmin(); // Reload dynamic content language
+            loadOrdersAdmin(); 
         }
 
         window.applyAdminLanguage = function() {
@@ -63,29 +65,53 @@
             });
         }
 
+        // --- NEW FEATURE: BANNERS ---
+        window.loadBannersAdmin = function() {
+            onValue(ref(db, 'banners'), (snapshot) => {
+                const data = snapshot.val(); let adminListDiv = document.getElementById('adminBannerList'); adminListDiv.innerHTML = '';
+                if (!data) return adminListDiv.innerHTML = '<p style="color: #bdc3c7; font-size:12px;">No banners found.</p>';
+                Object.keys(data).forEach((key) => { 
+                    adminListDiv.innerHTML += `<div class="admin-item"><img src="${data[key].image}" style="width:50px; height:25px; object-fit:cover; border-radius:3px;"><span>Banner</span><button class="delete-btn" onclick="deleteBanner('${key}')">❌</button></div>`; 
+                });
+            });
+        }
+        window.addNewBannerToFirebase = function() { 
+            let fileInput = document.getElementById('bImage'); 
+            if(fileInput.files.length === 0) return alert("Please select an image! / कृपया इमेज चुनें!"); 
+            let reader = new FileReader(); 
+            reader.onload = function(e) { 
+                set(push(ref(db, 'banners')), { image: e.target.result }).then(() => { 
+                    alert("Banner Added! / बैनर जुड़ गया!"); fileInput.value = ''; 
+                }); 
+            }; 
+            reader.readAsDataURL(fileInput.files[0]); 
+        }
+        window.deleteBanner = function(key) { if(confirm("Delete Banner? / बैनर हटाना है?")) remove(ref(db, 'banners/' + key)); }
+        // ------------------------------
+
         window.loadCategoriesAdmin = function() {
             onValue(ref(db, 'categories'), (snapshot) => {
                 const data = snapshot.val(); let selectBox = document.getElementById('pCategory'); let adminCatList = document.getElementById('adminCatList'); selectBox.innerHTML = ''; adminCatList.innerHTML = '';
-                let categories = data ? data : { "Bridal": "ब्राइडल", "Gifts": "गिफ्ट्स", "Daily": "डेली वियर" };
+                let categories = data ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
                 Object.keys(categories).forEach((catKey) => { selectBox.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`; adminCatList.innerHTML += `<div class="admin-item"><span>📁 ${categories[catKey]} (${catKey})</span><button class="delete-btn" onclick="deleteCategory('${catKey}')">❌</button></div>`; });
             });
         }
-        window.addNewCategory = function() { let catKey = document.getElementById('catKeyInput').value.trim(), catName = document.getElementById('catNameInput').value.trim(); if(!catKey || !catName) return alert("भरें! / Fill fields!"); set(ref(db, 'categories/' + catKey), catName).then(() => { alert("कैटेगरी जुड़ गई! / Category Added!"); document.getElementById('catKeyInput').value = ''; document.getElementById('catNameInput').value = ''; }); }
-        window.deleteCategory = function(catKey) { if(confirm("हटाना है? / Delete?")) remove(ref(db, 'categories/' + catKey)); }
+        window.addNewCategory = function() { let catKey = document.getElementById('catKeyInput').value.trim(), catName = document.getElementById('catNameInput').value.trim(); if(!catKey || !catName) return alert("Fill fields!"); set(ref(db, 'categories/' + catKey), catName).then(() => { alert("Category Added!"); document.getElementById('catKeyInput').value = ''; document.getElementById('catNameInput').value = ''; }); }
+        window.deleteCategory = function(catKey) { if(confirm("Delete?")) remove(ref(db, 'categories/' + catKey)); }
 
         window.loadProductsAdmin = function() {
             onValue(ref(db, 'products'), (snapshot) => {
                 const data = snapshot.val(); let adminListDiv = document.getElementById('adminProductList'); adminListDiv.innerHTML = '';
-                if (!data) return adminListDiv.innerHTML = '<p style="color: #bdc3c7;">अभी कोई प्रोडक्ट नहीं है।</p>';
+                if (!data) return adminListDiv.innerHTML = '<p style="color: #bdc3c7;">No products available.</p>';
                 Object.keys(data).forEach((key) => { adminListDiv.innerHTML += `<div class="admin-item"><span>${data[key].name} <small>(₹${data[key].price})</small></span><button class="delete-btn" onclick="deleteProduct('${key}')">❌</button></div>`; });
             });
         }
-        window.addNewProductToFirebase = function() { let name = document.getElementById('pName').value, category = document.getElementById('pCategory').value, price = document.getElementById('pPrice').value, fileInput = document.getElementById('pImage'); if(!name || !price || fileInput.files.length === 0) return alert("भरें! / Fill all fields!"); let reader = new FileReader(); reader.onload = function(e) { set(push(ref(db, 'products')), { name, category, price, image: e.target.result }).then(() => { alert("प्रोडक्ट जुड़ गया! / Product Added!"); document.getElementById('pName').value = ''; document.getElementById('pPrice').value = ''; }); }; reader.readAsDataURL(fileInput.files[0]); }
-        window.deleteProduct = function(key) { if(confirm("हटाना है? / Delete?")) remove(ref(db, 'products/' + key)); }
+        window.addNewProductToFirebase = function() { let name = document.getElementById('pName').value, category = document.getElementById('pCategory').value, price = document.getElementById('pPrice').value, fileInput = document.getElementById('pImage'); if(!name || !price || fileInput.files.length === 0) return alert("Fill all fields!"); let reader = new FileReader(); reader.onload = function(e) { set(push(ref(db, 'products')), { name, category, price, image: e.target.result }).then(() => { alert("Product Added!"); document.getElementById('pName').value = ''; document.getElementById('pPrice').value = ''; }); }; reader.readAsDataURL(fileInput.files[0]); }
+        window.deleteProduct = function(key) { if(confirm("Delete?")) remove(ref(db, 'products/' + key)); }
 
-        window.addNewReelToFirebase = function() { let title = document.getElementById('rTitle').value, videoUrl = document.getElementById('rVideoUrl').value, instaUrl = document.getElementById('rInstaUrl').value; if(!title || !videoUrl) return alert("भरें! / Fill fields!"); set(push(ref(db, 'reels')), { title, url: videoUrl, instaUrl: instaUrl || '#' }).then(() => { alert("रील पब्लिश! / Reel Published!"); document.getElementById('rTitle').value = ''; document.getElementById('rVideoUrl').value = ''; }); }
-        window.deleteReel = function(key) { if(confirm("हटाना है? / Delete?")) remove(ref(db, 'reels/' + key)); }
-        window.loadReelsAdmin = function() { onValue(ref(db, 'reels'), (snapshot) => { const data = snapshot.val(); let adminReelList = document.getElementById('adminReelList'); adminReelList.innerHTML = ''; if(!data) return adminReelList.innerHTML = '<p style="color: #bdc3c7; font-size:13px;">कोई रील नहीं है। / No reels.</p>'; Object.keys(data).forEach(key => { adminReelList.innerHTML += `<div class="admin-item"><span>🎥 ${data[key].title}</span><button class="delete-btn" onclick="deleteReel('${key}')">❌</button></div>`; }); }); }
+        window.addNewReelToFirebase = function() { let title = document.getElementById('rTitle').value, videoUrl = document.getElementById('rVideoUrl').value, instaUrl = document.getElementById('rInstaUrl').value; if(!title || !videoUrl) return alert("Fill fields!"); set(push(ref(db, 'reels')), { title, url: videoUrl, instaUrl: instaUrl || '#' }).then(() => { alert("Reel Published!"); document.getElementById('rTitle').value = ''; document.getElementById('rVideoUrl').value = ''; }); }
+        window.deleteReel = function(key) { if(confirm("Delete?")) remove(ref(db, 'reels/' + key)); }
+        window.loadReelsAdmin = function() { onValue(ref(db, 'reels'), (snapshot) => { const data = snapshot.val(); let adminReelList = document.getElementById('adminReelList'); adminReelList.innerHTML = ''; if(!data) return adminReelList.innerHTML = '<p style="color: #bdc3c7; font-size:13px;">No reels.</p>'; Object.keys(data).forEach(key => { adminReelList.innerHTML += `<div class="admin-item"><span>🎥 ${data[key].title}</span><button class="delete-btn" onclick="deleteReel('${key}')">❌</button></div>`; }); }); }
 
         window.loadCustomersListAdmin = function() { onValue(ref(db, 'customers'), (snapshot) => { const data = snapshot.val(); let custDiv = document.getElementById('adminCustomerList'); custDiv.innerHTML = ''; if(!data) return; Object.keys(data).forEach((key) => { let c = data[key]; custDiv.innerHTML += `<div class="order-card" style="border-left-color: #800020;"><p>👤 ${c.name} | 📞 ${c.phone}</p><p>📍 ${c.address}</p><p style="font-size:11px; color:#7f8c8d;">📅 ${c.date}</p></div>`; }); }); }
         
@@ -128,8 +154,8 @@
         }
 
         window.markDispatched = function(key) { 
-            let courierLink = prompt("कूरियर का ट्रैकिंग लिंक यहाँ पेस्ट करें / Paste Courier Link (Leave empty if none):");
-            let billNumber = prompt("Tohands का बिल नंबर डालें / Enter Tohands Bill Number:");
+            let courierLink = prompt("Paste Courier Tracking Link (Leave empty if none):");
+            let billNumber = prompt("Enter Tohands Bill Number:");
             
             let updateData = { status: 'Dispatched' };
             if(courierLink && courierLink.trim() !== '') updateData.courierLink = courierLink.trim();
@@ -141,37 +167,35 @@
         }
         
         window.addTrackingUpdate = function(key) {
-            let msg = prompt("लोकेशन या स्टेटस लिखें / Enter tracking update:");
+            let msg = prompt("Enter tracking location/status:");
             if(msg) {
-                push(ref(db, `orders/${key}/tracking`), { msg: msg, time: new Date().toLocaleString() }).then(() => {
-                    alert("📍 ट्रैकिंग अपडेट हो गई! / Tracking Updated!");
-                });
+                push(ref(db, `orders/${key}/tracking`), { msg: msg, time: new Date().toLocaleString() }).then(() => { alert("📍 Tracking Updated!"); });
             }
         }
         
         window.markDelivered = function(key) { 
-            if(confirm("क्या यह ऑर्डर सफलतापूर्वक डिलीवर हो गया है? / Successfully Delivered?")) {
+            if(confirm("Successfully Delivered?")) {
                 let deliveryTime = new Date().toLocaleString(); 
                 get(ref(db, 'orders/' + key)).then((snapshot) => {
                     if(snapshot.exists()) {
                         let orderData = snapshot.val(); orderData.status = 'Delivered'; orderData.deliveredAt = deliveryTime;
                         if(!orderData.tracking) orderData.tracking = {};
                         let newKey = push(ref(db, 'dummy')).key;
-                        orderData.tracking[newKey] = { msg: "सफलतापूर्वक डिलीवर हो गया! / Delivered Successfully!", time: deliveryTime };
+                        orderData.tracking[newKey] = { msg: "Delivered Successfully!", time: deliveryTime };
                         
-                        set(ref(db, 'order_history/' + key), orderData).then(() => { remove(ref(db, 'orders/' + key)); alert("✅ डिलीवर हो गया! / Delivered!"); });
+                        set(ref(db, 'order_history/' + key), orderData).then(() => { remove(ref(db, 'orders/' + key)); alert("✅ Delivered!"); });
                     }
                 });
             } 
         }
 
         window.markCancelled = function(key) { 
-            if(confirm("क्या आप इसे रद्द करना चाहते हैं? / Cancel this order?")) {
+            if(confirm("Cancel this order?")) {
                 let cancelTime = new Date().toLocaleString(); 
                 get(ref(db, 'orders/' + key)).then((snapshot) => {
                     if(snapshot.exists()) {
                         let orderData = snapshot.val(); orderData.status = 'Cancelled'; orderData.deliveredAt = "Cancelled on " + cancelTime;
-                        set(ref(db, 'order_history/' + key), orderData).then(() => { remove(ref(db, 'orders/' + key)); alert("❌ रद्द हो गया! / Cancelled!"); });
+                        set(ref(db, 'order_history/' + key), orderData).then(() => { remove(ref(db, 'orders/' + key)); alert("❌ Cancelled!"); });
                     }
                 });
             } 
@@ -198,20 +222,28 @@
 </head>
 <body>
     <div class="header-bar">
-        <button id="langToggleBtnAdmin" class="lang-btn" onclick="toggleLanguageAdmin()">🌐 English</button>
+        <button id="langToggleBtnAdmin" class="lang-btn" onclick="toggleLanguageAdmin()">🌐 हिंदी</button>
     </div>
     <div class="admin-panel">
         <h2 data-lang-key="dash_title">🛠️ Grihani Admin Dashboard</h2>
         <div class="grid-layout">
             <div class="column">
-                <div class="manage-section" style="border-left: 4px solid #3498db;"><h3 data-lang-key="new_orders">📥 नए ऑर्डर्स (New Orders)</h3><div id="adminNewOrders"></div></div>
-                <div class="manage-section" style="border-left: 4px solid #27ae60;"><h3 data-lang-key="dispatch_orders">🚚 रास्ते में हैं (Dispatched)</h3><div id="adminDispatchedOrders"></div></div>
-                <div class="manage-section" style="border-left: 4px solid #9b59b6;"><h3 data-lang-key="reg_customers">👥 रजिस्टर्ड कस्टमर्स</h3><div id="adminCustomerList"></div></div>
+                <div class="manage-section" style="border-left: 4px solid #3498db;"><h3 data-lang-key="new_orders">📥 New Orders</h3><div id="adminNewOrders"></div></div>
+                <div class="manage-section" style="border-left: 4px solid #27ae60;"><h3 data-lang-key="dispatch_orders">🚚 Dispatched Orders</h3><div id="adminDispatchedOrders"></div></div>
+                <div class="manage-section" style="border-left: 4px solid #9b59b6;"><h3 data-lang-key="reg_customers">👥 Registered Customers</h3><div id="adminCustomerList"></div></div>
             </div>
             <div class="column">
-                <div class="manage-section" style="border-left: 4px solid #f1c40f;"><h3 data-lang-key="categories">📁 कैटेगरीज</h3><div class="form-group"><input type="text" id="catKeyInput" placeholder="Code"></div><div class="form-group"><input type="text" id="catNameInput" placeholder="Name"></div><button class="add-btn" onclick="addNewCategory()" data-lang-key="btn_add">➕ जोड़ें</button><div id="adminCatList" style="margin-top: 10px;"></div></div>
-                <div class="manage-section" style="border-left: 4px solid #e67e22;"><h3 data-lang-key="add_product">🛍️ प्रोडक्ट जोड़ें</h3><div class="form-group"><input type="text" id="pName" placeholder="Name"></div><div class="form-group"><select id="pCategory"></select></div><div class="form-group"><input type="number" id="pPrice" placeholder="Price (₹)"></div><div class="form-group"><input type="file" id="pImage" accept="image/*"></div><button class="add-btn" onclick="addNewProductToFirebase()" data-lang-key="btn_publish">➕ पब्लिश करें</button><div id="adminProductList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div></div>
-                <div class="manage-section" style="border-left: 4px solid #e74c3c;"><h3 data-lang-key="add_reel">🎥 रील जोड़ें</h3><div class="form-group"><input type="text" id="rTitle" placeholder="Title"></div><div class="form-group"><input type="text" id="rVideoUrl" placeholder="MP4 Link"></div><div class="form-group"><input type="text" id="rInstaUrl" placeholder="Insta Link (Optional)"></div><button class="add-btn" onclick="addNewReelToFirebase()" data-lang-key="btn_publish_reel">🎬 पब्लिश करें</button><div id="adminReelList" style="margin-top: 10px;"></div></div>
+                <!-- NEW BANNER SECTION -->
+                <div class="manage-section" style="border-left: 4px solid #1abc9c;">
+                    <h3 data-lang-key="manage_banners">🖼️ Master Banners</h3>
+                    <div class="form-group"><input type="file" id="bImage" accept="image/*"></div>
+                    <button class="add-btn" onclick="addNewBannerToFirebase()" data-lang-key="btn_publish_banner">🖼️ Upload Banner</button>
+                    <div id="adminBannerList" style="margin-top: 10px; max-height: 120px; overflow-y: auto;"></div>
+                </div>
+
+                <div class="manage-section" style="border-left: 4px solid #f1c40f;"><h3 data-lang-key="categories">📁 Manage Categories</h3><div class="form-group"><input type="text" id="catKeyInput" placeholder="Code (e.g. Bridal)"></div><div class="form-group"><input type="text" id="catNameInput" placeholder="Name to Display"></div><button class="add-btn" onclick="addNewCategory()" data-lang-key="btn_add">➕ Add</button><div id="adminCatList" style="margin-top: 10px;"></div></div>
+                <div class="manage-section" style="border-left: 4px solid #e67e22;"><h3 data-lang-key="add_product">🛍️ Add Product</h3><div class="form-group"><input type="text" id="pName" placeholder="Product Name"></div><div class="form-group"><select id="pCategory"></select></div><div class="form-group"><input type="number" id="pPrice" placeholder="Price (₹)"></div><div class="form-group"><input type="file" id="pImage" accept="image/*"></div><button class="add-btn" onclick="addNewProductToFirebase()" data-lang-key="btn_publish">➕ Publish</button><div id="adminProductList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div></div>
+                <div class="manage-section" style="border-left: 4px solid #e74c3c;"><h3 data-lang-key="add_reel">🎥 Add Reel</h3><div class="form-group"><input type="text" id="rTitle" placeholder="Title"></div><div class="form-group"><input type="text" id="rVideoUrl" placeholder="MP4 Video Link"></div><div class="form-group"><input type="text" id="rInstaUrl" placeholder="Instagram Link (Optional)"></div><button class="add-btn" onclick="addNewReelToFirebase()" data-lang-key="btn_publish_reel">🎬 Publish Reel</button><div id="adminReelList" style="margin-top: 10px;"></div></div>
             </div>
         </div>
     </div>
