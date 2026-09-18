@@ -11,7 +11,7 @@
             let pass = prompt("कृपया एडमिन पासवर्ड दर्ज करें:");
             if (pass !== "admin123") {
                 alert("गलत पासवर्ड! आपको मेन वेबसाइट पर भेजा जा रहा है।");
-                window.location.href = "index.html";
+                window.location.href = "index.html"; 
             } else {
                 loadCategoriesAdmin();
                 loadProductsAdmin();
@@ -24,6 +24,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        // यहाँ हमने 'get' कमांड जोड़ा है ताकि वह ऑर्डर का डेटा पहले पढ़ सके
         import { getDatabase, ref, set, push, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -145,11 +146,11 @@
         
         window.markDispatched = function(key) { update(ref(db, 'orders/' + key), { status: 'Dispatched' }); }
         
-        // NEW FEATURE: डिलीट होने की जगह अब हिस्ट्री में सेव होगा!
+        // फिक्स्ड फंक्शन: डिलीवर करने पर हिस्ट्री में सेव करेगा!
         window.markDelivered = function(key) { 
             if(confirm("क्या यह ऑर्डर सफलतापूर्वक डिलीवर हो गया है?")) {
-                let deliveryTime = new Date().toLocaleString(); // डिलीवरी का समय निकालें
-                get(child(ref(db), `orders/${key}`)).then((snapshot) => {
+                let deliveryTime = new Date().toLocaleString(); 
+                get(ref(db, 'orders/' + key)).then((snapshot) => {
                     if(snapshot.exists()) {
                         let orderData = snapshot.val();
                         orderData.status = 'Delivered';
@@ -159,17 +160,18 @@
                         set(ref(db, 'order_history/' + key), orderData).then(() => {
                             // फिर इसे एक्टिव 'orders' लिस्ट से हटा दें
                             remove(ref(db, 'orders/' + key));
+                            alert("✅ ऑर्डर हिस्ट्री में सेव हो गया!");
                         });
                     }
                 });
             } 
         }
 
-        // NEW FEATURE: ऑर्डर कैंसिल करने पर भी वह हिस्ट्री में जाएगा
+        // फिक्स्ड फंक्शन: रद्द (Cancel) करने पर भी हिस्ट्री में सेव करेगा!
         window.markCancelled = function(key) { 
             if(confirm("क्या आप इस ऑर्डर को रद्द (Cancel) करना चाहते हैं?")) {
                 let cancelTime = new Date().toLocaleString(); 
-                get(child(ref(db), `orders/${key}`)).then((snapshot) => {
+                get(ref(db, 'orders/' + key)).then((snapshot) => {
                     if(snapshot.exists()) {
                         let orderData = snapshot.val();
                         orderData.status = 'Cancelled';
@@ -177,6 +179,7 @@
                         
                         set(ref(db, 'order_history/' + key), orderData).then(() => {
                             remove(ref(db, 'orders/' + key));
+                            alert("❌ ऑर्डर रद्द होकर हिस्ट्री में सेव हो गया!");
                         });
                     }
                 });
