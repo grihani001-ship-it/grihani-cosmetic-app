@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Grihani Cosmetic - Online Store</title>
     
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -377,7 +377,6 @@
             });
         }
 
-        // 🔥 PROFESSIONAL TOAST NOTIFICATION FUNCTION 🔥
         function showToast(msg) {
             let existing = document.getElementById('grihaniToast');
             if(existing) existing.remove();
@@ -643,127 +642,146 @@
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        body { background-color: #eaeded; color: #0f1111; min-height: 100vh; position: relative; }
+        body { background-color: #eaeded; color: #0f1111; min-height: 100vh; position: relative; overflow-x: hidden; width: 100%; }
         
         .amz-header { background-color: #131921; color: white; display: flex; flex-direction: column; width: 100%; position: sticky; top:0; z-index: 100; }
-        .amz-nav-top { display: flex; align-items: center; padding: 5px 10px; height: 60px; }
+        .amz-nav-top { display: flex; align-items: center; padding: 5px 10px; height: 60px; width: 100%; }
         
-        .amz-logo { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:10px;}
+        .amz-logo { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:10px; flex-shrink: 0;}
         .amz-logo:hover { border: 1px solid white; }
-        .amz-logo img { width: 40px; height: 40px; border-radius: 4px; margin-right: 8px; background: white; padding:2px;}
-        .amz-logo span { font-size: 20px; font-weight: bold; }
+        .amz-logo img { width: 35px; height: 35px; border-radius: 4px; margin-right: 6px; background: white; padding:2px;}
+        .amz-logo span { font-size: 18px; font-weight: bold; }
         
-        .amz-location { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:15px; }
+        .amz-location { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:10px; flex-shrink: 0; }
         .amz-location:hover { border: 1px solid white; }
-        .amz-loc-icon { font-size: 18px; margin-right:3px; margin-top:10px; }
+        .amz-loc-icon { font-size: 16px; margin-right:3px; margin-top:8px; }
         .amz-loc-text { display: flex; flex-direction: column; }
-        .amz-loc-line1 { font-size: 12px; color: #ccc; }
-        .amz-loc-line2 { font-size: 14px; font-weight: bold; color: white; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+        .amz-loc-line1 { font-size: 11px; color: #ccc; }
+        .amz-loc-line2 { font-size: 13px; font-weight: bold; color: white; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
 
-        .amz-search-bar { display: flex; flex-grow: 1; border-radius: 4px; overflow: hidden; background: white; height: 40px; margin-right: 15px; }
-        .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 10px; color: #333; outline: none; cursor: pointer; font-size: 12px; max-width:120px; }
-        .amz-search-input { flex-grow: 1; border: none; padding: 0 10px; outline: none; font-size: 15px; }
-        .amz-search-btn { background: #febd69; border: none; width: 45px; cursor: pointer; font-size: 18px; color: #333; display:flex; justify-content:center; align-items:center; }
+        .amz-search-bar { display: flex; flex-grow: 1; border-radius: 4px; overflow: hidden; background: white; height: 38px; margin: 0 10px; min-width: 120px; }
+        .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 8px; color: #333; outline: none; cursor: pointer; font-size: 11px; max-width:90px; }
+        .amz-search-input { flex-grow: 1; border: none; padding: 0 8px; outline: none; font-size: 14px; width: 100%; }
+        .amz-search-btn { background: #febd69; border: none; width: 40px; cursor: pointer; font-size: 16px; color: #333; display:flex; justify-content:center; align-items:center; flex-shrink: 0; }
         .amz-search-btn:hover { background: #f3a847; }
 
-        .amz-nav-right { display: flex; align-items: center; gap: 5px; }
-        .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 5px 8px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
+        .amz-nav-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
         .amz-nav-item:hover { border: 1px solid white; }
-        .amz-lang-text { font-weight: bold; font-size: 14px; padding-top:10px; }
-        .amz-line1 { font-size: 12px; color: #fff; }
-        .amz-line2 { font-size: 14px; font-weight: bold; color: white; }
+        .amz-lang-text { font-weight: bold; font-size: 13px; padding-top:8px; }
+        .amz-line1 { font-size: 11px; color: #fff; }
+        .amz-line2 { font-size: 13px; font-weight: bold; color: white; }
         
-        .amz-nav-cart { display: flex; align-items: flex-end; padding: 5px 8px; border: 1px solid transparent; cursor: pointer; position: relative; border-radius:2px; }
+        .amz-nav-cart { display: flex; align-items: flex-end; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; position: relative; border-radius:2px; }
         .amz-nav-cart:hover { border: 1px solid white; }
-        .amz-cart-icon { font-size: 28px; }
-        .amz-cart-count { color: #f08804; font-weight: bold; font-size: 16px; position: absolute; top: 0px; left: 22px; }
-        .amz-cart-text { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
+        .amz-cart-icon { font-size: 24px; }
+        .amz-cart-count { color: #f08804; font-weight: bold; font-size: 14px; position: absolute; top: 0px; left: 18px; }
+        .amz-cart-text { font-size: 13px; font-weight: bold; margin-bottom: 2px; }
 
-        .amz-nav-bottom { background-color: #232f3e; display: flex; padding: 5px 15px; align-items: center; gap: 15px; font-size: 14px; color: white; }
-        .amz-menu-icon { font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid transparent; padding: 5px; border-radius:2px; }
+        .amz-nav-bottom { background-color: #232f3e; display: flex; padding: 6px 12px; align-items: center; gap: 10px; font-size: 13px; color: white; width: 100%; overflow-x: auto; }
+        .amz-menu-icon { font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid transparent; padding: 4px; border-radius:2px; white-space: nowrap; flex-shrink: 0; }
         .amz-menu-icon:hover { border: 1px solid white; }
-        .amz-nav-links { display: flex; gap: 15px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
-        .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 14px; padding: 5px 8px; border-radius:2px; }
+        .amz-nav-links { display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+        .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius:2px; }
         .amz-nav-links button:hover { border: 1px solid white; }
 
-        .banner-container { width: 100%; height: 350px; position: relative; overflow: hidden; background: #eaeded; } 
+        .banner-container { width: 100%; height: 280px; position: relative; overflow: hidden; background: #eaeded; } 
         .banner-slide { width: 100%; height: 100%; position: absolute; top: 0; left: 0; } 
         .banner-slide img { width: 100%; height: 100%; object-fit: cover; mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%); -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%); } 
 
-        .reels-section { padding: 15px 25px; background: transparent; z-index:5; position:relative; margin-top:-100px; } 
-        .reels-section h4 { font-size: 20px; color: #0f1111; margin-bottom: 10px; background:white; padding:10px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } 
-        .reels-container { display: flex; gap: 15px; overflow-x: auto; scrollbar-width: thin; padding: 10px; background:white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); } 
-        .reel-card { min-width: 140px; height: 220px; background: #000; overflow: hidden; position: relative; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; cursor:pointer;} 
+        .reels-section { padding: 10px 15px; background: transparent; z-index:5; position:relative; margin-top:-70px; } 
+        .reels-section h4 { font-size: 18px; color: #0f1111; background:white; padding:8px 12px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
+        .reels-container { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: thin; padding: 10px 0; background:white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
+        .reel-card { min-width: 130px; height: 200px; background: #000; overflow: hidden; position: relative; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; cursor:pointer; border-radius: 4px;} 
         .reel-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; } 
-        .reel-title { position: relative; z-index: 2; background: rgba(0,0,0,0.7); color: white; font-size: 11px; padding: 6px; text-align: center; } 
-        .insta-link-btn { position: relative; z-index: 2; background: #E1306C; color: white; font-size: 10px; padding: 5px; text-align: center; text-decoration: none; font-weight: bold; display: block; }
+        .reel-title { position: relative; z-index: 2; background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 5px; text-align: center; } 
+        .insta-link-btn { position: relative; z-index: 2; background: #E1306C; color: white; font-size: 9px; padding: 4px; text-align: center; text-decoration: none; font-weight: bold; display: block; }
         
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; padding: 20px 25px; max-width: 1400px; margin: 0 auto; z-index: 5; position: relative; } 
-        .product-card { border: none; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; background: #fff; display:flex; flex-direction:column; cursor: pointer; z-index:5;} 
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding: 15px; max-width: 1400px; margin: 0 auto; z-index: 5; position: relative; } 
+        .product-card { border: none; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; background: #fff; display:flex; flex-direction:column; cursor: pointer; z-index:5; border-radius: 6px;} 
         .cat-tag { display:none; } 
-        .product-img { width: 100%; height: 220px; object-fit: contain; margin-bottom: 15px; background:#f9f9f9; mix-blend-mode: multiply; } 
-        .product-title { font-size: 15px; color: #007185; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:20px; flex-grow:1;} 
+        .product-img { width: 100%; height: 180px; object-fit: contain; margin-bottom: 12px; background:#f9f9f9; mix-blend-mode: multiply; } 
+        .product-title { font-size: 14px; color: #007185; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:18px; flex-grow:1;} 
         .product-title:hover { color: #c45500; text-decoration: underline; }
-        .product-price { font-size: 26px; color: #B12704; margin-bottom: 15px; } 
-        .cart-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 8px 0; width: 100%; border-radius: 100px; cursor: pointer; font-size: 13px; box-shadow: 0 2px 5px rgba(213,217,217,.5); } 
+        .product-price { font-size: 22px; color: #B12704; margin-bottom: 12px; font-weight: bold; } 
+        .cart-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 8px 0; width: 100%; border-radius: 100px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; } 
         .cart-btn:hover { background: #f7ca00; border-color: #f2c200; }
         
-        #cartPage, #ordersPage { display: none; padding: 25px; flex-grow: 1; max-width:1200px; margin:0 auto; background:white; margin-top:20px; box-shadow:0 1px 3px rgba(0,0,0,0.1); } 
-        .back-btn { color: #007185; cursor: pointer; display: inline-block; font-size: 14px; margin-bottom: 20px; } .back-btn:hover { text-decoration:underline; color:#c45500; }
+        #cartPage, #ordersPage { display: none; padding: 15px; flex-grow: 1; max-width:1100px; margin:15px auto; background:white; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; } 
+        .back-btn { color: #007185; cursor: pointer; display: inline-block; font-size: 13px; margin-bottom: 15px; font-weight: bold; } .back-btn:hover { text-decoration:underline; color:#c45500; }
         
-        .cart-item { display: flex; align-items: center; background: white; padding: 15px 0; border-bottom: 1px solid #ddd; } .cart-item img { width: 80px; height: 80px; object-fit: contain; margin-right: 15px; } .cart-item-info { flex-grow: 1; } .cart-item-title { font-size: 16px; color:#007185; margin-bottom: 5px; } .cart-item-price { font-size: 16px; font-weight:bold; color: #B12704; margin-bottom: 6px; } .qty-controls { display: flex; align-items: center; background: #f0f2f2; border-radius: 8px; width: fit-content; border:1px solid #d5d9d9; box-shadow: 0 2px 5px rgba(213,217,217,.5); } .qty-btn { background: none; border: none; padding: 4px 12px; font-size: 16px; cursor: pointer; color: #0f1111; } .qty-display { font-size: 14px; padding: 0 8px; min-width: 20px; text-align: center; background:white; height:100%; display:flex; align-items:center; border-left:1px solid #d5d9d9; border-right:1px solid #d5d9d9;} .item-total { font-weight: bold; color: #B12704; font-size: 16px; } 
-        .checkout-footer { background: #f3f3f3; padding: 20px; margin-top:20px; text-align:right;} .total-bill { font-size: 20px; margin-bottom: 15px; } .checkout-btn { background: #ffd814; color: #0f1111; padding: 10px 30px; border: 1px solid #fcd200; border-radius: 8px; font-size: 14px; cursor: pointer; box-shadow: 0 2px 5px rgba(213,217,217,.5); }
+        .cart-item { display: flex; align-items: center; background: white; padding: 12px 0; border-bottom: 1px solid #ddd; } .cart-item img { width: 70px; height: 70px; object-fit: contain; margin-right: 12px; flex-shrink: 0; } .cart-item-info { flex-grow: 1; } .cart-item-title { font-size: 14px; color:#007185; margin-bottom: 4px; } .cart-item-price { font-size: 14px; font-weight:bold; color: #B12704; margin-bottom: 5px; } .qty-controls { display: flex; align-items: center; background: #f0f2f2; border-radius: 6px; width: fit-content; border:1px solid #d5d9d9; } .qty-btn { background: none; border: none; padding: 3px 10px; font-size: 14px; cursor: pointer; color: #0f1111; } .qty-display { font-size: 13px; padding: 0 6px; min-width: 18px; text-align: center; background:white; height:100%; display:flex; align-items:center; border-left:1px solid #d5d9d9; border-right:1px solid #d5d9d9;} .item-total { font-weight: bold; color: #B12704; font-size: 14px; flex-shrink: 0; margin-left: 10px; } 
+        .checkout-footer { background: #f3f3f3; padding: 15px; margin-top:15px; text-align:right; border-radius: 6px;} .total-bill { font-size: 18px; margin-bottom: 12px; font-weight: bold; } .checkout-btn { background: #ffd814; color: #0f1111; padding: 10px 25px; border: 1px solid #fcd200; border-radius: 6px; font-size: 13px; cursor: pointer; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; }
         
-        .account-layout { display: flex; gap: 30px; align-items: flex-start; }
-        .account-sidebar { flex: 0 0 300px; background: #f9f9f9; padding: 20px; border: 1px solid #d5d9d9; border-radius: 8px; }
-        .account-orders { flex-grow: 1; }
+        .account-layout { display: flex; gap: 20px; align-items: flex-start; }
+        .account-sidebar { flex: 0 0 280px; background: #f9f9f9; padding: 15px; border: 1px solid #d5d9d9; border-radius: 6px; }
+        .account-orders { flex-grow: 1; width: 100%; }
         
-        .profile-info p { margin-bottom: 8px; font-size: 14px; color: #333; }
-        .address-section { margin-top: 20px; border-top: 1px solid #ddd; padding-top: 15px; }
-        .address-box { background: white; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #d5d9d9; font-size: 13px; line-height: 1.4; color: #333; }
-        .add-address-btn { background: white; border: 1px dashed #007185; color: #007185; padding: 8px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .profile-info p { margin-bottom: 6px; font-size: 13px; color: #333; word-break: break-all; }
+        .address-section { margin-top: 15px; border-top: 1px solid #ddd; padding-top: 12px; }
+        .address-box { background: white; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #d5d9d9; font-size: 12px; line-height: 1.4; color: #333; }
+        .add-address-btn { background: white; border: 1px dashed #007185; color: #007185; padding: 6px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
         .add-address-btn:hover { background: #f0f8ff; }
 
-        .order-history-card { background: white; padding: 20px; margin-bottom: 20px; border: 1px solid #d5d9d9; border-radius:8px; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #eaeded; padding-bottom: 10px; color: #555; } .order-status { font-weight: bold; } .status-new { color: #e67e22; } .status-shipping { color: #007185; } .status-delivered { color: #067d62; } .status-cancelled { color: #B12704; } .order-history-total { font-size: 16px; color: #0f1111; background: #f0f2f2; padding: 15px; margin-top:15px; }
+        .order-history-card { background: white; padding: 15px; margin-bottom: 15px; border: 1px solid #d5d9d9; border-radius:6px; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; border-bottom: 1px solid #eaeded; padding-bottom: 8px; color: #555; flex-wrap: wrap; gap: 5px; } .order-status { font-weight: bold; } .status-new { color: #e67e22; } .status-shipping { color: #007185; } .status-delivered { color: #067d62; } .status-cancelled { color: #B12704; } .order-history-total { font-size: 14px; color: #0f1111; background: #f0f2f2; padding: 10px; margin-top:12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px;}
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding:20px; } 
-        .modal-content { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 8px; max-height: 90vh; overflow-y: auto;} 
-        .modal-content h3 { font-weight:normal; font-size:24px; margin-bottom:20px;}
-        .modal-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #a6a6a6; border-radius: 4px; font-size: 14px; box-shadow: 0 1px 2px rgba(15,17,17,.15) inset; } 
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 15px; } 
+        .modal-content { background: white; width: 100%; max-width: 400px; padding: 20px; border-radius: 8px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); } 
+        .modal-content h3 { font-weight: normal; font-size: 20px; margin-bottom: 15px; }
+        .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #a6a6a6; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 2px rgba(15,17,17,.15) inset; } 
         .modal-input:focus { border-color: #e77600; box-shadow: 0 0 3px 2px rgba(228,121,17,.5); outline:none; }
-        .confirm-order-btn, .login-existing-btn { border: 1px solid; padding: 10px; width: 100%; border-radius: 8px; font-size: 13px; cursor: pointer; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(213,217,217,.5); } 
+        .confirm-order-btn, .login-existing-btn { border: 1px solid; padding: 10px; width: 100%; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; } 
         .confirm-order-btn { background: #ffd814; border-color: #fcd200; color: #0f1111; } .confirm-order-btn:hover { background: #f7ca00; border-color: #f2c200; }
         .login-existing-btn { background: #fff; border-color: #d5d9d9; color: #0f1111; } .login-existing-btn:hover { background:#f7fafa; }
-        .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 10px; width: 100%; font-size: 13px; cursor: pointer; text-decoration:underline; }
+        .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 8px; width: 100%; font-size: 12px; cursor: pointer; text-decoration:underline; }
         
-        .pd-img { width: 100%; height: 300px; object-fit: contain; background:#fff; margin-bottom: 15px; mix-blend-mode:multiply; }
-        .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; line-height:24px;}
-        .pd-price { font-size: 28px; color: #B12704; margin-bottom: 15px; }
-        .pd-desc-box { padding: 10px 0; font-size: 14px; color: #0f1111; margin-bottom: 15px; border-top: 1px solid #eaeded; line-height: 1.5; }
-        .pd-variant-group { margin-bottom: 15px; }
-        .pd-variant-group label { display: block; font-size: 14px; margin-bottom: 5px; color: #555; }
-        .pd-variant-group select { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #d5d9d9; font-size: 14px; background:#f0f2f2; box-shadow: 0 2px 5px rgba(213,217,217,.5);}
+        .pd-img { width: 100%; height: 240px; object-fit: contain; background:#fff; margin-bottom: 12px; mix-blend-mode:multiply; }
+        .pd-title { font-size: 16px; color: #0f1111; margin-bottom: 5px; line-height:22px; font-weight: bold;}
+        .pd-price { font-size: 24px; color: #B12704; margin-bottom: 12px; font-weight: bold; }
+        .pd-desc-box { padding: 8px 0; font-size: 13px; color: #0f1111; margin-bottom: 12px; border-top: 1px solid #eaeded; line-height: 1.4; }
+        .pd-variant-group { margin-bottom: 12px; }
+        .pd-variant-group label { display: block; font-size: 13px; margin-bottom: 4px; color: #555; font-weight: bold; }
+        .pd-variant-group select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d5d9d9; font-size: 13px; background:#f0f2f2;}
         
-        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; transition: all 0.3s ease; }
-        .whatsapp-float:hover { transform: scale(1.1); box-shadow: 2px 2px 10px rgba(0,0,0,0.4); }
-        .whatsapp-float img { width: 35px; height: 35px; filter: brightness(0) invert(1); }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 216, 20, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 216, 20, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 216, 20, 0); } }
+        .whatsapp-float { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 24px; box-shadow: 2px 2px 8px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; transition: all 0.3s ease; }
+        .whatsapp-float:hover { transform: scale(1.1); box-shadow: 2px 2px 12px rgba(0,0,0,0.4); }
+        .whatsapp-float img { width: 28px; height: 28px; filter: brightness(0) invert(1); }
         
-        @media(max-width: 900px) { 
-            .amz-nav-top { flex-wrap: wrap; height: auto; padding: 10px 5px; }
-            .amz-location { padding:5px; margin-right:5px; } 
-            .amz-loc-line2 { max-width:80px; font-size:12px;}
-            .amz-search-bar { order: 3; width: 100%; margin: 10px 0 0 0; }
-            .amz-nav-right { margin-left: auto; }
-            .amz-logo img { width:30px; height:30px; } .amz-logo span { font-size:16px;}
-            .banner-container { height: 200px; } 
-            .products-grid { grid-template-columns: repeat(2, 1fr); padding: 10px; gap: 10px; margin-top:-30px;} 
-            .reels-section { margin-top:-30px; padding:10px; }
-            .product-img { height: 150px; } 
-            #cartPage, #ordersPage { padding: 15px; margin-top:0; } 
-            .account-layout { flex-direction: column; }
-            .account-sidebar { width: 100%; flex: auto; }
-            .whatsapp-float { bottom: 20px; right: 20px; width: 50px; height: 50px; } .whatsapp-float img { width: 30px; height: 30px; } 
+        @media(max-width: 768px) { 
+            .amz-nav-top { padding: 4px 6px; gap: 4px; }
+            .amz-logo img { width: 30px; height: 30px; margin-right: 4px; }
+            .amz-logo span { font-size: 15px; }
+            .amz-location { padding: 3px; margin-right: 4px; }
+            .amz-loc-line2 { max-width: 70px; font-size: 11px; }
+            .amz-search-bar { height: 34px; margin: 0 4px; }
+            .amz-search-select { max-width: 70px; font-size: 10px; padding: 0 4px; }
+            .amz-search-input { font-size: 12px; padding: 0 6px; }
+            .amz-search-btn { width: 34px; font-size: 14px; }
+            .amz-nav-item { padding: 3px 4px; }
+            .amz-line1 { font-size: 9px; }
+            .amz-line2 { font-size: 11px; }
+            .amz-nav-cart { padding: 3px 4px; }
+            .amz-cart-icon { font-size: 20px; }
+            .amz-cart-count { font-size: 12px; left: 14px; top: -2px; }
+            .amz-cart-text { display: none; }
+            .banner-container { height: 160px; } 
+            .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
+            .product-card { padding: 10px; }
+            .product-img { height: 130px; } 
+            .product-title { font-size: 12px; line-height: 16px; }
+            .product-price { font-size: 18px; margin-bottom: 8px; }
+            .cart-btn { padding: 6px 0; font-size: 11px; }
+            .reels-section { padding: 8px; margin-top: -40px; }
+            .reels-section h4 { font-size: 14px; padding: 6px 10px; }
+            .reel-card { min-width: 100px; height: 160px; }
+            #cartPage, #ordersPage { padding: 10px; margin-top: 10px; } 
+            .account-layout { flex-direction: column; gap: 15px; }
+            .account-sidebar { width: 100%; padding: 12px; }
+            .cart-item img { width: 55px; height: 55px; margin-right: 8px; }
+            .cart-item-title { font-size: 12px; }
+            .cart-item-price { font-size: 12px; }
+            .item-total { font-size: 12px; }
+            .modal-content { padding: 15px; max-width: 92%; }
         }
     </style>
 </head>
@@ -771,7 +789,7 @@
     <div class="website-container">
         <!-- Floating WhatsApp Button -->
         <a href="https://wa.me/919955400139?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank">
-            <svg viewBox="0 0 32 32" width="35" height="35" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
+            <svg viewBox="0 0 32 32" width="28" height="28" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
         <!-- HEADER -->
@@ -831,7 +849,7 @@
 
         <div id="cartPage">
             <div class="back-btn" onclick="closeCart()" data-lang-key="btn_back_store">← Back to Store</div>
-            <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 24px;" data-lang-key="cart_title">Your Shopping Cart</h2>
+            <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 20px;" data-lang-key="cart_title">Your Shopping Cart</h2>
             <div class="cart-items-container" id="cartItemsList"></div>
             <div class="checkout-footer">
                 <div class="total-bill"><span data-lang-key="total_bill">Total Bill:</span> <span id="totalAmount" style="color:#B12704; font-weight:bold;">₹0</span></div>
@@ -844,46 +862,46 @@
             
             <div class="account-layout">
                 <div class="account-sidebar">
-                    <h3 style="color: #800020; margin-bottom: 15px;" data-lang-key="profile_title">👤 My Profile</h3>
+                    <h3 style="color: #800020; margin-bottom: 12px; font-size: 18px;" data-lang-key="profile_title">👤 My Profile</h3>
                     <div class="profile-info">
                         <p><strong>Name:</strong> <span id="profileName"></span></p>
                         <p><strong>Phone:</strong> <span id="profilePhone"></span></p>
                     </div>
                     
                     <div class="address-section">
-                        <h4 style="margin-bottom: 10px; color:#555;" data-lang-key="saved_address_title">📍 Saved Addresses</h4>
+                        <h4 style="margin-bottom: 8px; color:#555; font-size: 14px;" data-lang-key="saved_address_title">📍 Saved Addresses</h4>
                         <div id="profileAddresses"></div>
                         <button class="add-address-btn" onclick="addNewAddress()" data-lang-key="add_address_btn">+ Add New Address</button>
                     </div>
                     
-                    <button onclick="logoutUser()" style="width:100%; margin-top:20px; padding:10px; background:#fff; border:1px solid #d5d9d9; border-radius:4px; font-weight:bold; cursor:pointer; color:#0f1111;" data-lang-key="logout_btn">Logout</button>
+                    <button onclick="logoutUser()" style="width:100%; margin-top:15px; padding:8px; background:#fff; border:1px solid #d5d9d9; border-radius:4px; font-weight:bold; cursor:pointer; color:#0f1111; font-size:12px;" data-lang-key="logout_btn">Logout</button>
                 </div>
 
                 <div class="account-orders">
-                    <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 24px;" data-lang-key="order_history_title">📦 My Order History</h2>
+                    <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 20px;" data-lang-key="order_history_title">📦 My Order History</h2>
                     <div id="myOrdersList"></div>
                 </div>
             </div>
         </div>
 
         <div id="productDetailModal" class="modal-overlay">
-            <div class="modal-content" style="padding: 20px;">
-                <div style="text-align: right;"><span onclick="closeProductModal()" style="font-size: 24px; cursor: pointer; color: #555;">&times;</span></div>
+            <div class="modal-content">
+                <div style="text-align: right;"><span onclick="closeProductModal()" style="font-size: 22px; cursor: pointer; color: #555;">&times;</span></div>
                 <img id="pmImg" src="" class="pd-img">
                 <div id="pmTitle" class="pd-title">Product Name</div>
                 <div id="pmPrice" class="pd-price">₹0</div>
-                <div class="pd-desc-box"><strong data-lang-key="prod_desc">Description:</strong><br><span id="pmDescText" style="margin-top:5px; display:block;"></span></div>
+                <div class="pd-desc-box"><strong data-lang-key="prod_desc">Description:</strong><br><span id="pmDescText" style="margin-top:4px; display:block;"></span></div>
                 <div id="pmColorDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_color">Select Color:</label><select id="pmColorSelect"></select></div>
                 <div id="pmSizeDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_size">Select Size:</label><select id="pmSizeSelect"></select></div>
-                <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 15px;">🛒 <span data-lang-key="btn_checkout">Add to Cart</span></button>
+                <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 10px;">🛒 <span data-lang-key="btn_checkout">Add to Cart</span></button>
             </div>
         </div>
 
         <div id="locationModal" class="modal-overlay">
             <div class="modal-content">
                 <h3 data-lang-key="update_loc">Update location</h3>
-                <button class="confirm-order-btn" onclick="fetchCurrentLocation()" style="background:#f0f2f2; color:#0f1111; border-color:#d5d9d9; margin-bottom:15px; font-size:15px;">📍 <span data-lang-key="use_current_loc">Use Current Location</span></button>
-                <div style="text-align:center; margin-bottom:10px; color:#777; font-size:12px;">OR</div>
+                <button class="confirm-order-btn" onclick="fetchCurrentLocation()" style="background:#f0f2f2; color:#0f1111; border-color:#d5d9d9; margin-bottom:12px; font-size:13px;">📍 <span data-lang-key="use_current_loc">Use Current Location</span></button>
+                <div style="text-align:center; margin-bottom:8px; color:#777; font-size:11px;">OR</div>
                 <input type="text" id="manualLocationInput" class="modal-input" placeholder="Enter City or Pincode">
                 <button class="confirm-order-btn" onclick="saveManualLocation()" data-lang-key="save_btn">Save</button>
                 <button class="cancel-order-btn" onclick="closeLocationModal()" data-lang-key="close_btn">❌ Close</button>
@@ -893,11 +911,11 @@
         <!-- 🔥 OTP LOGIN MODAL 🔥 -->
         <div id="loginModal" class="modal-overlay">
             <div class="modal-content" id="loginContentBox">
-                <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:20px;">✨ Grihani Cosmetic</h3>
+                <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:15px;">✨ Grihani Cosmetic</h3>
                 
                 <!-- STEP 1: Enter Phone Number -->
                 <div id="step1Phone">
-                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Mobile Number</label>
+                    <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Mobile Number</label>
                     <input type="tel" id="regPhone" class="modal-input" placeholder="Enter 10 digit number">
                     
                     <div id="recaptcha-container"></div>
@@ -908,8 +926,8 @@
 
                 <!-- STEP 2: Enter OTP -->
                 <div id="step2OTP" style="display:none;">
-                    <p style="font-size:13px; margin-bottom:15px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
-                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Enter 6-Digit OTP</label>
+                    <p style="font-size:12px; margin-bottom:12px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
+                    <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Enter 6-Digit OTP</label>
                     <input type="number" id="otpInput" class="modal-input" placeholder="XXXXXX">
                     
                     <button id="verifyOtpBtn" class="confirm-order-btn" onclick="verifyOTP()">✅ Verify OTP</button>
@@ -918,11 +936,11 @@
 
                 <!-- STEP 3: Enter Details (Only for New Users) -->
                 <div id="step3Details" style="display:none;">
-                    <p style="font-size:13px; margin-bottom:15px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified! Enter details to continue.</p>
-                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Full Name</label>
+                    <p style="font-size:12px; margin-bottom:12px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified! Enter details to continue.</p>
+                    <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Full Name</label>
                     <input type="text" id="regName" class="modal-input" placeholder="Your Name">
                     
-                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Delivery Address</label>
+                    <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Delivery Address</label>
                     <textarea id="regAddress" class="modal-input" placeholder="Full Delivery Address" rows="3"></textarea>
                     
                     <button class="confirm-order-btn" onclick="completeRegistration()">🚀 Complete Registration</button>
@@ -934,15 +952,15 @@
             <div class="modal-content">
                 <h3 data-lang-key="confirm_title">Confirm Your Order</h3>
                 
-                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border: 1px solid #d5d9d9;">
-                    <p style="margin-bottom:5px;"><strong>Name:</strong> <span id="confirmName" style="color: #007185;"></span></p>
+                <div style="background: #f9f9f9; padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; border: 1px solid #d5d9d9;">
+                    <p style="margin-bottom:4px;"><strong>Name:</strong> <span id="confirmName" style="color: #007185;"></span></p>
                     <p style="margin-bottom:0;"><strong>Mobile:</strong> <span id="confirmPhone" style="color: #007185;"></span></p>
                 </div>
 
-                <label style="font-size: 14px; font-weight: bold; margin-bottom: 8px; display:block;" data-lang-key="select_delivery_addr">Select Delivery Address:</label>
+                <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display:block;" data-lang-key="select_delivery_addr">Select Delivery Address:</label>
                 <select id="checkoutAddressSelect" class="modal-input" style="background:#fff; border-color:#800020;"></select>
                 
-                <label style="font-size: 14px; font-weight: bold; margin-top:10px; margin-bottom: 8px; display:block;" data-lang-key="pay_mode_title">Select Payment Mode:</label>
+                <label style="font-size: 13px; font-weight: bold; margin-top:8px; margin-bottom: 6px; display:block;" data-lang-key="pay_mode_title">Select Payment Mode:</label>
                 <select id="payMode" class="modal-input" style="background:#f0f2f2;">
                     <option value="Cash on Delivery (COD)" data-lang-key="cod_opt">Cash on Delivery (COD)</option>
                     <option value="Online UPI" data-lang-key="online_opt">Pay Online (UPI/Card)</option>
