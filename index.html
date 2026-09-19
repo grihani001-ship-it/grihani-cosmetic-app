@@ -682,7 +682,7 @@
         .amz-search-btn { background: #febd69; border: none; width: 40px; cursor: pointer; font-size: 16px; color: #333; display:flex; justify-content:center; align-items:center; flex-shrink: 0; }
         .amz-search-btn:hover { background: #f3a847; }
 
-        /* Mobile Search & Cart Row (Hidden on Desktop) */
+        /* Mobile Search & Cart Row */
         .amz-mobile-search-cart-row { display: none; background-color: #131921; padding: 6px 10px; width: 100%; align-items: center; gap: 8px; }
 
         .amz-nav-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
@@ -768,20 +768,20 @@
         .whatsapp-float img { width: 28px; height: 28px; filter: brightness(0) invert(1); }
         
         @media(max-width: 768px) { 
-            .amz-nav-top { padding: 6px 8px; gap: 6px; height: 50px; }
-            .amz-logo img { width: 28px; height: 28px; margin-right: 4px; }
-            .amz-logo span { font-size: 15px; }
-            .amz-location { padding: 3px; margin-right: 4px; }
-            .amz-loc-line2 { max-width: 70px; font-size: 11px; }
+            .amz-nav-top { padding: 5px 6px; gap: 4px; height: 50px; }
+            .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
+            .amz-logo span { font-size: 14px; }
+            .amz-location { padding: 2px; margin-right: 2px; }
+            .amz-loc-line2 { max-width: 65px; font-size: 10px; }
             
             /* Hide desktop search bar on mobile */
             .amz-search-bar { display: none !important; }
             /* Show mobile dedicated search & cart row */
             .amz-mobile-search-cart-row { display: flex !important; }
 
-            .amz-nav-item { padding: 3px 4px; }
+            .amz-nav-item { padding: 2px 3px; }
             .amz-line1 { font-size: 9px; }
-            .amz-line2 { font-size: 11px; }
+            .amz-line2 { font-size: 10px; }
             
             .banner-container { height: 160px; } 
             .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
@@ -856,18 +856,18 @@
                 </div>
             </div>
 
-            <!-- Mobile Dedicated Search Bar & Cart Row (Between Logo & Category Menu) -->
+            <!-- Mobile Dedicated Search Bar & Cart Row (Left to Right Full Fit) -->
             <div class="amz-mobile-search-cart-row">
-                <div class="amz-search-bar" style="margin: 0; width: 100%; display: flex; height: 36px;">
+                <div class="amz-search-bar" style="margin: 0; width: 100%; display: flex; height: 36px; flex-grow: 1;">
                     <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value, null)">
                         <option value="All">All</option>
                     </select>
                     <input type="text" id="searchInputMob" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
                     <button class="amz-search-btn" onclick="searchProducts()">🔍</button>
                 </div>
-                <div class="amz-nav-cart" onclick="openCart()" style="background: #232f3e; padding: 6px 10px; border-radius: 4px; flex-shrink: 0; border: 1px solid #3a4553;">
-                    <span class="amz-cart-icon" style="font-size: 22px;">🛒</span>
-                    <span id="cartCountMob" class="amz-cart-count" style="left: 22px; top: 2px; font-size: 13px;">0</span>
+                <div class="amz-nav-cart" onclick="openCart()" style="background: #232f3e; padding: 5px 8px; border-radius: 4px; flex-shrink: 0; border: 1px solid #3a4553; display: flex; align-items: center; justify-content: center; height: 36px;">
+                    <span class="amz-cart-icon" style="font-size: 20px;">🛒</span>
+                    <span id="cartCountMob" class="amz-cart-count" style="left: 18px; top: 0px; font-size: 12px;">0</span>
                 </div>
             </div>
 
