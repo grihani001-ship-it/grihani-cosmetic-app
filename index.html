@@ -782,43 +782,43 @@
         .whatsapp-float:hover { transform: scale(1.1); box-shadow: 2px 2px 12px rgba(0,0,0,0.4); }
         .whatsapp-float img { width: 28px; height: 28px; filter: brightness(0) invert(1); }
         
-        @media(max-width: 768px) { 
-            .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
-            .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
-            .amz-logo span { font-size: 14px; }
-            .amz-location { padding: 2px; margin-right: 2px; }
-            .amz-loc-line2 { max-width: 60px; font-size: 10px; }
-            
-            /* Hide desktop search bar & top cart on mobile */
-            .amz-search-bar { display: none !important; }
-            .amz-nav-right .amz-nav-cart { display: none !important; }
+        @media(max-width: 768px) {
+    .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
+    .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
+    .amz-logo span { font-size: 14px; }
+    .amz-location { padding: 2px; margin-right: 2px; }
+    .amz-loc-line2 { max-width: 60px; font-size: 10px; }
+    
+    .amz-search-bar { display: none !important; }
+    .amz-nav-right .amz-nav-cart { display: none !important; }
 
-            /* FORCE SHOW Mobile dedicated search & cart row between Logo and Menu */
-            .amz-mobile-search-cart-row { display: flex !important; }
-
-            .amz-nav-item { padding: 2px 3px; }
-            .amz-line1 { font-size: 9px; }
-            .amz-line2 { font-size: 10px; }
-            
-            .banner-container { height: 160px; } 
-            .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
-            .product-card { padding: 10px; }
-            .product-img { height: 130px; } 
-            .product-title { font-size: 12px; line-height: 16px; }
-            .product-price { font-size: 18px; margin-bottom: 8px; }
-            .cart-btn { padding: 6px 0; font-size: 11px; }
-            .reels-section { padding: 8px; margin-top: -40px; }
-            .reels-section h4 { font-size: 14px; padding: 6px 10px; }
-            .reel-card { min-width: 100px; height: 160px; }
-            #cartPage, #ordersPage { padding: 10px; margin-top: 10px; } 
-            .account-layout { flex-direction: column; gap: 15px; }
-            .account-sidebar { width: 100%; padding: 12px; }
-            .cart-item img { width: 55px; height: 55px; margin-right: 8px; }
-            .cart-item-title { font-size: 12px; }
-            .cart-item-price { font-size: 12px; }
-            .item-total { font-size: 12px; }
-            .modal-content { padding: 15px; max-width: 92%; }
-        }
+    /* यहाँ सर्च बार और कार्ट दोनों को एक लाइन में साफ़ सेट किया गया है */
+    .amz-mobile-search-cart-row { display: flex !important; width: 100%; background-color: #131921; padding: 6px 8px; align-items: center; gap: 6px; }
+    .amz-mobile-search-cart-row .amz-search-bar { display: flex !important; flex-grow: 1; height: 36px; margin: 0; }
+    
+    .amz-nav-item { padding: 2px 3px; }
+    .amz-line1 { font-size: 9px; }
+    .amz-line2 { font-size: 10px; }
+    
+    .banner-container { height: 160px; } 
+    .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
+    .product-card { padding: 10px; }
+    .product-img { height: 130px; } 
+    .product-title { font-size: 12px; line-height: 16px; }
+    .product-price { font-size: 18px; margin-bottom: 8px; }
+    .cart-btn { padding: 6px 0; font-size: 11px; }
+    .reels-section { padding: 8px; margin-top: -40px; }
+    .reels-section h4 { font-size: 14px; padding: 6px 10px; }
+    .reel-card { min-width: 100px; height: 160px; }
+    #cartPage, #ordersPage { padding: 10px; margin-top: 10px; } 
+    .account-layout { flex-direction: column; gap: 15px; }
+    .account-sidebar { width: 100%; padding: 12px; }
+    .cart-item img { width: 55px; height: 55px; margin-right: 8px; }
+    .cart-item-title { font-size: 12px; }
+    .cart-item-price { font-size: 12px; }
+    .item-total { font-size: 12px; }
+    .modal-content { padding: 15px; max-width: 92%; }
+}
     </style>
 </head>
 <body>
