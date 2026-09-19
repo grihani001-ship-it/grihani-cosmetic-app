@@ -99,12 +99,12 @@
                         let pin = data.address.postcode || "";
                         let finalLoc = city + (pin ? " " + pin : "");
                         updateLocationUI(finalLoc);
-                    }).catch(e => { alert(currentLang === 'hi' ? "लोकेशन नहीं मिल सकी!" : "Could not fetch location!"); checkSavedLocation(); });
+                    }).catch(e => { showToast("Could not fetch location!"); checkSavedLocation(); });
                 }, function(error) {
-                    alert(currentLang === 'hi' ? "कृपया मोबाइल की लोकेशन/GPS चालू करें!" : "Please enable Location/GPS permission!");
+                    showToast(currentLang === 'hi' ? "कृपया मोबाइल की लोकेशन/GPS चालू करें!" : "Please enable Location/GPS permission!");
                     checkSavedLocation();
                 });
-            } else { alert("Geolocation is not supported."); }
+            } else { showToast("Geolocation is not supported."); }
         }
         function updateLocationUI(loc) {
             localStorage.setItem('grihani_user_location', loc);
@@ -290,7 +290,7 @@
 
         window.sendOTP = function() {
             let phone = document.getElementById('regPhone').value.trim();
-            if(phone.length !== 10) return alert(currentLang === 'hi' ? "कृपया 10 अंकों का मोबाइल नंबर डालें!" : "Please enter a valid 10-digit mobile number!");
+            if(phone.length !== 10) return showToast(currentLang === 'hi' ? "कृपया 10 अंकों का मोबाइल नंबर डालें!" : "Please enter a valid 10-digit mobile number!");
             
             let btn = document.getElementById('sendOtpBtn');
             btn.innerText = currentLang === 'hi' ? "भेज रहे हैं..." : "Sending...";
@@ -313,7 +313,7 @@
                     } else if (error.code === 'auth/invalid-phone-number') {
                         errMsg = currentLang === 'hi' ? "कृपया सही मोबाइल नंबर दर्ज करें।" : "Please enter a valid mobile number.";
                     }
-                    alert(errMsg);
+                    showToast(errMsg);
                     btn.innerText = '📲 Send OTP';
                     if(window.recaptchaVerifier) window.recaptchaVerifier.render().then(widgetId => grecaptcha.reset(widgetId));
                 });
@@ -321,7 +321,7 @@
 
         window.verifyOTP = function() {
             let code = document.getElementById('otpInput').value.trim();
-            if(code.length !== 6) return alert(currentLang === 'hi' ? "6 अंकों का OTP दर्ज करें!" : "Enter 6-digit OTP!");
+            if(code.length !== 6) return showToast(currentLang === 'hi' ? "6 अंकों का OTP दर्ज करें!" : "Enter 6-digit OTP!");
 
             let btn = document.getElementById('verifyOtpBtn');
             btn.innerText = currentLang === 'hi' ? "चेक कर रहे हैं..." : "Verifying...";
@@ -339,10 +339,7 @@
                         
                         document.getElementById('loginModal').style.display = 'none'; 
                         updateUserUI(cData.name); 
-                        
-                        // 🔥 REPLACED DEFAULT ALERT WITH PROFESSIONAL BANNER/GREETING 🔥
-                        showWelcomeNotification((currentLang === 'hi' ? "स्वागत है, " : "Welcome, ") + cData.name + "!");
-                        
+                        showToast((currentLang === 'hi' ? "स्वागत है, " : "Welcome, ") + cData.name + "!");
                         mergeAndListenCart(phone);
                     } else {
                         document.getElementById('step2OTP').style.display = 'none';
@@ -351,7 +348,7 @@
                 });
 
             }).catch((error) => {
-                alert(currentLang === 'hi' ? "गलत OTP! कृपया दोबारा प्रयास करें।" : "Invalid OTP! Please try again.");
+                showToast(currentLang === 'hi' ? "गलत OTP! कृपया दोबारा प्रयास करें।" : "Invalid OTP! Please try again.");
                 btn.innerText = '✅ Verify OTP';
             });
         }
@@ -361,7 +358,7 @@
             let address = document.getElementById('regAddress').value.trim();
             let phone = document.getElementById('regPhone').value.trim();
 
-            if(!name || !address) return alert(currentLang === 'hi' ? "नाम और पता ज़रूरी है!" : "Name and Address are required!");
+            if(!name || !address) return showToast(currentLang === 'hi' ? "नाम और पता ज़रूरी है!" : "Name and Address are required!");
 
             set(ref(window.db, 'customers/' + phone), { 
                 name: name, 
@@ -375,23 +372,20 @@
                 
                 document.getElementById('loginModal').style.display = 'none'; 
                 updateUserUI(name); 
-                
-                // 🔥 PROFESSIONAL REGISTRATION SUCCESS BANNER 🔥
-                showWelcomeNotification(currentLang === 'hi' ? "✨ Grihani Cosmetic में आपका स्वागत है, " + name + "!" : "✨ Welcome to Grihani Cosmetic, " + name + "!");
-                
+                showToast(currentLang === 'hi' ? "✨ Grihani Cosmetic में आपका स्वागत है, " + name + "!" : "✨ Welcome to Grihani Cosmetic, " + name + "!");
                 mergeAndListenCart(phone);
             });
         }
 
-        // 🔥 PROFESSIONAL CUSTOM NOTIFICATION FUNCTION (No GitHub URL) 🔥
-        function showWelcomeNotification(msg) {
+        // 🔥 PROFESSIONAL TOAST NOTIFICATION FUNCTION 🔥
+        function showToast(msg) {
             let existing = document.getElementById('grihaniToast');
             if(existing) existing.remove();
 
             let toast = document.createElement('div');
             toast.id = 'grihaniToast';
             toast.innerHTML = `<span>🛍️ <b>Grihani Cosmetic</b><br>${msg}</span>`;
-            toast.style.cssText = "position:fixed; top:20px; right:20px; background:#131921; color:#fff; padding:15px 20px; border-radius:8px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:14px; border-left:5px solid #febd69; animation: slideIn 0.3s ease;";
+            toast.style.cssText = "position:fixed; top:20px; right:20px; background:#131921; color:#fff; padding:15px 20px; border-radius:8px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:14px; border-left:5px solid #febd69;";
             
             document.body.appendChild(toast);
             setTimeout(() => { toast.remove(); }, 4000);
@@ -432,7 +426,7 @@
                 update(ref(window.db, 'customers/' + phone), { addresses: addrs }).then(() => {
                     localStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
                     renderProfileInfo();
-                    alert(currentLang === 'hi' ? "📍 नया पता जुड़ गया!" : "📍 New Address Added!");
+                    showToast(currentLang === 'hi' ? "📍 नया पता जुड़ गया!" : "📍 New Address Added!");
                 });
             }
         }
@@ -458,7 +452,7 @@
         window.addToCart = function(product, sColor, sSize) { 
             let existingItem = cart.find(item => item.name === product.name && item.selectedColor === sColor && item.selectedSize === sSize); 
             if(existingItem) existingItem.qty += 1; else cart.push({ ...product, selectedColor: sColor, selectedSize: sSize, qty: 1 }); 
-            alert(product.name + (currentLang === 'hi' ? " कार्ट में जुड़ गया!" : " added to cart!")); 
+            showToast(product.name + (currentLang === 'hi' ? " कार्ट में जुड़ गया!" : " added to cart!")); 
             syncCartToCloud();
         }
 
@@ -550,7 +544,7 @@
 
         window.payCodOnline = function(orderId, amountStr, name, phone) {
             let amountNum = parseInt(amountStr.replace(/[^0-9]/g, '')) * 100;
-            var rzp = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": amountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response) { update(ref(window.db, 'orders/' + orderId), { paymentMode: "Online Paid", paymentId: response.razorpay_payment_id }).then(() => { alert(currentLang === 'hi' ? "✅ आपका ऑनलाइन पेमेंट सफल रहा!" : "✅ Payment Successful!"); }); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } });
+            var rzp = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": amountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response) { update(ref(window.db, 'orders/' + orderId), { paymentMode: "Online Paid", paymentId: response.razorpay_payment_id }).then(() => { showToast(currentLang === 'hi' ? "✅ आपका ऑनलाइन पेमेंट सफल रहा!" : "✅ Payment Successful!"); }); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } });
             rzp.open();
         }
 
@@ -597,7 +591,7 @@
         }
 
         window.openCheckoutForm = function() {
-            if(cart.length === 0) return alert(currentLang === 'hi' ? "कार्ट खाली है!" : "Cart is empty!");
+            if(cart.length === 0) return showToast(currentLang === 'hi' ? "कार्ट खाली है!" : "Cart is empty!");
             if(!localStorage.getItem('grihani_user_phone')) { openLoginModal(); return; }
             
             let addrs = [];
@@ -631,7 +625,7 @@
             let totalAmountText = document.getElementById('totalAmount').innerText.replace(/[^0-9]/g, '');
             let totalAmountNum = parseInt(totalAmountText) * 100; 
             
-            if(isNaN(totalAmountNum) || totalAmountNum <= 0) return alert("Error in calculation.");
+            if(isNaN(totalAmountNum) || totalAmountNum <= 0) return showToast("Error in calculation.");
             closeCheckoutForm();
             
             if(payMode === 'Online UPI') {
@@ -642,7 +636,7 @@
 
         function saveOrderData(paymentMode, paymentId, totalAmountNum, finalAddress) {
             set(push(ref(window.db, 'orders')), { customerName: localStorage.getItem('grihani_user_name') || 'Customer', customerPhone: localStorage.getItem('grihani_user_phone') || 'N/A', customerAddress: finalAddress, paymentMode: paymentMode, paymentId: paymentId, items: cart, total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New' }).then(() => { 
-                alert(currentLang === 'hi' ? "🎉 आपका ऑर्डर सफलतापूलवक दर्ज हो गया है!" : "🎉 Order Placed Successfully!"); 
+                showToast(currentLang === 'hi' ? "🎉 आपका ऑर्डर सफलतापूलवक दर्ज हो गया है!" : "🎉 Order Placed Successfully!"); 
                 cart = []; syncCartToCloud(); closeCart(); window.openOrdersPage(); 
             });
         }
@@ -742,7 +736,7 @@
         .login-existing-btn { background: #fff; border-color: #d5d9d9; color: #0f1111; } .login-existing-btn:hover { background:#f7fafa; }
         .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 10px; width: 100%; font-size: 13px; cursor: pointer; text-decoration:underline; }
         
-        .pd-img { width: { width: 100%; height: 300px; object-fit: contain; background:#fff; margin-bottom: 15px; mix-blend-mode:multiply; }
+        .pd-img { width: 100%; height: 300px; object-fit: contain; background:#fff; margin-bottom: 15px; mix-blend-mode:multiply; }
         .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; line-height:24px;}
         .pd-price { font-size: 28px; color: #B12704; margin-bottom: 15px; }
         .pd-desc-box { padding: 10px 0; font-size: 14px; color: #0f1111; margin-bottom: 15px; border-top: 1px solid #eaeded; line-height: 1.5; }
@@ -750,7 +744,7 @@
         .pd-variant-group label { display: block; font-size: 14px; margin-bottom: 5px; color: #555; }
         .pd-variant-group select { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #d5d9d9; font-size: 14px; background:#f0f2f2; box-shadow: 0 2px 5px rgba(213,217,217,.5);}
         
-        .whatsapp-float {,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; transition: all 0.3s ease; }
+        .whatsapp-float { position: fixed; bottom: 30px; right: 30px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 30px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; transition: all 0.3s ease; }
         .whatsapp-float:hover { transform: scale(1.1); box-shadow: 2px 2px 10px rgba(0,0,0,0.4); }
         .whatsapp-float img { width: 35px; height: 35px; filter: brightness(0) invert(1); }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 216, 20, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 216, 20, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 216, 20, 0); } }
@@ -899,7 +893,7 @@
         <!-- 🔥 OTP LOGIN MODAL 🔥 -->
         <div id="loginModal" class="modal-overlay">
             <div class="modal-content" id="loginContentBox">
-                <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:20px;">✨ Grihani Login / Register</h3>
+                <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:20px;">✨ Grihani Cosmetic</h3>
                 
                 <!-- STEP 1: Enter Phone Number -->
                 <div id="step1Phone">
@@ -914,7 +908,7 @@
 
                 <!-- STEP 2: Enter OTP -->
                 <div id="step2OTP" style="display:none;">
-                    <p style="print; font-size:13px; margin-bottom:15px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
+                    <p style="font-size:13px; margin-bottom:15px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
                     <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Enter 6-Digit OTP</label>
                     <input type="number" id="otpInput" class="modal-input" placeholder="XXXXXX">
                     
@@ -922,7 +916,7 @@
                     <button class="cancel-order-btn" onclick="resetLoginUI()">← Back</button>
                 </div>
 
-                <!-- STEP 3: Test Details -->
+                <!-- STEP 3: Enter Details (Only for New Users) -->
                 <div id="step3Details" style="display:none;">
                     <p style="font-size:13px; margin-bottom:15px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified! Enter details to continue.</p>
                     <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Full Name</label>
@@ -938,7 +932,7 @@
 
         <div id="checkoutModal" class="modal-overlay">
             <div class="modal-content">
-                <h3 data-lang-key="confirm_title">Checkout</h3>
+                <h3 data-lang-key="confirm_title">Confirm Your Order</h3>
                 
                 <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border: 1px solid #d5d9d9;">
                     <p style="margin-bottom:5px;"><strong>Name:</strong> <span id="confirmName" style="color: #007185;"></span></p>
