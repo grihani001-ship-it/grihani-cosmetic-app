@@ -154,12 +154,18 @@
                 const data = snapshot.val(); 
                 let filterDiv = document.getElementById('categoryFilters');
                 let searchSelect = document.getElementById('amzCategorySelect');
-                filterDiv.innerHTML = ''; searchSelect.innerHTML = `<option value="All">All</option>`;
+                let searchSelectMob = document.getElementById('amzCategorySelectMob');
+                
+                filterDiv.innerHTML = ''; 
+                let selectHtml = `<option value="All">All</option>`;
+                searchSelect.innerHTML = selectHtml;
+                if(searchSelectMob) searchSelectMob.innerHTML = selectHtml;
                 
                 let categories = data ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
                 Object.keys(categories).forEach((catKey) => { 
                     filterDiv.innerHTML += `<button onclick="filterCategory('${catKey}', this)">${categories[catKey]}</button>`; 
                     searchSelect.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
+                    if(searchSelectMob) searchSelectMob.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
                 });
             });
         }
@@ -188,6 +194,9 @@
 
         window.searchProducts = function() {
             let input = document.getElementById('searchInput').value.toLowerCase();
+            let inputMob = document.getElementById('searchInputMob');
+            if(inputMob && inputMob.value) input = inputMob.value.toLowerCase();
+            
             let cards = document.querySelectorAll('.product-card');
             cards.forEach(card => {
                 let title = card.querySelector('.product-title').innerText.toLowerCase();
@@ -446,7 +455,14 @@
         }
         window.logoutUser = function() { if(confirm(currentLang === 'hi' ? "क्या आप लॉग आउट करना चाहते हैं?" : "Do you want to logout?")) { localStorage.clear(); location.reload(); } }
         
-        window.filterCategory = function(cat, btnElement) { currentCategory = cat; loadProducts(); document.getElementById('searchInput').value = ''; }
+        window.filterCategory = function(cat, btnElement) { 
+            currentCategory = cat; 
+            loadProducts(); 
+            let searchInput = document.getElementById('searchInput');
+            let searchInputMob = document.getElementById('searchInputMob');
+            if(searchInput) searchInput.value = '';
+            if(searchInputMob) searchInputMob.value = '';
+        }
         
         window.addToCart = function(product, sColor, sSize) { 
             let existingItem = cart.find(item => item.name === product.name && item.selectedColor === sColor && item.selectedSize === sSize); 
@@ -642,8 +658,8 @@
     </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-            html, body { width: 100%; max-width: 100%; overflow-x: hidden; background-color: #eaeded; color: #0f1111; position: relative; }
-            .website-container { width: 100%; max-width: 100%; overflow-x: hidden; position: relative; }
+        html, body { width: 100%; max-width: 100%; overflow-x: hidden; background-color: #eaeded; color: #0f1111; position: relative; }
+        .website-container { width: 100%; max-width: 100%; overflow-x: hidden; position: relative; }
         
         .amz-header { background-color: #131921; color: white; display: flex; flex-direction: column; width: 100%; position: sticky; top:0; z-index: 100; }
         .amz-nav-top { display: flex; align-items: center; padding: 5px 10px; height: 60px; width: 100%; }
@@ -665,6 +681,9 @@
         .amz-search-input { flex-grow: 1; border: none; padding: 0 8px; outline: none; font-size: 14px; width: 100%; }
         .amz-search-btn { background: #febd69; border: none; width: 40px; cursor: pointer; font-size: 16px; color: #333; display:flex; justify-content:center; align-items:center; flex-shrink: 0; }
         .amz-search-btn:hover { background: #f3a847; }
+
+        /* Mobile Search Bar Row (Hidden on Desktop) */
+        .amz-search-bar-mobile { display: none; background-color: #131921; padding: 6px 10px; width: 100%; }
 
         .amz-nav-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
@@ -749,23 +768,23 @@
         .whatsapp-float img { width: 28px; height: 28px; filter: brightness(0) invert(1); }
         
         @media(max-width: 768px) { 
-            .amz-nav-top { padding: 4px 4px; gap: 2px; }
-            .amz-logo img { width: 28px; height: 28px; margin-right: 2px; }
-            .amz-logo span { font-size: 14px; }
-            .amz-location { padding: 2px; margin-right: 2px; }
-            .amz-loc-line2 { max-width: 60px; font-size: 10px; }
-            .amz-search-bar { height: 32px; margin: 0 2px; }
-            .amz-search-select { max-width: 60px; font-size: 9px; padding: 0 2px; }
-            .amz-search-input { font-size: 11px; padding: 0 4px; }
-            .amz-search-btn { width: 30px; font-size: 13px; }
-    
-            /* Cart icon styling for mobile view */
-            .amz-nav-right { gap: 2px; }
-            .amz-nav-item { padding: 2px 3px; }
-            .amz-line1, .amz-line2, .amz-lang-text { font-size: 10px; }
-            .amz-nav-cart { display: flex !important; align-items: center; padding: 2px 4px; position: relative; }
-            .amz-cart-icon { font-size: 24px; display: block !important; }
-            .amz-cart-count { font-size: 11px; font-weight: bold; position: absolute; top: -2px; left: 12px; }
+            .amz-nav-top { padding: 6px 8px; gap: 6px; height: 50px; }
+            .amz-logo img { width: 28px; height: 28px; margin-right: 4px; }
+            .amz-logo span { font-size: 15px; }
+            .amz-location { padding: 3px; margin-right: 4px; }
+            .amz-loc-line2 { max-width: 80px; font-size: 11px; }
+            
+            /* Hide desktop search bar on mobile */
+            .amz-search-bar { display: none !important; }
+            /* Show mobile dedicated search bar row */
+            .amz-search-bar-mobile { display: flex !important; }
+
+            .amz-nav-item { padding: 3px 4px; }
+            .amz-line1 { font-size: 9px; }
+            .amz-line2 { font-size: 11px; }
+            .amz-nav-cart { padding: 3px 4px; }
+            .amz-cart-icon { font-size: 24px; }
+            .amz-cart-count { font-size: 12px; left: 14px; top: -2px; }
             .amz-cart-text { display: none; }
             
             .banner-container { height: 160px; } 
@@ -812,6 +831,7 @@
                     </div>
                 </div>
 
+                <!-- Desktop Search Bar -->
                 <div class="amz-search-bar">
                     <select id="amzCategorySelect" class="amz-search-select" onchange="filterCategory(this.value, null)">
                         <option value="All">All</option>
@@ -839,6 +859,18 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Mobile Dedicated Search Bar Row (Between Logo & Category Menu) -->
+            <div class="amz-search-bar-mobile">
+                <div class="amz-search-bar" style="margin: 0; width: 100%; display: flex;">
+                    <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value, null)">
+                        <option value="All">All</option>
+                    </select>
+                    <input type="text" id="searchInputMob" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
+                    <button class="amz-search-btn" onclick="searchProducts()">🔍</button>
+                </div>
+            </div>
+
             <div class="amz-nav-bottom">
                 <div class="amz-menu-icon" onclick="filterCategory('All', null)">☰ <span data-lang-key="all_txt">All</span></div>
                 <div id="categoryFilters" class="amz-nav-links"></div>
