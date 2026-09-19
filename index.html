@@ -749,28 +749,25 @@
         .whatsapp-float img { width: 28px; height: 28px; filter: brightness(0) invert(1); }
         
         @media(max-width: 768px) { 
+            .amz-nav-top { padding: 4px 4px; gap: 2px; }
+            .amz-logo img { width: 28px; height: 28px; margin-right: 2px; }
+            .amz-logo span { font-size: 14px; }
+            .amz-location { padding: 2px; margin-right: 2px; }
+            .amz-loc-line2 { max-width: 60px; font-size: 10px; }
+            .amz-search-bar { height: 32px; margin: 0 2px; }
+            .amz-search-select { max-width: 60px; font-size: 9px; padding: 0 2px; }
+            .amz-search-input { font-size: 11px; padding: 0 4px; }
+            .amz-search-btn { width: 30px; font-size: 13px; }
+    
+            /* Cart icon styling for mobile view */
             .amz-nav-right { gap: 2px; }
-            .amz-nav-cart { padding: 2px 4px; }
-            .amz-cart-icon { font-size: 22px; }
-            .amz-cart-count { font-size: 11px; left: 14px; top: -2px; }
-            /* मोबाइल पर Cart शब्द छिपाने के बजाय छोटा आइकॉन साफ दिखेगा */
-            .amz-cart-text { display: none; } 
-            .amz-nav-top { padding: 4px 6px; gap: 4px; }
-            .amz-logo img { width: 30px; height: 30px; margin-right: 4px; }
-            .amz-logo span { font-size: 15px; }
-            .amz-location { padding: 3px; margin-right: 4px; }
-            .amz-loc-line2 { max-width: 70px; font-size: 11px; }
-            .amz-search-bar { height: 34px; margin: 0 4px; }
-            .amz-search-select { max-width: 70px; font-size: 10px; padding: 0 4px; }
-            .amz-search-input { font-size: 12px; padding: 0 6px; }
-            .amz-search-btn { width: 34px; font-size: 14px; }
-            .amz-nav-item { padding: 3px 4px; }
-            .amz-line1 { font-size: 9px; }
-            .amz-line2 { font-size: 11px; }
-            .amz-nav-cart { padding: 3px 4px; }
-            .amz-cart-icon { font-size: 20px; }
-            .amz-cart-count { font-size: 12px; left: 14px; top: -2px; }
+            .amz-nav-item { padding: 2px 3px; }
+            .amz-line1, .amz-line2, .amz-lang-text { font-size: 10px; }
+            .amz-nav-cart { display: flex !important; align-items: center; padding: 2px 4px; position: relative; }
+            .amz-cart-icon { font-size: 24px; display: block !important; }
+            .amz-cart-count { font-size: 11px; font-weight: bold; position: absolute; top: -2px; left: 12px; }
             .amz-cart-text { display: none; }
+            
             .banner-container { height: 160px; } 
             .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
             .product-card { padding: 10px; }
