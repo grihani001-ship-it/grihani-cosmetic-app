@@ -471,7 +471,7 @@
             syncCartToCloud();
         }
 
-        window.updateCartCount = function() { let total = 0; cart.forEach(item => total += item.qty); document.getElementById('cartCount').innerText = total; }
+        window.updateCartCount = function() { let total = 0; cart.forEach(item => total += item.qty); document.getElementById('cartCount').innerText = total; document.getElementById('cartCountMob').innerText = total; }
         window.increaseQty = function(index) { cart[index].qty += 1; syncCartToCloud(); }
         window.decreaseQty = function(index) { cart[index].qty -= 1; if(cart[index].qty === 0) cart.splice(index, 1); syncCartToCloud(); }
         
@@ -682,8 +682,8 @@
         .amz-search-btn { background: #febd69; border: none; width: 40px; cursor: pointer; font-size: 16px; color: #333; display:flex; justify-content:center; align-items:center; flex-shrink: 0; }
         .amz-search-btn:hover { background: #f3a847; }
 
-        /* Mobile Search Bar Row (Hidden on Desktop) */
-        .amz-search-bar-mobile { display: none; background-color: #131921; padding: 6px 10px; width: 100%; }
+        /* Mobile Search & Cart Row (Hidden on Desktop) */
+        .amz-mobile-search-cart-row { display: none; background-color: #131921; padding: 6px 10px; width: 100%; align-items: center; gap: 8px; }
 
         .amz-nav-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
@@ -772,20 +772,16 @@
             .amz-logo img { width: 28px; height: 28px; margin-right: 4px; }
             .amz-logo span { font-size: 15px; }
             .amz-location { padding: 3px; margin-right: 4px; }
-            .amz-loc-line2 { max-width: 80px; font-size: 11px; }
+            .amz-loc-line2 { max-width: 70px; font-size: 11px; }
             
             /* Hide desktop search bar on mobile */
             .amz-search-bar { display: none !important; }
-            /* Show mobile dedicated search bar row */
-            .amz-search-bar-mobile { display: flex !important; }
+            /* Show mobile dedicated search & cart row */
+            .amz-mobile-search-cart-row { display: flex !important; }
 
             .amz-nav-item { padding: 3px 4px; }
             .amz-line1 { font-size: 9px; }
             .amz-line2 { font-size: 11px; }
-            .amz-nav-cart { padding: 3px 4px; }
-            .amz-cart-icon { font-size: 24px; }
-            .amz-cart-count { font-size: 12px; left: 14px; top: -2px; }
-            .amz-cart-text { display: none; }
             
             .banner-container { height: 160px; } 
             .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
@@ -842,7 +838,7 @@
 
                 <div class="amz-nav-right">
                     <div class="amz-nav-item" onclick="toggleLanguage()">
-                        <span class="amz-lang-text" id="langToggleBtn">🇮🇳 EN</span>
+                        <span class="amz-lang-text" id="langToggleBtn">🇮🇳 HI</span>
                     </div>
                     <div class="amz-nav-item" onclick="openLoginModal()">
                         <span class="amz-line1" id="userGreeting" data-lang-key="hello_sign_in">Hello, sign in</span>
@@ -860,14 +856,18 @@
                 </div>
             </div>
 
-            <!-- Mobile Dedicated Search Bar Row (Between Logo & Category Menu) -->
-            <div class="amz-search-bar-mobile">
-                <div class="amz-search-bar" style="margin: 0; width: 100%; display: flex;">
+            <!-- Mobile Dedicated Search Bar & Cart Row (Between Logo & Category Menu) -->
+            <div class="amz-mobile-search-cart-row">
+                <div class="amz-search-bar" style="margin: 0; width: 100%; display: flex; height: 36px;">
                     <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value, null)">
                         <option value="All">All</option>
                     </select>
                     <input type="text" id="searchInputMob" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
                     <button class="amz-search-btn" onclick="searchProducts()">🔍</button>
+                </div>
+                <div class="amz-nav-cart" onclick="openCart()" style="background: #232f3e; padding: 6px 10px; border-radius: 4px; flex-shrink: 0; border: 1px solid #3a4553;">
+                    <span class="amz-cart-icon" style="font-size: 22px;">🛒</span>
+                    <span id="cartCountMob" class="amz-cart-count" style="left: 22px; top: 2px; font-size: 13px;">0</span>
                 </div>
             </div>
 
