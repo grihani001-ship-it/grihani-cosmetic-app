@@ -10,7 +10,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, get, child, update } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
-        // 🔥 NEW: Firebase Auth Import for OTP
         import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -24,7 +23,7 @@
         };
         const app = initializeApp(firebaseConfig);
         window.db = getDatabase(app);
-        window.auth = getAuth(app); // Auth Init
+        window.auth = getAuth(app); 
 
         let cart = []; let currentCategory = 'All'; let currentSlide = 0;
         let currentLang = localStorage.getItem('grihani_lang') || 'en'; 
@@ -260,8 +259,6 @@
             if(savedPhone) { syncUserData(savedPhone); }
         }
 
-        // --- 🔥 NEW FIREBASE OTP LOGIN SYSTEM 🔥 ---
-        
         window.openLoginModal = function() { 
             if(localStorage.getItem('grihani_user_phone')) { openOrdersPage(); } 
             else { 
@@ -291,9 +288,10 @@
             }
         }
 
+        // 🔥 UPDATED PROFESSIONAL OTP ERROR HANDLING 🔥
         window.sendOTP = function() {
             let phone = document.getElementById('regPhone').value.trim();
-            if(phone.length !== 10) return alert(currentLang === 'hi' ? "10 अंकों का मोबाइल नंबर डालें!" : "Enter valid 10-digit mobile number!");
+            if(phone.length !== 10) return alert(currentLang === 'hi' ? "कृपया 10 अंकों का मोबाइल नंबर डालें!" : "Please enter a valid 10-digit mobile number!");
             
             let btn = document.getElementById('sendOtpBtn');
             btn.innerText = currentLang === 'hi' ? "भेज रहे हैं..." : "Sending...";
@@ -310,7 +308,16 @@
                     document.getElementById('step2OTP').style.display = 'block';
                 }).catch((error) => {
                     console.error("OTP Error:", error);
-                    alert("Error sending OTP. Please check if domain is authorized in Firebase settings.");
+                    
+                    let errMsg = currentLang === 'hi' ? "सर्वर व्यस्त है, कृपया कुछ देर बाद प्रयास करें।" : "Server is busy, please try again later.";
+                    
+                    if(error.code === 'auth/too-many-requests' || error.code === 'auth/quota-exceeded') {
+                        errMsg = currentLang === 'hi' ? "आज के OTP की लिमिट खत्म हो गई है। कृपया कल प्रयास करें।" : "Daily OTP limit reached. Please try again tomorrow.";
+                    } else if (error.code === 'auth/invalid-phone-number') {
+                        errMsg = currentLang === 'hi' ? "कृपया सही मोबाइल नंबर दर्ज करें।" : "Please enter a valid mobile number.";
+                    }
+
+                    alert(errMsg);
                     btn.innerText = '📲 Send OTP';
                     if(window.recaptchaVerifier) window.recaptchaVerifier.render().then(widgetId => grecaptcha.reset(widgetId));
                 });
@@ -318,19 +325,16 @@
 
         window.verifyOTP = function() {
             let code = document.getElementById('otpInput').value.trim();
-            if(code.length !== 6) return alert("Enter 6-digit OTP!");
+            if(code.length !== 6) return alert(currentLang === 'hi' ? "6 अंकों का OTP दर्ज करें!" : "Enter 6-digit OTP!");
 
             let btn = document.getElementById('verifyOtpBtn');
             btn.innerText = currentLang === 'hi' ? "चेक कर रहे हैं..." : "Verifying...";
 
             window.confirmationResult.confirm(code).then((result) => {
-                // OTP VERIFIED SUCCESSFULLY
                 let phone = document.getElementById('regPhone').value.trim();
                 
-                // Check if user already exists in Realtime DB
                 get(child(ref(window.db), `customers/${phone}`)).then((snapshot) => {
                     if (snapshot.exists()) {
-                        // User exists -> Direct Login
                         let cData = snapshot.val();
                         let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
                         localStorage.setItem('grihani_user_name', cData.name); 
@@ -342,14 +346,13 @@
                         alert((currentLang === 'hi' ? "🎉 स्वागत है " : "🎉 Welcome ") + cData.name + "!");
                         mergeAndListenCart(phone);
                     } else {
-                        // New User -> Show Registration Form
                         document.getElementById('step2OTP').style.display = 'none';
                         document.getElementById('step3Details').style.display = 'block';
                     }
                 });
 
             }).catch((error) => {
-                alert(currentLang === 'hi' ? "गलत OTP!" : "Invalid OTP!");
+                alert(currentLang === 'hi' ? "गलत OTP! कृपया दोबारा प्रयास करें।" : "Invalid OTP! Please try again.");
                 btn.innerText = '✅ Verify OTP';
             });
         }
@@ -377,7 +380,6 @@
                 mergeAndListenCart(phone);
             });
         }
-        // ------------------------------------------
 
         window.syncCartToCloud = function() {
             let phone = localStorage.getItem('grihani_user_phone');
@@ -580,11 +582,7 @@
 
         window.openCheckoutForm = function() {
             if(cart.length === 0) return alert(currentLang === 'hi' ? "कार्ट खाली है!" : "Cart is empty!");
-            
-            if(!localStorage.getItem('grihani_user_phone')) {
-                openLoginModal();
-                return;
-            }
+            if(!localStorage.getItem('grihani_user_phone')) { openLoginModal(); return; }
             
             let addrs = [];
             try {
@@ -763,7 +761,7 @@
     <div class="website-container">
         <!-- Floating WhatsApp Button -->
         <a href="https://wa.me/919955400139?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank">
-            <svg viewBox="0 0 32 32" width="35" height="35" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
+            <svg viewBox="0 0 32 32" width="35" height="35" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.2-.4.4-.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
         <!-- HEADER -->
@@ -882,7 +880,7 @@
             </div>
         </div>
 
-        <!-- 🔥 NEW OTP LOGIN MODAL 🔥 -->
+        <!-- 🔥 OTP LOGIN MODAL 🔥 -->
         <div id="loginModal" class="modal-overlay">
             <div class="modal-content" id="loginContentBox">
                 <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:20px;">✨ Grihani Login / Register</h3>
@@ -892,7 +890,6 @@
                     <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Mobile Number</label>
                     <input type="tel" id="regPhone" class="modal-input" placeholder="Enter 10 digit number">
                     
-                    <!-- Firebase Invisible Recaptcha Container -->
                     <div id="recaptcha-container"></div>
                     
                     <button id="sendOtpBtn" class="confirm-order-btn" onclick="sendOTP()">📲 Send OTP</button>
