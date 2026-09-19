@@ -158,13 +158,13 @@
                 
                 filterDiv.innerHTML = ''; 
                 let selectHtml = `<option value="All">All</option>`;
-                searchSelect.innerHTML = selectHtml;
+                if(searchSelect) searchSelect.innerHTML = selectHtml;
                 if(searchSelectMob) searchSelectMob.innerHTML = selectHtml;
                 
                 let categories = data ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
                 Object.keys(categories).forEach((catKey) => { 
                     filterDiv.innerHTML += `<button onclick="filterCategory('${catKey}', this)">${categories[catKey]}</button>`; 
-                    searchSelect.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
+                    if(searchSelect) searchSelect.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
                     if(searchSelectMob) searchSelectMob.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
                 });
             });
@@ -193,9 +193,16 @@
         }
 
         window.searchProducts = function() {
-            let input = document.getElementById('searchInput').value.toLowerCase();
-            let inputMob = document.getElementById('searchInputMob');
-            if(inputMob && inputMob.value) input = inputMob.value.toLowerCase();
+            let input = '';
+            let searchInputDesktop = document.getElementById('searchInput');
+            let searchInputMob = document.getElementById('searchInputMob');
+            
+            if(searchInputDesktop && searchInputDesktop.value) {
+                input = searchInputDesktop.value.toLowerCase();
+            }
+            if(searchInputMob && searchInputMob.value) {
+                input = searchInputMob.value.toLowerCase();
+            }
             
             let cards = document.querySelectorAll('.product-card');
             cards.forEach(card => {
@@ -471,7 +478,14 @@
             syncCartToCloud();
         }
 
-        window.updateCartCount = function() { let total = 0; cart.forEach(item => total += item.qty); document.getElementById('cartCount').innerText = total; document.getElementById('cartCountMob').innerText = total; }
+        window.updateCartCount = function() { 
+            let total = 0; 
+            cart.forEach(item => total += item.qty); 
+            let cCount = document.getElementById('cartCount');
+            let cCountMob = document.getElementById('cartCountMob');
+            if(cCount) cCount.innerText = total; 
+            if(cCountMob) cCountMob.innerText = total; 
+        }
         window.increaseQty = function(index) { cart[index].qty += 1; syncCartToCloud(); }
         window.decreaseQty = function(index) { cart[index].qty -= 1; if(cart[index].qty === 0) cart.splice(index, 1); syncCartToCloud(); }
         
@@ -774,9 +788,11 @@
             .amz-location { padding: 2px; margin-right: 2px; }
             .amz-loc-line2 { max-width: 65px; font-size: 10px; }
             
-            /* Hide desktop search bar on mobile */
+            /* Hide desktop search bar & top cart on mobile */
             .amz-search-bar { display: none !important; }
-            /* Show mobile dedicated search & cart row */
+            .amz-nav-right .amz-nav-cart { display: none !important; }
+
+            /* Show mobile dedicated search & cart row between logo and menu */
             .amz-mobile-search-cart-row { display: flex !important; }
 
             .amz-nav-item { padding: 2px 3px; }
@@ -856,18 +872,18 @@
                 </div>
             </div>
 
-            <!-- Mobile Dedicated Search Bar & Cart Row (Left to Right Full Fit) -->
+            <!-- Mobile Dedicated Search Bar & Cart Row (Logo & Menu के बीच में) -->
             <div class="amz-mobile-search-cart-row">
-                <div class="amz-search-bar" style="margin: 0; width: 100%; display: flex; height: 36px; flex-grow: 1;">
+                <div class="amz-search-bar" style="margin: 0; width: 100%; display: flex; height: 38px; flex-grow: 1;">
                     <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value, null)">
                         <option value="All">All</option>
                     </select>
                     <input type="text" id="searchInputMob" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
                     <button class="amz-search-btn" onclick="searchProducts()">🔍</button>
                 </div>
-                <div class="amz-nav-cart" onclick="openCart()" style="background: #232f3e; padding: 5px 8px; border-radius: 4px; flex-shrink: 0; border: 1px solid #3a4553; display: flex; align-items: center; justify-content: center; height: 36px;">
-                    <span class="amz-cart-icon" style="font-size: 20px;">🛒</span>
-                    <span id="cartCountMob" class="amz-cart-count" style="left: 18px; top: 0px; font-size: 12px;">0</span>
+                <div class="amz-nav-cart" onclick="openCart()" style="background: #232f3e; padding: 6px 10px; border-radius: 4px; flex-shrink: 0; border: 1px solid #3a4553; display: flex; align-items: center; justify-content: center; height: 38px; position: relative;">
+                    <span class="amz-cart-icon" style="font-size: 22px;">🛒</span>
+                    <span id="cartCountMob" class="amz-cart-count" style="left: 20px; top: 0px; font-size: 13px; color: #f08804; font-weight: bold;">0</span>
                 </div>
             </div>
 
