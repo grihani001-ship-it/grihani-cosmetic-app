@@ -676,28 +676,29 @@
         .website-container { width: 100%; max-width: 100%; overflow-x: hidden; position: relative; }
         
         .amz-header { background-color: #131921; color: white; display: flex; flex-direction: column; width: 100%; position: sticky; top:0; z-index: 100; }
-        .amz-nav-top { display: flex; align-items: center; padding: 5px 10px; height: 60px; width: 100%; }
+        .amz-nav-top { display: flex; align-items: center; padding: 5px 10px; height: 55px; width: 100%; }
         
-        .amz-logo { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:10px; flex-shrink: 0;}
+        .amz-logo { display: flex; align-items: center; padding: 4px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:8px; flex-shrink: 0;}
         .amz-logo:hover { border: 1px solid white; }
-        .amz-logo img { width: 35px; height: 35px; border-radius: 4px; margin-right: 6px; background: white; padding:2px;}
-        .amz-logo span { font-size: 18px; font-weight: bold; }
+        .amz-logo img { width: 32px; height: 32px; border-radius: 4px; margin-right: 4px; background: white; padding:2px;}
+        .amz-logo span { font-size: 16px; font-weight: bold; }
         
-        .amz-location { display: flex; align-items: center; padding: 5px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:10px; flex-shrink: 0; }
+        .amz-location { display: flex; align-items: center; padding: 4px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:8px; flex-shrink: 0; }
         .amz-location:hover { border: 1px solid white; }
-        .amz-loc-icon { font-size: 16px; margin-right:3px; margin-top:8px; }
+        .amz-loc-icon { font-size: 14px; margin-right:2px; margin-top:6px; }
         .amz-loc-text { display: flex; flex-direction: column; }
-        .amz-loc-line1 { font-size: 11px; color: #ccc; }
-        .amz-loc-line2 { font-size: 13px; font-weight: bold; color: white; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+        .amz-loc-line1 { font-size: 10px; color: #ccc; }
+        .amz-loc-line2 { font-size: 12px; font-weight: bold; color: white; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
 
+        /* Desktop Search Bar */
         .amz-search-bar { display: flex; flex-grow: 1; border-radius: 4px; overflow: hidden; background: white; height: 38px; margin: 0 10px; min-width: 120px; }
         .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 8px; color: #333; outline: none; cursor: pointer; font-size: 11px; max-width:90px; }
         .amz-search-input { flex-grow: 1; border: none; padding: 0 8px; outline: none; font-size: 14px; width: 100%; }
         .amz-search-btn { background: #febd69; border: none; width: 40px; cursor: pointer; font-size: 16px; color: #333; display:flex; justify-content:center; align-items:center; flex-shrink: 0; }
         .amz-search-btn:hover { background: #f3a847; }
 
-        /* Mobile Search & Cart Row */
-        .amz-mobile-search-cart-row { display: none; background-color: #131921; padding: 6px 10px; width: 100%; align-items: center; gap: 8px; }
+        /* Mobile Search & Cart Row (Logo और Menu के बीच) */
+        .amz-mobile-search-cart-row { display: none; background-color: #131921; padding: 6px 8px; width: 100%; align-items: center; gap: 8px; }
 
         .amz-nav-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
@@ -782,17 +783,17 @@
         .whatsapp-float img { width: 28px; height: 28px; filter: brightness(0) invert(1); }
         
         @media(max-width: 768px) { 
-            .amz-nav-top { padding: 5px 6px; gap: 4px; height: 50px; }
+            .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
             .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
             .amz-logo span { font-size: 14px; }
             .amz-location { padding: 2px; margin-right: 2px; }
-            .amz-loc-line2 { max-width: 65px; font-size: 10px; }
+            .amz-loc-line2 { max-width: 60px; font-size: 10px; }
             
             /* Hide desktop search bar & top cart on mobile */
             .amz-search-bar { display: none !important; }
             .amz-nav-right .amz-nav-cart { display: none !important; }
 
-            /* Show mobile dedicated search & cart row between logo and menu */
+            /* FORCE SHOW Mobile dedicated search & cart row between Logo and Menu */
             .amz-mobile-search-cart-row { display: flex !important; }
 
             .amz-nav-item { padding: 2px 3px; }
@@ -872,9 +873,9 @@
                 </div>
             </div>
 
-            <!-- Mobile Dedicated Search Bar & Cart Row (Logo & Menu के बीच में) -->
+            <!-- Mobile Search Bar & Cart Row (Logo और Menu के बीच बिल्कुल साफ़ दिखेगा) -->
             <div class="amz-mobile-search-cart-row">
-                <div class="amz-search-bar" style="margin: 0; width: 100%; display: flex; height: 38px; flex-grow: 1;">
+                <div class="amz-search-bar" style="margin: 0; display: flex; height: 38px; flex-grow: 1;">
                     <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value, null)">
                         <option value="All">All</option>
                     </select>
