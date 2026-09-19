@@ -10,6 +10,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, get, child, update } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+        // 🔥 NEW: Firebase Auth Import for OTP
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
@@ -22,6 +24,7 @@
         };
         const app = initializeApp(firebaseConfig);
         window.db = getDatabase(app);
+        window.auth = getAuth(app); // Auth Init
 
         let cart = []; let currentCategory = 'All'; let currentSlide = 0;
         let currentLang = localStorage.getItem('grihani_lang') || 'en'; 
@@ -44,9 +47,7 @@
             "total_bill": { hi: "कुल बिल:", en: "Total Bill:" },
             "btn_checkout": { hi: "ऑर्डर करें (Checkout)", en: "Proceed to Buy" },
             "order_history_title": { hi: "📦 मेरे ऑर्डर्स (Order History)", en: "📦 My Order History" },
-            "login_title": { hi: "✨ Grihani Cosmetic में स्वागत है", en: "✨ Welcome to Grihani" },
-            "login_new": { hi: "🚀 नया रजिस्ट्रेशन करें", en: "🚀 Register New Account" },
-            "login_exist": { hi: "🔑 पहले से रजिस्टर्ड हैं? लॉगिन करें", en: "🔑 Already Registered? Login" },
+            "login_title": { hi: "✨ Grihani Login / Register", en: "✨ Grihani Login / Register" },
             "close_btn": { hi: "❌ बंद करें", en: "❌ Close" },
             "confirm_title": { hi: "ऑर्डर की पुष्टि करें", en: "Confirm Your Order" },
             "pay_mode_title": { hi: "पेमेंट का तरीका चुनें:", en: "Select Payment Mode:" },
@@ -256,34 +257,138 @@
             checkSavedLocation(); 
             
             let savedPhone = localStorage.getItem('grihani_user_phone');
-            if(savedPhone) { 
-                syncUserData(savedPhone); 
-            }
+            if(savedPhone) { syncUserData(savedPhone); }
         }
 
+        // --- 🔥 NEW FIREBASE OTP LOGIN SYSTEM 🔥 ---
+        
         window.openLoginModal = function() { 
             if(localStorage.getItem('grihani_user_phone')) { openOrdersPage(); } 
-            else { document.getElementById('loginModal').style.display = 'flex'; }
+            else { 
+                resetLoginUI();
+                document.getElementById('loginModal').style.display = 'flex'; 
+            }
         }
-        window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; }
+        window.closeLoginModal = function() { 
+            document.getElementById('loginModal').style.display = 'none'; 
+            resetLoginUI();
+        }
 
-        // --- CLOUD CART LOGIC ---
+        window.resetLoginUI = function() {
+            document.getElementById('step1Phone').style.display = 'block';
+            document.getElementById('step2OTP').style.display = 'none';
+            document.getElementById('step3Details').style.display = 'none';
+            document.getElementById('regPhone').value = '';
+            document.getElementById('otpInput').value = '';
+            document.getElementById('sendOtpBtn').innerText = '📲 Send OTP';
+        }
+
+        function setupRecaptcha() {
+            if(!window.recaptchaVerifier) {
+                window.recaptchaVerifier = new RecaptchaVerifier(window.auth, 'recaptcha-container', {
+                    'size': 'invisible'
+                });
+            }
+        }
+
+        window.sendOTP = function() {
+            let phone = document.getElementById('regPhone').value.trim();
+            if(phone.length !== 10) return alert(currentLang === 'hi' ? "10 अंकों का मोबाइल नंबर डालें!" : "Enter valid 10-digit mobile number!");
+            
+            let btn = document.getElementById('sendOtpBtn');
+            btn.innerText = currentLang === 'hi' ? "भेज रहे हैं..." : "Sending...";
+            
+            setupRecaptcha();
+            let appVerifier = window.recaptchaVerifier;
+            let numberForAuth = "+91" + phone;
+
+            signInWithPhoneNumber(window.auth, numberForAuth, appVerifier)
+                .then((confirmationResult) => {
+                    window.confirmationResult = confirmationResult;
+                    document.getElementById('step1Phone').style.display = 'none';
+                    document.getElementById('displayPhoneOTP').innerText = numberForAuth;
+                    document.getElementById('step2OTP').style.display = 'block';
+                }).catch((error) => {
+                    console.error("OTP Error:", error);
+                    alert("Error sending OTP. Please check if domain is authorized in Firebase settings.");
+                    btn.innerText = '📲 Send OTP';
+                    if(window.recaptchaVerifier) window.recaptchaVerifier.render().then(widgetId => grecaptcha.reset(widgetId));
+                });
+        }
+
+        window.verifyOTP = function() {
+            let code = document.getElementById('otpInput').value.trim();
+            if(code.length !== 6) return alert("Enter 6-digit OTP!");
+
+            let btn = document.getElementById('verifyOtpBtn');
+            btn.innerText = currentLang === 'hi' ? "चेक कर रहे हैं..." : "Verifying...";
+
+            window.confirmationResult.confirm(code).then((result) => {
+                // OTP VERIFIED SUCCESSFULLY
+                let phone = document.getElementById('regPhone').value.trim();
+                
+                // Check if user already exists in Realtime DB
+                get(child(ref(window.db), `customers/${phone}`)).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        // User exists -> Direct Login
+                        let cData = snapshot.val();
+                        let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
+                        localStorage.setItem('grihani_user_name', cData.name); 
+                        localStorage.setItem('grihani_user_phone', phone); 
+                        localStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
+                        
+                        document.getElementById('loginModal').style.display = 'none'; 
+                        updateUserUI(cData.name); 
+                        alert((currentLang === 'hi' ? "🎉 स्वागत है " : "🎉 Welcome ") + cData.name + "!");
+                        mergeAndListenCart(phone);
+                    } else {
+                        // New User -> Show Registration Form
+                        document.getElementById('step2OTP').style.display = 'none';
+                        document.getElementById('step3Details').style.display = 'block';
+                    }
+                });
+
+            }).catch((error) => {
+                alert(currentLang === 'hi' ? "गलत OTP!" : "Invalid OTP!");
+                btn.innerText = '✅ Verify OTP';
+            });
+        }
+
+        window.completeRegistration = function() {
+            let name = document.getElementById('regName').value.trim();
+            let address = document.getElementById('regAddress').value.trim();
+            let phone = document.getElementById('regPhone').value.trim();
+
+            if(!name || !address) return alert(currentLang === 'hi' ? "नाम और पता ज़रूरी है!" : "Name and Address are required!");
+
+            set(ref(window.db, 'customers/' + phone), { 
+                name: name, 
+                phone: phone, 
+                addresses: [address], 
+                date: new Date().toLocaleString() 
+            }).then(() => {
+                localStorage.setItem('grihani_user_name', name); 
+                localStorage.setItem('grihani_user_phone', phone); 
+                localStorage.setItem('grihani_user_addresses', JSON.stringify([address]));
+                
+                document.getElementById('loginModal').style.display = 'none'; 
+                updateUserUI(name); 
+                alert(currentLang === 'hi' ? "✨ रजिस्ट्रेशन सफल रहा!" : "✨ Registration Successful!");
+                mergeAndListenCart(phone);
+            });
+        }
+        // ------------------------------------------
+
         window.syncCartToCloud = function() {
             let phone = localStorage.getItem('grihani_user_phone');
-            if(phone) {
-                set(ref(window.db, 'carts/' + phone.replace(/[^0-9]/g, '')), cart);
-            } else {
-                updateCartCount(); renderCartItems();
-            }
+            if(phone) { set(ref(window.db, 'carts/' + phone.replace(/[^0-9]/g, '')), cart); } 
+            else { updateCartCount(); renderCartItems(); }
         }
 
         window.startCartListener = function(cleanPhone) {
             onValue(ref(window.db, `carts/${cleanPhone}`), (snapshot) => {
-                cart = snapshot.val() || [];
-                updateCartCount();
-                if (document.getElementById('cartPage').style.display === 'block') {
-                    renderCartItems();
-                }
+                cart = snapshot.val() || []; updateCartCount();
+                if (document.getElementById('cartPage').style.display === 'block') renderCartItems();
             });
         }
 
@@ -293,49 +398,10 @@
                 if (cart.length > 0) {
                     cart.forEach(lItem => {
                         let exist = cloudCart.find(c => c.name === lItem.name && c.selectedColor === lItem.selectedColor && c.selectedSize === lItem.selectedSize);
-                        if(exist) exist.qty += lItem.qty;
-                        else cloudCart.push(lItem);
+                        if(exist) exist.qty += lItem.qty; else cloudCart.push(lItem);
                     });
                     set(ref(window.db, `carts/${cleanPhone}`), cloudCart).then(() => { startCartListener(cleanPhone); });
-                } else {
-                    startCartListener(cleanPhone);
-                }
-            });
-        }
-        // ------------------------
-
-        window.saveCustomerLogin = function() {
-            let name = document.getElementById('regName').value, phone = document.getElementById('regPhone').value, address = document.getElementById('regAddress').value;
-            if(!name || phone.length < 10 || !address) return alert(currentLang === 'hi' ? "कृपया सही जानकारी दर्ज करें!" : "Please enter valid details!");
-            let cleanPhone = phone.replace(/[^0-9]/g, '');
-            
-            set(ref(window.db, 'customers/' + cleanPhone), { name, phone, addresses: [address], date: new Date().toLocaleString() }).then(() => {
-                localStorage.setItem('grihani_user_name', name); 
-                localStorage.setItem('grihani_user_phone', phone); 
-                localStorage.setItem('grihani_user_addresses', JSON.stringify([address]));
-                document.getElementById('loginModal').style.display = 'none'; 
-                updateUserUI(name); 
-                alert(currentLang === 'hi' ? "✨ रजिस्ट्रेशन सफल रहा!" : "✨ Registration Successful!");
-                mergeAndListenCart(cleanPhone);
-            });
-        }
-
-        window.existingCustomerLogin = function() {
-            let phone = document.getElementById('regPhone').value.trim();
-            if(phone.length < 10) return alert(currentLang === 'hi' ? "सही मोबाइल नंबर दर्ज करें!" : "Enter valid mobile number!");
-            let cleanPhone = phone.replace(/[^0-9]/g, '');
-            get(child(ref(window.db), `customers/${cleanPhone}`)).then((snapshot) => {
-                if (snapshot.exists()) {
-                    let cData = snapshot.val();
-                    let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
-                    localStorage.setItem('grihani_user_name', cData.name); 
-                    localStorage.setItem('grihani_user_phone', cData.phone); 
-                    localStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
-                    document.getElementById('loginModal').style.display = 'none'; 
-                    updateUserUI(cData.name); 
-                    alert((currentLang === 'hi' ? "🎉 स्वागत है " : "🎉 Welcome ") + cData.name + "!");
-                    mergeAndListenCart(cleanPhone);
-                } else alert(currentLang === 'hi' ? "यह नंबर रजिस्टर्ड नहीं है। कृपया नया रजिस्ट्रेशन करें!" : "Number not registered. Please register!");
+                } else { startCartListener(cleanPhone); }
             });
         }
 
@@ -345,7 +411,6 @@
                 let phone = localStorage.getItem('grihani_user_phone');
                 let addrs = JSON.parse(localStorage.getItem('grihani_user_addresses') || "[]");
                 addrs.push(newAdd.trim());
-                
                 update(ref(window.db, 'customers/' + phone), { addresses: addrs }).then(() => {
                     localStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
                     renderProfileInfo();
@@ -357,7 +422,6 @@
         window.renderProfileInfo = function() {
             document.getElementById('profileName').innerText = localStorage.getItem('grihani_user_name');
             document.getElementById('profilePhone').innerText = localStorage.getItem('grihani_user_phone');
-            
             let addrs = JSON.parse(localStorage.getItem('grihani_user_addresses') || "[]");
             let addrsHtml = addrs.map((a, i) => `<div class="address-box"><b>${i+1}.</b> ${a}</div>`).join('');
             document.getElementById('profileAddresses').innerHTML = addrsHtml;
@@ -371,15 +435,11 @@
         }
         window.logoutUser = function() { if(confirm(currentLang === 'hi' ? "क्या आप लॉग आउट करना चाहते हैं?" : "Do you want to logout?")) { localStorage.clear(); location.reload(); } }
         
-        window.filterCategory = function(cat, btnElement) { 
-            currentCategory = cat; loadProducts(); 
-            document.getElementById('searchInput').value = '';
-        }
+        window.filterCategory = function(cat, btnElement) { currentCategory = cat; loadProducts(); document.getElementById('searchInput').value = ''; }
         
         window.addToCart = function(product, sColor, sSize) { 
             let existingItem = cart.find(item => item.name === product.name && item.selectedColor === sColor && item.selectedSize === sSize); 
-            if(existingItem) existingItem.qty += 1; 
-            else cart.push({ ...product, selectedColor: sColor, selectedSize: sSize, qty: 1 }); 
+            if(existingItem) existingItem.qty += 1; else cart.push({ ...product, selectedColor: sColor, selectedSize: sSize, qty: 1 }); 
             alert(product.name + (currentLang === 'hi' ? " कार्ट में जुड़ गया!" : " added to cart!")); 
             syncCartToCloud();
         }
@@ -518,27 +578,19 @@
             }); document.getElementById('totalAmount').innerText = "₹" + total;
         }
 
-        // --- CHECKOUT FIX ---
         window.openCheckoutForm = function() {
             if(cart.length === 0) return alert(currentLang === 'hi' ? "कार्ट खाली है!" : "Cart is empty!");
             
             if(!localStorage.getItem('grihani_user_phone')) {
-                document.getElementById('loginModal').style.display = 'flex';
+                openLoginModal();
                 return;
             }
             
             let addrs = [];
             try {
                 let savedAddrs = localStorage.getItem('grihani_user_addresses');
-                if(savedAddrs) {
-                    addrs = JSON.parse(savedAddrs);
-                } else {
-                    let oldAddr = localStorage.getItem('grihani_user_address');
-                    if(oldAddr) addrs = [oldAddr];
-                }
-            } catch(e) {
-                console.error("Address error", e);
-            }
+                if(savedAddrs) { addrs = JSON.parse(savedAddrs); } 
+            } catch(e) { console.error(e); }
             
             let cNameEl = document.getElementById('confirmName');
             if(cNameEl) cNameEl.innerText = localStorage.getItem('grihani_user_name') || 'User'; 
@@ -548,13 +600,9 @@
 
             let sel = document.getElementById('checkoutAddressSelect');
             if(sel) {
-                if(addrs && addrs.length > 0) {
-                    sel.innerHTML = addrs.map(a => `<option value="${a}">${a}</option>`).join('');
-                } else {
-                    sel.innerHTML = `<option value="Saved Address">Please add an address in your profile</option>`;
-                }
+                if(addrs && addrs.length > 0) { sel.innerHTML = addrs.map(a => `<option value="${a}">${a}</option>`).join(''); } 
+                else { sel.innerHTML = `<option value="Saved Address">Please add an address in your profile</option>`; }
             }
-            
             document.getElementById('checkoutModal').style.display = 'flex';
         }
         
@@ -563,60 +611,25 @@
         window.confirmOrder = function() {
             let name = localStorage.getItem('grihani_user_name') || 'Customer';
             let phone = localStorage.getItem('grihani_user_phone') || '0000000000';
-            
             let addrSelect = document.getElementById('checkoutAddressSelect');
             let address = addrSelect ? addrSelect.value : "Address not provided"; 
-            
             let payMode = document.getElementById('payMode').value;
-            
             let totalAmountText = document.getElementById('totalAmount').innerText.replace(/[^0-9]/g, '');
             let totalAmountNum = parseInt(totalAmountText) * 100; 
             
-            if(isNaN(totalAmountNum) || totalAmountNum <= 0) {
-                alert("Error in calculation. Please try again.");
-                return;
-            }
-
+            if(isNaN(totalAmountNum) || totalAmountNum <= 0) return alert("Error in calculation.");
             closeCheckoutForm();
             
             if(payMode === 'Online UPI') {
-                var rzp1 = new Razorpay({ 
-                    "key": "rzp_live_TdDiIxmQqRizQi", 
-                    "amount": totalAmountNum, 
-                    "currency": "INR", 
-                    "name": "Grihani Cosmetic", 
-                    "handler": function (response){ 
-                        saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum, address); 
-                    }, 
-                    "prefill": { "name": name, "contact": phone }, 
-                    "theme": { "color": "#131921" } 
-                }); 
+                var rzp1 = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response){ saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum, address); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } }); 
                 rzp1.open();
-            } else { 
-                saveOrderData("Cash on Delivery (COD)", "N/A", totalAmountNum, address); 
-            }
+            } else { saveOrderData("Cash on Delivery (COD)", "N/A", totalAmountNum, address); }
         }
 
         function saveOrderData(paymentMode, paymentId, totalAmountNum, finalAddress) {
-            set(push(ref(window.db, 'orders')), { 
-                customerName: localStorage.getItem('grihani_user_name') || 'Customer', 
-                customerPhone: localStorage.getItem('grihani_user_phone') || 'N/A', 
-                customerAddress: finalAddress, 
-                paymentMode: paymentMode, 
-                paymentId: paymentId, 
-                items: cart, 
-                total: "₹" + (totalAmountNum / 100), 
-                date: new Date().toLocaleString(), 
-                status: 'New' 
-            }).then(() => { 
+            set(push(ref(window.db, 'orders')), { customerName: localStorage.getItem('grihani_user_name') || 'Customer', customerPhone: localStorage.getItem('grihani_user_phone') || 'N/A', customerAddress: finalAddress, paymentMode: paymentMode, paymentId: paymentId, items: cart, total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New' }).then(() => { 
                 alert(currentLang === 'hi' ? "🎉 आपका ऑर्डर सफलतापूलवक दर्ज हो गया है!" : "🎉 Order Placed Successfully!"); 
-                cart = []; 
-                syncCartToCloud();
-                closeCart(); 
-                window.openOrdersPage(); 
-            }).catch(e => {
-                console.error("Order error:", e);
-                alert("Error placing order.");
+                cart = []; syncCartToCloud(); closeCart(); window.openOrdersPage(); 
             });
         }
     </script>
@@ -750,7 +763,7 @@
     <div class="website-container">
         <!-- Floating WhatsApp Button -->
         <a href="https://wa.me/919955400139?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank">
-            <svg viewBox="0 0 32 32" width="35" height="35" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.2-.4.4-.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
+            <svg viewBox="0 0 32 32" width="35" height="35" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
         <!-- HEADER -->
@@ -869,15 +882,44 @@
             </div>
         </div>
 
+        <!-- 🔥 NEW OTP LOGIN MODAL 🔥 -->
         <div id="loginModal" class="modal-overlay">
-            <div class="modal-content">
-                <h3 data-lang-key="login_title">✨ Welcome to Grihani</h3>
-                <input type="text" id="regName" class="modal-input" placeholder="Full Name">
-                <input type="tel" id="regPhone" class="modal-input" placeholder="Mobile (10 digits)">
-                <textarea id="regAddress" class="modal-input" placeholder="Full Delivery Address" rows="3"></textarea>
-                <button class="confirm-order-btn" onclick="saveCustomerLogin()" data-lang-key="login_new">🚀 Register New Account</button>
-                <button class="login-existing-btn" onclick="existingCustomerLogin()" data-lang-key="login_exist">🔑 Already Registered? Login</button>
-                <button class="cancel-order-btn" onclick="closeLoginModal()" data-lang-key="close_btn">❌ Close</button>
+            <div class="modal-content" id="loginContentBox">
+                <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:20px;">✨ Grihani Login / Register</h3>
+                
+                <!-- STEP 1: Enter Phone Number -->
+                <div id="step1Phone">
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Mobile Number</label>
+                    <input type="tel" id="regPhone" class="modal-input" placeholder="Enter 10 digit number">
+                    
+                    <!-- Firebase Invisible Recaptcha Container -->
+                    <div id="recaptcha-container"></div>
+                    
+                    <button id="sendOtpBtn" class="confirm-order-btn" onclick="sendOTP()">📲 Send OTP</button>
+                    <button class="cancel-order-btn" onclick="closeLoginModal()" data-lang-key="close_btn">❌ Close</button>
+                </div>
+
+                <!-- STEP 2: Enter OTP -->
+                <div id="step2OTP" style="display:none;">
+                    <p style="font-size:13px; margin-bottom:15px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Enter 6-Digit OTP</label>
+                    <input type="number" id="otpInput" class="modal-input" placeholder="XXXXXX">
+                    
+                    <button id="verifyOtpBtn" class="confirm-order-btn" onclick="verifyOTP()">✅ Verify OTP</button>
+                    <button class="cancel-order-btn" onclick="resetLoginUI()">← Back</button>
+                </div>
+
+                <!-- STEP 3: Enter Details (Only for New Users) -->
+                <div id="step3Details" style="display:none;">
+                    <p style="font-size:13px; margin-bottom:15px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified! Enter details to continue.</p>
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Full Name</label>
+                    <input type="text" id="regName" class="modal-input" placeholder="Your Name">
+                    
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 5px; display:block;">Delivery Address</label>
+                    <textarea id="regAddress" class="modal-input" placeholder="Full Delivery Address" rows="3"></textarea>
+                    
+                    <button class="confirm-order-btn" onclick="completeRegistration()">🚀 Complete Registration</button>
+                </div>
             </div>
         </div>
 
