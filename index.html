@@ -27,7 +27,8 @@
 
         let cart = []; let currentCategory = 'All'; let currentSlide = 0;
         let currentLang = localStorage.getItem('grihani_lang') || 'en'; 
-        window.currentProductImages = []; // स्लाइडर के लिए नई स्टेट
+        window.currentProductImages = []; 
+        window.currentImageIndex = 0;
         
         const dict = {
             "deliver_to": { hi: "डिलीवर करें", en: "Deliver to" },
@@ -180,8 +181,6 @@
                     if (currentCategory === 'All' || item.category === currentCategory) {
                         let btnText = currentLang === 'hi' ? 'कार्ट में डालें' : 'Add to Cart';
                         let safeProduct = encodeURIComponent(JSON.stringify(item));
-                        
-                        // पुरानी इमेज (image) और नई मल्टीपल इमेज (images[0]) दोनों को सपोर्ट करने के लिए:
                         let displayImg = item.image ? item.image : (item.images && item.images.length > 0 ? item.images[0] : '');
 
                         appDiv.innerHTML += `
@@ -218,25 +217,13 @@
             });
         }
 
-        // --- NEW POPUP FUNCTION WITH IMAGE SLIDER ---
+        // --- UPDATED POPUP & SLIDER FUNCTION ---
         window.openProductModal = function(prodStr) {
             let p = JSON.parse(decodeURIComponent(prodStr));
-            
-            // पुरानी 1 इमेज या नई 4-5 इमेजेज दोनों का डेटा लिस्ट में लें
             window.currentProductImages = p.images ? p.images : (p.image ? [p.image] : []);
+            window.currentImageIndex = 0;
             
-            // मुख्य फोटो सेट करें
-            document.getElementById('pmImg').src = window.currentProductImages[0] || '';
-            
-            // थंबनेल गैलरी (स्लाइडर) बनाएं
-            let thumbContainer = document.getElementById('pmThumbnails');
-            thumbContainer.innerHTML = '';
-            if (window.currentProductImages.length > 1) {
-                window.currentProductImages.forEach((imgUrl, index) => {
-                    let activeClass = index === 0 ? 'pd-thumb-active' : '';
-                    thumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeMainImage(${index}, this)">`;
-                });
-            }
+            updateModalImageView();
 
             document.getElementById('pmTitle').innerText = p.name;
             document.getElementById('pmPrice').innerHTML = `<span style="font-size:16px; vertical-align:top;">₹</span>${p.price}`;
@@ -260,13 +247,83 @@
                 addToCart(p, selectedColor, selectedSize); closeProductModal();
             };
             document.getElementById('productDetailModal').style.display = 'flex';
+            setupModalTouchSwipe();
         }
 
-        // क्लिक करने पर बड़ी फोटो बदलने का फंक्शन
-        window.changeMainImage = function(index, thumbElement) {
-            document.getElementById('pmImg').src = window.currentProductImages[index];
-            document.querySelectorAll('.pd-thumb-img').forEach(el => el.classList.remove('pd-thumb-active'));
-            thumbElement.classList.add('pd-thumb-active');
+        // इमेज, थंबनेल और डॉट्स अपडेट करने का सेंट्रल फंक्शन
+        window.updateModalImageView = function() {
+            let mainImg = document.getElementById('pmImg');
+            if(window.currentProductImages.length > 0) {
+                mainImg.src = window.currentProductImages[window.currentImageIndex];
+            }
+
+            // थंबनेल अपडेट करें
+            let thumbContainer = document.getElementById('pmThumbnails');
+            thumbContainer.innerHTML = '';
+            if (window.currentProductImages.length > 1) {
+                window.currentProductImages.forEach((imgUrl, index) => {
+                    let activeClass = index === window.currentImageIndex ? 'pd-thumb-active' : '';
+                    thumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeMainImage(${index})">`;
+                });
+            }
+
+            // डॉट्स (Dots) अपडेट करें
+            let dotsContainer = document.getElementById('pmDotsContainer');
+            dotsContainer.innerHTML = '';
+            if (window.currentProductImages.length > 1) {
+                window.currentProductImages.forEach((_, index) => {
+                    let activeDot = index === window.currentImageIndex ? 'pd-dot-active' : '';
+                    dotsContainer.innerHTML += `<span class="pd-dot ${activeDot}" onclick="changeMainImage(${index})"></span>`;
+                });
+            }
+        }
+
+        window.changeMainImage = function(index) {
+            window.currentImageIndex = index;
+            updateModalImageView();
+        }
+
+        // मोबाइल स्वाइप (Touch Swipe) इम्पेलेंटेशन
+        function setupModalTouchSwipe() {
+            let imgElement = document.getElementById('pmImg');
+            if(!imgElement) return;
+            let startX = 0;
+
+            imgElement.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+            }, {passive: true});
+
+            imgElement.addEventListener('touchend', (e) => {
+                let endX = e.changedTouches[0].clientX;
+                let diff = startX - endX;
+                if (Math.abs(diff) > 50) { // स्वाइप डिस्टेंस चेक
+                    if (diff > 0) {
+                        // बाएं स्वाइप किया (अगली फोटो)
+                        if (window.currentImageIndex < window.currentProductImages.length - 1) {
+                            window.currentImageIndex++;
+                            updateModalImageView();
+                        }
+                    } else {
+                        // दाएं स्वाइप किया (पिछली फोटो)
+                        if (window.currentImageIndex > 0) {
+                            window.currentImageIndex--;
+                            updateModalImageView();
+                        }
+                    }
+                }
+            }, {passive: true});
+        }
+
+        // मेन फोटो क्लिक करने पर Full-Screen Zoom (Lightbox) खोलना
+        window.openFullscreenZoom = function() {
+            if(window.currentProductImages.length === 0) return;
+            let zoomImg = document.getElementById('fullscreenZoomImg');
+            zoomImg.src = window.currentProductImages[window.currentImageIndex];
+            document.getElementById('fullscreenZoomModal').style.display = 'flex';
+        }
+
+        window.closeFullscreenZoom = function() {
+            document.getElementById('fullscreenZoomModal').style.display = 'none';
         }
 
         window.closeProductModal = function() { document.getElementById('productDetailModal').style.display = 'none'; }
@@ -644,8 +701,6 @@
                 let itemTotal = parseInt(item.price) * item.qty; total += itemTotal;
                 let varText = ''; if(item.selectedColor) varText += item.selectedColor + ' '; if(item.selectedSize) varText += item.selectedSize;
                 let varDisplay = varText ? `<div style="font-size:11px; color:#007185; margin-bottom:5px;">${varText.trim()}</div>` : '';
-                
-                // कार्ट में इमेज दिखाने के लिए
                 let displayImg = item.image ? item.image : (item.images && item.images.length > 0 ? item.images[0] : '');
                 
                 cartDiv.innerHTML += `<div class="cart-item"><img src="${displayImg}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div>${varDisplay}<div class="cart-item-price">₹${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div><div class="item-total">₹${itemTotal}</div></div>`;
@@ -801,15 +856,26 @@
         .login-existing-btn { background: #fff; border-color: #d5d9d9; color: #0f1111; } .login-existing-btn:hover { background:#f7fafa; }
         .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 8px; width: 100%; font-size: 12px; cursor: pointer; text-decoration:underline; }
         
-        /* 🔥 NEW MODAL LAYOUT FOR MULTIPLE IMAGES 🔥 */
+        /* 🔥 POPUP & SLIDER & DOTS STYLING 🔥 */
         .pd-modal-layout { max-width: 850px; display: flex; flex-direction: row; gap: 20px; padding-top: 40px; }
-        .pd-gallery-section { flex: 1.2; display: flex; flex-direction: column; }
+        .pd-gallery-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; }
         .pd-details-section { flex: 1; display: flex; flex-direction: column; }
-        .pd-img { width: 100%; height: 350px; object-fit: contain; background:#f9f9f9; margin-bottom: 12px; border-radius: 8px; border: 1px solid #eee; mix-blend-mode: multiply; }
+        .pd-img { width: 100%; height: 320px; object-fit: contain; background:#f9f9f9; margin-bottom: 8px; border-radius: 8px; border: 1px solid #eee; mix-blend-mode: multiply; cursor: zoom-in; }
         
-        .pd-thumbnails { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin; }
+        /* Dots Styling */
+        .pd-dots-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; }
+        .pd-dot { width: 8px; height: 8px; background-color: #bbb; border-radius: 50%; cursor: pointer; transition: background-color 0.3s; }
+        .pd-dot-active { background-color: #e77600; width: 20px; border-radius: 4px; }
+
+        /* Thumbnails Styling */
+        .pd-thumbnails { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin; width: 100%; }
         .pd-thumb-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; background: #f9f9f9; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .pd-thumb-active { border-color: #e77600; }
+
+        /* Full-Screen Zoom Lightbox Styling */
+        .zoom-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
+        .zoom-modal-content { position: relative; max-width: 90%; max-height: 90%; display: flex; justify-content: center; align-items: center; }
+        .zoom-modal-content img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 4px; }
 
         .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; line-height:24px; font-weight: bold;}
         .pd-price { font-size: 26px; color: #B12704; margin-bottom: 12px; font-weight: bold; }
@@ -857,10 +923,9 @@
             .cart-item-price { font-size: 12px; }
             .item-total { font-size: 12px; }
             
-            /* Mobile Popup Layout */
             .modal-content { padding: 15px; max-width: 92%; }
             .pd-modal-layout { flex-direction: column; padding-top: 35px; gap: 10px; }
-            .pd-img { height: 250px; margin-bottom: 8px; }
+            .pd-img { height: 230px; margin-bottom: 6px; }
         }
     </style>
 </head>
@@ -980,17 +1045,17 @@
             </div>
         </div>
 
-        <!-- 🔥 NEW DETAILED PRODUCT POPUP (MODAL) 🔥 -->
+        <!-- 🔥 DETAILED PRODUCT POPUP (WITH THUMBNAILS, DOTS & ZOOM) 🔥 -->
         <div id="productDetailModal" class="modal-overlay">
             <div class="modal-content pd-modal-layout">
-                <!-- Close Button -->
                 <div style="width: 100%; text-align: right; position: absolute; right: 15px; top: 12px; z-index: 10;">
                     <span onclick="closeProductModal()" style="font-size: 26px; cursor: pointer; color: #333; background: #fff; padding: 0 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">&times;</span>
                 </div>
                 
-                <!-- Left Side: Image Gallery -->
+                <!-- Left Side: Image Gallery, Dots & Thumbnails -->
                 <div class="pd-gallery-section">
-                    <img id="pmImg" src="" class="pd-img">
+                    <img id="pmImg" src="" class="pd-img" onclick="openFullscreenZoom()" title="Click to Zoom">
+                    <div id="pmDotsContainer" class="pd-dots-container"></div>
                     <div id="pmThumbnails" class="pd-thumbnails"></div>
                 </div>
 
@@ -1017,6 +1082,14 @@
             </div>
         </div>
 
+        <!-- 🔥 FULL-SCREEN ZOOM LIGHTBOX MODAL 🔥 -->
+        <div id="fullscreenZoomModal" class="zoom-modal-overlay" onclick="closeFullscreenZoom()">
+            <div class="zoom-modal-content">
+                <span style="position: absolute; top: -40px; right: 0; font-size: 32px; color: #fff; cursor: pointer; font-weight: bold;">&times;</span>
+                <img id="fullscreenZoomImg" src="">
+            </div>
+        </div>
+
         <div id="locationModal" class="modal-overlay">
             <div class="modal-content" id="loginContentBox" style="max-width:400px; display:block;">
                 <h3 data-lang-key="update_loc">Update location</h3>
@@ -1033,36 +1106,28 @@
             <div class="modal-content" id="loginContentBox" style="max-width:400px; display:block;">
                 <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:15px;">✨ Grihani Cosmetic</h3>
                 
-                <!-- STEP 1: Enter Phone Number -->
                 <div id="step1Phone">
                     <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Mobile Number</label>
                     <input type="tel" id="regPhone" class="modal-input" placeholder="Enter 10 digit number">
-                    
                     <div id="recaptcha-container"></div>
-                    
                     <button id="sendOtpBtn" class="confirm-order-btn" onclick="sendOTP()">📲 Send OTP</button>
                     <button class="cancel-order-btn" onclick="closeLoginModal()" data-lang-key="close_btn">❌ Close</button>
                 </div>
 
-                <!-- STEP 2: Enter OTP -->
                 <div id="step2OTP" style="display:none;">
                     <p style="font-size:12px; margin-bottom:12px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
                     <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Enter 6-Digit OTP</label>
                     <input type="number" id="otpInput" class="modal-input" placeholder="XXXXXX">
-                    
                     <button id="verifyOtpBtn" class="confirm-order-btn" onclick="verifyOTP()">✅ Verify OTP</button>
                     <button class="cancel-order-btn" onclick="resetLoginUI()">← Back</button>
                 </div>
 
-                <!-- STEP 3: Enter Details (Only for New Users) -->
                 <div id="step3Details" style="display:none;">
                     <p style="font-size:12px; margin-bottom:12px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified! Enter details to continue.</p>
                     <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Full Name</label>
                     <input type="text" id="regName" class="modal-input" placeholder="Your Name">
-                    
                     <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Delivery Address</label>
                     <textarea id="regAddress" class="modal-input" placeholder="Full Delivery Address" rows="3"></textarea>
-                    
                     <button class="confirm-order-btn" onclick="completeRegistration()">🚀 Complete Registration</button>
                 </div>
             </div>
