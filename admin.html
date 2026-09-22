@@ -36,7 +36,7 @@
         const storage = getStorage(app);
 
         window.currentLangAdmin = localStorage.getItem('grihani_admin_lang') || 'en';
-        window.editingProductId = null; // एडिट करने के लिए ट्रैक करने हेतु variable
+        window.editingProductId = null;
 
         const adminDict = {
             "dash_title": { hi: "🛠️ Grihani Admin Dashboard", en: "🛠️ Grihani Admin Dashboard" },
@@ -123,9 +123,10 @@
                 if (!data) return adminListDiv.innerHTML = '<p style="color: #bdc3c7;">No products available.</p>';
                 Object.keys(data).forEach((key) => { 
                     let p = data[key];
+                    let displayPrice = p.price || p.mrp || 0;
                     adminListDiv.innerHTML += `
                         <div class="admin-item">
-                            <span>${p.name} <small>(₹${p.price})</small></span>
+                            <span>${p.name} <small>(₹${displayPrice})</small></span>
                             <div style="display:flex; gap:5px;">
                                 <button class="edit-btn" onclick="prepareEditProduct('${key}')">✏️ Edit</button>
                                 <button class="delete-btn" onclick="deleteProduct('${key}')">❌</button>
@@ -135,19 +136,19 @@
             });
         }
 
-        // --- PRODUCT EDIT (डेटा फॉर्म में लोड करना) ---
         window.prepareEditProduct = function(key) {
             let p = window.allAdminProducts[key];
             if(!p) return;
             
             document.getElementById('pName').value = p.name || '';
             document.getElementById('pCategory').value = p.category || '';
+            document.getElementById('pMrp').value = p.mrp || '';
             document.getElementById('pPrice').value = p.price || '';
             document.getElementById('pDesc').value = p.desc || '';
             document.getElementById('pColor').value = p.color || '';
             document.getElementById('pSize').value = p.size || '';
             
-            window.editingProductId = key; // एडिट मोड ऑन
+            window.editingProductId = key;
             
             let btn = document.getElementById('publishProductBtn');
             btn.innerText = "💾 Update Product";
@@ -156,15 +157,18 @@
             window.scrollTo({ top: document.getElementById('addProductSection').offsetTop, behavior: 'smooth' });
         }
 
-        // --- ADD OR UPDATE PRODUCT TO FIREBASE ---
         window.saveProductToFirebase = async function() { 
-            let name = document.getElementById('pName').value, category = document.getElementById('pCategory').value, price = document.getElementById('pPrice').value, fileInput = document.getElementById('pImage'); 
+            let name = document.getElementById('pName').value, category = document.getElementById('pCategory').value;
+            let mrp = document.getElementById('pMrp').value;
+            let price = document.getElementById('pPrice').value;
+            let fileInput = document.getElementById('pImage'); 
             let desc = document.getElementById('pDesc').value.trim();
             let color = document.getElementById('pColor').value.trim();
             let size = document.getElementById('pSize').value.trim();
 
-            if(!name || !price) return alert("Fill name and price! / नाम और कीमत ज़रूर भरें!"); 
-            
+            if(!name || !price) return alert("Fill name and offer price! / नाम और ऑफर प्राइस ज़रूर भरें!"); 
+            if(!mrp) mrp = price; // अगर MRP नहीं भरी तो MRP को ही price मान लें
+
             const uploadImageAndGetURL = async (file) => {
                 const uniqueName = new Date().getTime() + '-' + file.name;
                 const fileRef = storageRef(storage, 'products/' + uniqueName);
@@ -183,7 +187,6 @@
                     let imagePromises = Array.from(fileInput.files).map(file => uploadImageAndGetURL(file));
                     imagesArray = await Promise.all(imagePromises);
                 } else if (window.editingProductId && window.allAdminProducts[window.editingProductId]) {
-                    // अगर नया फोटो नहीं चुना, तो पुरानी फोटो सुरक्षित रखें
                     imagesArray = window.allAdminProducts[window.editingProductId].images || [window.allAdminProducts[window.editingProductId].image];
                 }
 
@@ -194,23 +197,22 @@
                     return;
                 }
 
-                let productData = { name, category, price, desc, color, size, images: imagesArray };
+                let productData = { name, category, mrp, price, desc, color, size, images: imagesArray };
 
                 if (window.editingProductId) {
-                    // अगर एडिट कर रहे हैं तो अपडेट करें
                     await update(ref(db, 'products/' + window.editingProductId), productData);
                     alert("Product Updated Successfully! / प्रोडक्ट अपडेट हो गया!");
                     window.editingProductId = null;
                     btn.innerText = "➕ Publish Product";
                     btn.style.backgroundColor = "#27ae60";
                 } else {
-                    // नया प्रोडक्ट जोड़ें
                     await set(push(ref(db, 'products')), productData);
                     alert("Product Added Successfully! / नया प्रोडक्ट जुड़ गया!");
                     btn.innerText = "➕ Publish Product";
                 }
                 
                 document.getElementById('pName').value = ''; 
+                document.getElementById('pMrp').value = ''; 
                 document.getElementById('pPrice').value = ''; 
                 document.getElementById('pDesc').value = ''; 
                 document.getElementById('pColor').value = ''; 
@@ -349,10 +351,11 @@
                     <h3 data-lang-key="add_product">🛍️ Add / Edit Product</h3>
                     <div class="form-group"><input type="text" id="pName" placeholder="Product Name / नाम *"></div>
                     <div class="form-group"><select id="pCategory"></select></div>
-                    <div class="form-group"><input type="number" id="pPrice" placeholder="Price (₹) *"></div>
+                    <div class="form-group"><input type="number" id="pMrp" placeholder="MRP (₹) / मूल कीमत (कटी हुई कीमत)"></div>
+                    <div class="form-group"><input type="number" id="pPrice" placeholder="Offer / Selling Price (₹) * / ऑफर प्राइस"></div>
                     <div class="form-group"><textarea id="pDesc" placeholder="Description / प्रोडक्ट का विवरण" rows="2"></textarea></div>
-                    <div class="form-group"><input type="text" id="pColor" placeholder="Colors (ex: Red, Blue) / रंग (वैकल्पिक)"></div>
-                    <div class="form-group"><input type="text" id="pSize" placeholder="Sizes (ex: S, M, L) / साइज़ (वैकल्पिक)"></div>
+                    <div class="form-group"><input type="text" id="pColor" placeholder="Colors (ex: Red, Blue) / रंग"></div>
+                    <div class="form-group"><input type="text" id="pSize" placeholder="Sizes (ex: S, M, L) / साइज़"></div>
                     <div class="form-group"><input type="file" id="pImage" multiple accept="image/*"></div>
                     <button class="add-btn" id="publishProductBtn" onclick="saveProductToFirebase()" data-lang-key="btn_publish">➕ Publish Product</button>
                     <div id="adminProductList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div>
