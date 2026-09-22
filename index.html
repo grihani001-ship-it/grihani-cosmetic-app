@@ -756,7 +756,7 @@
             } catch(e) { console.error(e); }
             
             let cNameEl = document.getElementById('confirmName');
-            if(cNameEl) cNameEl.innerText = localStorage.getItem('grihani_user_name') || 'User'; 
+            if(cNameEl) cNameEl.innerText = localStorage.getItem('grihani_user_name'] || 'User'; 
             
             let cPhoneEl = document.getElementById('confirmPhone');
             if(cPhoneEl) cPhoneEl.innerText = localStorage.getItem('grihani_user_phone') || 'N/A'; 
@@ -844,10 +844,10 @@
         .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius:2px; }
         .amz-nav-links button:hover { border: 1px solid white; }
 
-        /* ✅ अपडेटेड बैनर स्टाइल: अब यह दोनों तरफ फैला हुआ और बड़ा (340px) है */
-        .banner-container { width: 98%; max-width: 1450px; height: 340px; margin: 8px auto; position: relative; overflow: hidden; background: #eaeded; border-radius: 6px; } 
+        /* ✅ बैनर अब बिना कटे पूरा दिखेगा (object-fit: contain के साथ) */
+        .banner-container { width: 98%; max-width: 1450px; height: 350px; margin: 10px auto; position: relative; overflow: hidden; background: #eaeded; border-radius: 6px; } 
         .banner-slide { width: 100%; height: 100%; position: absolute; top: 0; left: 0; } 
-        .banner-slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; } 
+        .banner-slide img { width: 100%; height: 100%; object-fit: contain; background-color: #eaeded; border-radius: 6px; } 
 
         .reels-section { padding: 10px 15px; background: transparent; z-index:5; position:relative; margin-top:-70px; } 
         .reels-section h4 { font-size: 18px; color: #0f1111; background:white; padding:8px 12px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
