@@ -246,66 +246,45 @@
                 addToCart(p, selectedColor, selectedSize); closeProductModal();
             };
             document.getElementById('productDetailModal').style.display = 'flex';
-            setupTouchSwipe('pmImg', () => updateModalImageView());
+            setupModalTouchSwipe();
         }
 
-        // मेन पॉपअप और ज़ूम दोनों के लिए कॉमन इमेज व्यू अपडेटर
         window.updateModalImageView = function() {
             let mainImg = document.getElementById('pmImg');
-            let zoomImg = document.getElementById('fullscreenZoomImg');
-            
             if(window.currentProductImages.length > 0) {
-                let currentUrl = window.currentProductImages[window.currentImageIndex];
-                if(mainImg) mainImg.src = currentUrl;
-                if(zoomImg) zoomImg.src = currentUrl;
+                mainImg.src = window.currentProductImages[window.currentImageIndex];
             }
 
-            // पॉपअप थंबनेल
+            // पॉपअप थंबनेल अपडेट करें
             let thumbContainer = document.getElementById('pmThumbnails');
-            if(thumbContainer) {
-                thumbContainer.innerHTML = '';
-                if (window.currentProductImages.length > 1) {
-                    window.currentProductImages.forEach((imgUrl, index) => {
-                        let activeClass = index === window.currentImageIndex ? 'pd-thumb-active' : '';
-                        thumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeMainImage(${index})">`;
-                    });
-                }
+            thumbContainer.innerHTML = '';
+            if (window.currentProductImages.length > 1) {
+                window.currentProductImages.forEach((imgUrl, index) => {
+                    let activeClass = index === window.currentImageIndex ? 'pd-thumb-active' : '';
+                    thumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeMainImage(${index})">`;
+                });
             }
 
-            // पॉपअप डॉट्स
-            let dotsContainer = document.getElementById('pmDotsContainer');
-            if(dotsContainer) {
-                dotsContainer.innerHTML = '';
-                if (window.currentProductImages.length > 1) {
-                    window.currentProductImages.forEach((_, index) => {
-                        let activeDot = index === window.currentImageIndex ? 'pd-dot-active' : '';
-                        dotsContainer.innerHTML += `<span class="pd-dot ${activeDot}" onclick="changeMainImage(${index})"></span>`;
-                    });
-                }
-            }
-
-            // ज़ूम व्यू थंबनेल
+            // ज़ूम विंडो के थंबनेल भी अपडेट करें
             let zoomThumbContainer = document.getElementById('zoomThumbnails');
             if(zoomThumbContainer) {
                 zoomThumbContainer.innerHTML = '';
                 if (window.currentProductImages.length > 1) {
                     window.currentProductImages.forEach((imgUrl, index) => {
                         let activeClass = index === window.currentImageIndex ? 'pd-thumb-active' : '';
-                        zoomThumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeMainImage(${index})">`;
+                        zoomThumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeZoomImage(${index})">`;
                     });
                 }
             }
 
-            // ज़ूम व्यू डॉट्स
-            let zoomDotsContainer = document.getElementById('zoomDotsContainer');
-            if(zoomDotsContainer) {
-                zoomDotsContainer.innerHTML = '';
-                if (window.currentProductImages.length > 1) {
-                    window.currentProductImages.forEach((_, index) => {
-                        let activeDot = index === window.currentImageIndex ? 'pd-dot-active' : '';
-                        zoomDotsContainer.innerHTML += `<span class="pd-dot ${activeDot}" onclick="changeMainImage(${index})"></span>`;
-                    });
-                }
+            // डॉट्स (Dots) अपडेट करें
+            let dotsContainer = document.getElementById('pmDotsContainer');
+            dotsContainer.innerHTML = '';
+            if (window.currentProductImages.length > 1) {
+                window.currentProductImages.forEach((_, index) => {
+                    let activeDot = index === window.currentImageIndex ? 'pd-dot-active' : '';
+                    dotsContainer.innerHTML += `<span class="pd-dot ${activeDot}" onclick="changeMainImage(${index})"></span>`;
+                });
             }
         }
 
@@ -314,41 +293,49 @@
             updateModalImageView();
         }
 
-        // यूनिवर्सल टच-स्वाइप फंक्शन (पॉपअप और ज़ूम दोनों के लिए)
-        function setupTouchSwipe(elementId, callback) {
-            let el = document.getElementById(elementId);
-            if(!el) return;
+        window.changeZoomImage = function(index) {
+            window.currentImageIndex = index;
+            let zoomImg = document.getElementById('fullscreenZoomImg');
+            zoomImg.src = window.currentProductImages[index];
+            updateModalImageView();
+        }
+
+        function setupModalTouchSwipe() {
+            let imgElement = document.getElementById('pmImg');
+            if(!imgElement) return;
             let startX = 0;
 
-            el.addEventListener('touchstart', (e) => {
+            imgElement.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
             }, {passive: true});
 
-            el.addEventListener('touchend', (e) => {
+            imgElement.addEventListener('touchend', (e) => {
                 let endX = e.changedTouches[0].clientX;
                 let diff = startX - endX;
-                if (Math.abs(diff) > 50) {
+                if (Math.abs(diff) > 50) { 
                     if (diff > 0) {
                         if (window.currentImageIndex < window.currentProductImages.length - 1) {
                             window.currentImageIndex++;
-                            callback();
+                            updateModalImageView();
                         }
                     } else {
                         if (window.currentImageIndex > 0) {
                             window.currentImageIndex--;
-                            callback();
+                            updateModalImageView();
                         }
                     }
                 }
             }, {passive: true});
         }
 
-        // Full-Screen Zoom Lightbox खोलना
+        // फुल-स्क्रीन ज़ूम खोलना और सभी थंबनेल दिखाना
         window.openFullscreenZoom = function() {
             if(window.currentProductImages.length === 0) return;
+            let zoomImg = document.getElementById('fullscreenZoomImg');
+            zoomImg.src = window.currentProductImages[window.currentImageIndex];
+            
             updateModalImageView();
             document.getElementById('fullscreenZoomModal').style.display = 'flex';
-            setupTouchSwipe('fullscreenZoomImg', () => updateModalImageView());
         }
 
         window.closeFullscreenZoom = function() {
@@ -885,26 +872,24 @@
         .login-existing-btn { background: #fff; border-color: #d5d9d9; color: #0f1111; } .login-existing-btn:hover { background:#f7fafa; }
         .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 8px; width: 100%; font-size: 12px; cursor: pointer; text-decoration:underline; }
         
-        /* 🔥 POPUP & SLIDER & DOTS STYLING 🔥 */
         .pd-modal-layout { max-width: 850px; display: flex; flex-direction: row; gap: 20px; padding-top: 40px; }
         .pd-gallery-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; }
         .pd-details-section { flex: 1; display: flex; flex-direction: column; }
         .pd-img { width: 100%; height: 320px; object-fit: contain; background:#f9f9f9; margin-bottom: 8px; border-radius: 8px; border: 1px solid #eee; mix-blend-mode: multiply; cursor: zoom-in; }
         
-        /* Dots Styling */
         .pd-dots-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; }
         .pd-dot { width: 8px; height: 8px; background-color: #bbb; border-radius: 50%; cursor: pointer; transition: background-color 0.3s; }
         .pd-dot-active { background-color: #e77600; width: 20px; border-radius: 4px; }
 
-        /* Thumbnails Styling */
         .pd-thumbnails { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin; width: 100%; }
         .pd-thumb-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; background: #f9f9f9; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .pd-thumb-active { border-color: #e77600; }
 
-        /* Full-Screen Zoom Lightbox Styling (थंबनेल और डॉट्स के साथ) */
-        .zoom-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; justify-content: center; align-items: center; padding: 20px; }
-        .zoom-modal-content { position: relative; width: 100%; max-width: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .zoom-modal-content img { width: 100%; max-height: 70vh; object-fit: contain; border-radius: 6px; margin-bottom: 15px; }
+        /* Full-Screen Zoom Lightbox Styling (With Thumbnails at bottom) */
+        .zoom-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; flex-direction: column; justify-content: space-between; align-items: center; padding: 25px; }
+        .zoom-main-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; position: relative; }
+        .zoom-main-area img { max-width: 90vw; max-height: 72vh; object-fit: contain; border-radius: 4px; }
+        .zoom-thumbnails-bar { display: flex; gap: 12px; overflow-x: auto; padding: 10px; max-width: 100%; background: rgba(255,255,255,0.1); border-radius: 8px; }
 
         .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; line-height:24px; font-weight: bold;}
         .pd-price { font-size: 26px; color: #B12704; margin-bottom: 12px; font-weight: bold; }
@@ -955,7 +940,6 @@
             .modal-content { padding: 15px; max-width: 92%; }
             .pd-modal-layout { flex-direction: column; padding-top: 35px; gap: 10px; }
             .pd-img { height: 230px; margin-bottom: 6px; }
-            .zoom-modal-content img { max-height: 55vh; }
         }
     </style>
 </head>
@@ -1082,14 +1066,12 @@
                     <span onclick="closeProductModal()" style="font-size: 26px; cursor: pointer; color: #333; background: #fff; padding: 0 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">&times;</span>
                 </div>
                 
-                <!-- Left Side: Image Gallery, Dots & Thumbnails -->
                 <div class="pd-gallery-section">
                     <img id="pmImg" src="" class="pd-img" onclick="openFullscreenZoom()" title="Click to Zoom">
                     <div id="pmDotsContainer" class="pd-dots-container"></div>
                     <div id="pmThumbnails" class="pd-thumbnails"></div>
                 </div>
 
-                <!-- Right Side: Product Details -->
                 <div class="pd-details-section">
                     <div id="pmTitle" class="pd-title">Product Name</div>
                     <div id="pmPrice" class="pd-price">₹0</div>
@@ -1112,14 +1094,16 @@
             </div>
         </div>
 
-        <!-- 🔥 FULL-SCREEN ZOOM LIGHTBOX MODAL (थंबनेल और डॉट्स के साथ) 🔥 -->
+        <!-- 🔥 FULL-SCREEN ZOOM LIGHTBOX MODAL (WITH ALL THUMBNAILS) 🔥 -->
         <div id="fullscreenZoomModal" class="zoom-modal-overlay">
-            <div class="zoom-modal-content">
-                <span onclick="closeFullscreenZoom()" style="position: absolute; top: -35px; right: 0; font-size: 32px; color: #fff; cursor: pointer; font-weight: bold; background: rgba(0,0,0,0.5); padding: 0 10px; border-radius: 50%;">&times;</span>
-                <img id="fullscreenZoomImg" src="">
-                <div id="zoomDotsContainer" class="pd-dots-container" style="margin-top: 10px;"></div>
-                <div id="zoomThumbnails" class="pd-thumbnails" style="justify-content: center; margin-top: 10px;"></div>
+            <div style="width: 100%; text-align: right; padding: 5px 15px;">
+                <span onclick="closeFullscreenZoom()" style="font-size: 38px; color: #fff; cursor: pointer; font-weight: bold; background: rgba(0,0,0,0.5); padding: 0 12px; border-radius: 50%;">&times;</span>
             </div>
+            <div class="zoom-main-area">
+                <img id="fullscreenZoomImg" src="">
+            </div>
+            <!-- यहाँ अब ज़ूम विंडो के नीचे भी सभी थंबनेल एक साथ दिखेंगे -->
+            <div id="zoomThumbnails" class="zoom-thumbnails-bar"></div>
         </div>
 
         <div id="locationModal" class="modal-overlay">
