@@ -27,6 +27,7 @@
 
         let cart = []; let currentCategory = 'All'; let currentSlide = 0;
         let currentLang = localStorage.getItem('grihani_lang') || 'en'; 
+        window.currentProductImages = []; // स्लाइडर के लिए नई स्टेट
         
         const dict = {
             "deliver_to": { hi: "डिलीवर करें", en: "Deliver to" },
@@ -179,10 +180,14 @@
                     if (currentCategory === 'All' || item.category === currentCategory) {
                         let btnText = currentLang === 'hi' ? 'कार्ट में डालें' : 'Add to Cart';
                         let safeProduct = encodeURIComponent(JSON.stringify(item));
+                        
+                        // पुरानी इमेज (image) और नई मल्टीपल इमेज (images[0]) दोनों को सपोर्ट करने के लिए:
+                        let displayImg = item.image ? item.image : (item.images && item.images.length > 0 ? item.images[0] : '');
+
                         appDiv.innerHTML += `
                             <div class="product-card" onclick="openProductModal('${safeProduct}')">
                                 <span class="cat-tag">${item.category}</span>
-                                <img src="${item.image}" class="product-img">
+                                <img src="${displayImg}" class="product-img">
                                 <div class="product-title">${item.name}</div>
                                 <div class="product-price"><span style="font-size:14px; vertical-align:top;">₹</span>${item.price}</div>
                                 <button class="cart-btn">${btnText}</button>
@@ -213,9 +218,26 @@
             });
         }
 
+        // --- NEW POPUP FUNCTION WITH IMAGE SLIDER ---
         window.openProductModal = function(prodStr) {
             let p = JSON.parse(decodeURIComponent(prodStr));
-            document.getElementById('pmImg').src = p.image;
+            
+            // पुरानी 1 इमेज या नई 4-5 इमेजेज दोनों का डेटा लिस्ट में लें
+            window.currentProductImages = p.images ? p.images : (p.image ? [p.image] : []);
+            
+            // मुख्य फोटो सेट करें
+            document.getElementById('pmImg').src = window.currentProductImages[0] || '';
+            
+            // थंबनेल गैलरी (स्लाइडर) बनाएं
+            let thumbContainer = document.getElementById('pmThumbnails');
+            thumbContainer.innerHTML = '';
+            if (window.currentProductImages.length > 1) {
+                window.currentProductImages.forEach((imgUrl, index) => {
+                    let activeClass = index === 0 ? 'pd-thumb-active' : '';
+                    thumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeMainImage(${index}, this)">`;
+                });
+            }
+
             document.getElementById('pmTitle').innerText = p.name;
             document.getElementById('pmPrice').innerHTML = `<span style="font-size:16px; vertical-align:top;">₹</span>${p.price}`;
             document.getElementById('pmDescText').innerText = p.desc || (currentLang === 'hi' ? 'इस प्रोडक्ट का कोई विवरण नहीं है।' : 'No description available.');
@@ -239,6 +261,14 @@
             };
             document.getElementById('productDetailModal').style.display = 'flex';
         }
+
+        // क्लिक करने पर बड़ी फोटो बदलने का फंक्शन
+        window.changeMainImage = function(index, thumbElement) {
+            document.getElementById('pmImg').src = window.currentProductImages[index];
+            document.querySelectorAll('.pd-thumb-img').forEach(el => el.classList.remove('pd-thumb-active'));
+            thumbElement.classList.add('pd-thumb-active');
+        }
+
         window.closeProductModal = function() { document.getElementById('productDetailModal').style.display = 'none'; }
 
         window.loadReels = function() {
@@ -615,7 +645,10 @@
                 let varText = ''; if(item.selectedColor) varText += item.selectedColor + ' '; if(item.selectedSize) varText += item.selectedSize;
                 let varDisplay = varText ? `<div style="font-size:11px; color:#007185; margin-bottom:5px;">${varText.trim()}</div>` : '';
                 
-                cartDiv.innerHTML += `<div class="cart-item"><img src="${item.image}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div>${varDisplay}<div class="cart-item-price">₹${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div><div class="item-total">₹${itemTotal}</div></div>`;
+                // कार्ट में इमेज दिखाने के लिए
+                let displayImg = item.image ? item.image : (item.images && item.images.length > 0 ? item.images[0] : '');
+                
+                cartDiv.innerHTML += `<div class="cart-item"><img src="${displayImg}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div>${varDisplay}<div class="cart-item-price">₹${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div><div class="item-total">₹${itemTotal}</div></div>`;
             }); document.getElementById('totalAmount').innerText = "₹" + total;
         }
 
@@ -690,14 +723,12 @@
         .amz-loc-line1 { font-size: 10px; color: #ccc; }
         .amz-loc-line2 { font-size: 12px; font-weight: bold; color: white; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
 
-        /* Desktop Search Bar */
         .amz-search-bar { display: flex; flex-grow: 1; border-radius: 4px; overflow: hidden; background: white; height: 38px; margin: 0 10px; min-width: 120px; }
         .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 8px; color: #333; outline: none; cursor: pointer; font-size: 11px; max-width:90px; }
         .amz-search-input { flex-grow: 1; border: none; padding: 0 8px; outline: none; font-size: 14px; width: 100%; }
         .amz-search-btn { background: #febd69; border: none; width: 40px; cursor: pointer; font-size: 16px; color: #333; display:flex; justify-content:center; align-items:center; flex-shrink: 0; }
         .amz-search-btn:hover { background: #f3a847; }
 
-        /* Mobile Search & Cart Row (Logo और Menu के बीच) */
         .amz-mobile-search-cart-row { display: none; background-color: #131921; padding: 6px 8px; width: 100%; align-items: center; gap: 8px; }
 
         .amz-nav-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
@@ -761,7 +792,7 @@
         .order-history-card { background: white; padding: 15px; margin-bottom: 15px; border: 1px solid #d5d9d9; border-radius:6px; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; border-bottom: 1px solid #eaeded; padding-bottom: 8px; color: #555; flex-wrap: wrap; gap: 5px; } .order-status { font-weight: bold; } .status-new { color: #e67e22; } .status-shipping { color: #007185; } .status-delivered { color: #067d62; } .status-cancelled { color: #B12704; } .order-history-total { font-size: 14px; color: #0f1111; background: #f0f2f2; padding: 10px; margin-top:12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px;}
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 15px; } 
-        .modal-content { background: white; width: 100%; max-width: 400px; padding: 20px; border-radius: 8px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); } 
+        .modal-content { background: white; width: 100%; max-width: 400px; padding: 20px; border-radius: 8px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; } 
         .modal-content h3 { font-weight: normal; font-size: 20px; margin-bottom: 15px; }
         .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #a6a6a6; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 2px rgba(15,17,17,.15) inset; } 
         .modal-input:focus { border-color: #e77600; box-shadow: 0 0 3px 2px rgba(228,121,17,.5); outline:none; }
@@ -770,9 +801,18 @@
         .login-existing-btn { background: #fff; border-color: #d5d9d9; color: #0f1111; } .login-existing-btn:hover { background:#f7fafa; }
         .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 8px; width: 100%; font-size: 12px; cursor: pointer; text-decoration:underline; }
         
-        .pd-img { width: 100%; height: 240px; object-fit: contain; background:#fff; margin-bottom: 12px; mix-blend-mode:multiply; }
-        .pd-title { font-size: 16px; color: #0f1111; margin-bottom: 5px; line-height:22px; font-weight: bold;}
-        .pd-price { font-size: 24px; color: #B12704; margin-bottom: 12px; font-weight: bold; }
+        /* 🔥 NEW MODAL LAYOUT FOR MULTIPLE IMAGES 🔥 */
+        .pd-modal-layout { max-width: 850px; display: flex; flex-direction: row; gap: 20px; padding-top: 40px; }
+        .pd-gallery-section { flex: 1.2; display: flex; flex-direction: column; }
+        .pd-details-section { flex: 1; display: flex; flex-direction: column; }
+        .pd-img { width: 100%; height: 350px; object-fit: contain; background:#f9f9f9; margin-bottom: 12px; border-radius: 8px; border: 1px solid #eee; mix-blend-mode: multiply; }
+        
+        .pd-thumbnails { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin; }
+        .pd-thumb-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; background: #f9f9f9; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .pd-thumb-active { border-color: #e77600; }
+
+        .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; line-height:24px; font-weight: bold;}
+        .pd-price { font-size: 26px; color: #B12704; margin-bottom: 12px; font-weight: bold; }
         .pd-desc-box { padding: 8px 0; font-size: 13px; color: #0f1111; margin-bottom: 12px; border-top: 1px solid #eaeded; line-height: 1.4; }
         .pd-variant-group { margin-bottom: 12px; }
         .pd-variant-group label { display: block; font-size: 13px; margin-bottom: 4px; color: #555; font-weight: bold; }
@@ -783,42 +823,45 @@
         .whatsapp-float img { width: 28px; height: 28px; filter: brightness(0) invert(1); }
         
         @media(max-width: 768px) {
-    .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
-    .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
-    .amz-logo span { font-size: 14px; }
-    .amz-location { padding: 2px; margin-right: 2px; }
-    .amz-loc-line2 { max-width: 60px; font-size: 10px; }
-    
-    .amz-search-bar { display: none !important; }
-    .amz-nav-right .amz-nav-cart { display: none !important; }
+            .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
+            .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
+            .amz-logo span { font-size: 14px; }
+            .amz-location { padding: 2px; margin-right: 2px; }
+            .amz-loc-line2 { max-width: 60px; font-size: 10px; }
+            
+            .amz-search-bar { display: none !important; }
+            .amz-nav-right .amz-nav-cart { display: none !important; }
 
-    /* यहाँ सर्च बार और कार्ट दोनों को एक लाइन में साफ़ सेट किया गया है */
-    .amz-mobile-search-cart-row { display: flex !important; width: 100%; background-color: #131921; padding: 6px 8px; align-items: center; gap: 6px; }
-    .amz-mobile-search-cart-row .amz-search-bar { display: flex !important; flex-grow: 1; height: 36px; margin: 0; }
-    
-    .amz-nav-item { padding: 2px 3px; }
-    .amz-line1 { font-size: 9px; }
-    .amz-line2 { font-size: 10px; }
-    
-    .banner-container { height: 160px; } 
-    .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
-    .product-card { padding: 10px; }
-    .product-img { height: 130px; } 
-    .product-title { font-size: 12px; line-height: 16px; }
-    .product-price { font-size: 18px; margin-bottom: 8px; }
-    .cart-btn { padding: 6px 0; font-size: 11px; }
-    .reels-section { padding: 8px; margin-top: -40px; }
-    .reels-section h4 { font-size: 14px; padding: 6px 10px; }
-    .reel-card { min-width: 100px; height: 160px; }
-    #cartPage, #ordersPage { padding: 10px; margin-top: 10px; } 
-    .account-layout { flex-direction: column; gap: 15px; }
-    .account-sidebar { width: 100%; padding: 12px; }
-    .cart-item img { width: 55px; height: 55px; margin-right: 8px; }
-    .cart-item-title { font-size: 12px; }
-    .cart-item-price { font-size: 12px; }
-    .item-total { font-size: 12px; }
-    .modal-content { padding: 15px; max-width: 92%; }
-}
+            .amz-mobile-search-cart-row { display: flex !important; width: 100%; background-color: #131921; padding: 6px 8px; align-items: center; gap: 6px; }
+            .amz-mobile-search-cart-row .amz-search-bar { display: flex !important; flex-grow: 1; height: 36px; margin: 0; }
+            
+            .amz-nav-item { padding: 2px 3px; }
+            .amz-line1 { font-size: 9px; }
+            .amz-line2 { font-size: 10px; }
+            
+            .banner-container { height: 160px; } 
+            .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
+            .product-card { padding: 10px; }
+            .product-img { height: 130px; } 
+            .product-title { font-size: 12px; line-height: 16px; }
+            .product-price { font-size: 18px; margin-bottom: 8px; }
+            .cart-btn { padding: 6px 0; font-size: 11px; }
+            .reels-section { padding: 8px; margin-top: -40px; }
+            .reels-section h4 { font-size: 14px; padding: 6px 10px; }
+            .reel-card { min-width: 100px; height: 160px; }
+            #cartPage, #ordersPage { padding: 10px; margin-top: 10px; } 
+            .account-layout { flex-direction: column; gap: 15px; }
+            .account-sidebar { width: 100%; padding: 12px; }
+            .cart-item img { width: 55px; height: 55px; margin-right: 8px; }
+            .cart-item-title { font-size: 12px; }
+            .cart-item-price { font-size: 12px; }
+            .item-total { font-size: 12px; }
+            
+            /* Mobile Popup Layout */
+            .modal-content { padding: 15px; max-width: 92%; }
+            .pd-modal-layout { flex-direction: column; padding-top: 35px; gap: 10px; }
+            .pd-img { height: 250px; margin-bottom: 8px; }
+        }
     </style>
 </head>
 <body>
@@ -873,7 +916,7 @@
                 </div>
             </div>
 
-            <!-- Mobile Search Bar & Cart Row (Logo और Menu के बीच बिल्कुल साफ़ दिखेगा) -->
+            <!-- Mobile Search Bar & Cart Row -->
             <div class="amz-mobile-search-cart-row">
                 <div class="amz-search-bar" style="margin: 0; display: flex; height: 38px; flex-grow: 1;">
                     <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value, null)">
@@ -937,21 +980,45 @@
             </div>
         </div>
 
+        <!-- 🔥 NEW DETAILED PRODUCT POPUP (MODAL) 🔥 -->
         <div id="productDetailModal" class="modal-overlay">
-            <div class="modal-content">
-                <div style="text-align: right;"><span onclick="closeProductModal()" style="font-size: 22px; cursor: pointer; color: #555;">&times;</span></div>
-                <img id="pmImg" src="" class="pd-img">
-                <div id="pmTitle" class="pd-title">Product Name</div>
-                <div id="pmPrice" class="pd-price">₹0</div>
-                <div class="pd-desc-box"><strong data-lang-key="prod_desc">Description:</strong><br><span id="pmDescText" style="margin-top:4px; display:block;"></span></div>
-                <div id="pmColorDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_color">Select Color:</label><select id="pmColorSelect"></select></div>
-                <div id="pmSizeDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_size">Select Size:</label><select id="pmSizeSelect"></select></div>
-                <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 10px;">🛒 <span data-lang-key="btn_checkout">Add to Cart</span></button>
+            <div class="modal-content pd-modal-layout">
+                <!-- Close Button -->
+                <div style="width: 100%; text-align: right; position: absolute; right: 15px; top: 12px; z-index: 10;">
+                    <span onclick="closeProductModal()" style="font-size: 26px; cursor: pointer; color: #333; background: #fff; padding: 0 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">&times;</span>
+                </div>
+                
+                <!-- Left Side: Image Gallery -->
+                <div class="pd-gallery-section">
+                    <img id="pmImg" src="" class="pd-img">
+                    <div id="pmThumbnails" class="pd-thumbnails"></div>
+                </div>
+
+                <!-- Right Side: Product Details -->
+                <div class="pd-details-section">
+                    <div id="pmTitle" class="pd-title">Product Name</div>
+                    <div id="pmPrice" class="pd-price">₹0</div>
+                    <div class="pd-desc-box">
+                        <strong data-lang-key="prod_desc">Description:</strong><br>
+                        <span id="pmDescText" style="margin-top:4px; display:block;"></span>
+                    </div>
+                    <div id="pmColorDiv" class="pd-variant-group" style="display: none;">
+                        <label data-lang-key="select_color">Select Color:</label>
+                        <select id="pmColorSelect"></select>
+                    </div>
+                    <div id="pmSizeDiv" class="pd-variant-group" style="display: none;">
+                        <label data-lang-key="select_size">Select Size:</label>
+                        <select id="pmSizeSelect"></select>
+                    </div>
+                    <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 10px;">
+                        🛒 <span data-lang-key="btn_checkout">Add to Cart</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <div id="locationModal" class="modal-overlay">
-            <div class="modal-content">
+            <div class="modal-content" id="loginContentBox" style="max-width:400px; display:block;">
                 <h3 data-lang-key="update_loc">Update location</h3>
                 <button class="confirm-order-btn" onclick="fetchCurrentLocation()" style="background:#f0f2f2; color:#0f1111; border-color:#d5d9d9; margin-bottom:12px; font-size:13px;">📍 <span data-lang-key="use_current_loc">Use Current Location</span></button>
                 <div style="text-align:center; margin-bottom:8px; color:#777; font-size:11px;">OR</div>
@@ -963,7 +1030,7 @@
 
         <!-- 🔥 OTP LOGIN MODAL 🔥 -->
         <div id="loginModal" class="modal-overlay">
-            <div class="modal-content" id="loginContentBox">
+            <div class="modal-content" id="loginContentBox" style="max-width:400px; display:block;">
                 <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:15px;">✨ Grihani Cosmetic</h3>
                 
                 <!-- STEP 1: Enter Phone Number -->
@@ -1002,7 +1069,7 @@
         </div>
 
         <div id="checkoutModal" class="modal-overlay">
-            <div class="modal-content">
+            <div class="modal-content" style="max-width:400px; display:block;">
                 <h3 data-lang-key="confirm_title">Confirm Your Order</h3>
                 
                 <div style="background: #f9f9f9; padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; border: 1px solid #d5d9d9;">
