@@ -844,10 +844,10 @@
         .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius:2px; }
         .amz-nav-links button:hover { border: 1px solid white; }
 
-        /* ✅ बैनर अब बिना किसी कट-छॉट के, सही साइज़ और चौड़ाई में दिखेगा */
-        .banner-container { width: 98%; max-width: 1450px; height: 320px; margin: 10px auto; position: relative; overflow: hidden; background: #eaeded; border-radius: 6px; } 
+        .banner-container { width: 100%; height: 280px; position: relative; overflow: hidden; background: #eaeded; } 
         .banner-slide { width: 100%; height: 100%; position: absolute; top: 0; left: 0; } 
-        .banner-slide img { width: 100%; height: 100%; object-fit: fill; border-radius: 6px; } 
+        /* ✅ यहाँ object-fit को contain कर दिया गया है ताकि डेस्कटॉप पर बैनर कटे नहीं */
+        .banner-slide img { width: 100%; height: 100%; object-fit: contain; background-color: #eaeded; } 
 
         .reels-section { padding: 10px 15px; background: transparent; z-index:5; position:relative; margin-top:-70px; } 
         .reels-section h4 { font-size: 18px; color: #0f1111; background:white; padding:8px 12px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
@@ -946,8 +946,7 @@
             .amz-line1 { font-size: 9px; }
             .amz-line2 { font-size: 10px; }
             
-            .banner-container { height: 160px; width: 100%; border-radius: 0; } 
-            .banner-slide img { border-radius: 0; }
+            .banner-container { height: 160px; } 
             .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
             .product-card { padding: 10px; }
             .product-img { height: 130px; } 
