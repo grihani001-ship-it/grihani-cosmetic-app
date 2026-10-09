@@ -13,3 +13,10 @@ jobs:
         uses: cicirello/generate-sitemap@v1
         with:
           base-url-path: https://grihanicosmetic.com/
+      - name: Commit and Push sitemap
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add sitemap.xml
+          git commit -m "Generated sitemap"
+          git push || echo "No changes to commit"
