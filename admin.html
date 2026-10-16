@@ -5,17 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grihani Admin Panel</title>
     
-    <script>
-        window.onload = function() {
-            let pass = prompt("Please enter Admin Password / कृपया एडमिन पासवर्ड दर्ज करें:");
-            if (pass !== "admin123") { alert("Wrong Password! / गलत पासवर्ड!"); window.location.href = "index.html"; } 
-            else { 
-                document.getElementById('langToggleBtnAdmin').innerText = currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
-                applyAdminLanguage();
-                loadCategoriesAdmin(); loadProductsAdmin(); loadOrdersAdmin(); loadReelsAdmin(); loadCustomersListAdmin(); loadBannersAdmin();
-            }
-        };
-    </script>
+   <script>
+    window.onload = function() {
+        document.getElementById('langToggleBtnAdmin').innerText = currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
+        applyAdminLanguage();
+        loadCategoriesAdmin(); 
+        loadProductsAdmin(); 
+        loadOrdersAdmin(); 
+        loadReelsAdmin(); 
+        loadCustomersListAdmin(); 
+        loadBannersAdmin();
+    };
+</script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
