@@ -5,18 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grihani Admin Panel</title>
     
-    <script>
-        window.onload = function() {
-            let pass = prompt("Please enter Admin Password / कृपया एडमिन पासवर्ड दर्ज करें:");
-            if (pass !== "admin123") { alert("Wrong Password! / गलत पासवर्ड!"); window.location.href = "index.html"; } 
-            else { 
-                document.getElementById('langToggleBtnAdmin').innerText = currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
-                applyAdminLanguage();
-                loadCategoriesAdmin(); loadProductsAdmin(); loadOrdersAdmin(); loadReelsAdmin(); loadCustomersListAdmin(); loadBannersAdmin();
-            }
-        };
-    </script>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
@@ -37,6 +25,44 @@
 
         window.currentLangAdmin = localStorage.getItem('grihani_admin_lang') || 'en';
         window.editingProductId = null;
+
+        // पेज लोड होने पर डेटाबेस से पासवर्ड चेक करने का सुरक्षित तरीका
+        window.onload = function() {
+            let pass = prompt("Please enter Admin Password / कृपया एडमिन पासवर्ड दर्ज करें:");
+            if (!pass) {
+                alert("Password required! / पासवर्ड आवश्यक है!");
+                window.location.href = "index.html";
+                return;
+            }
+
+            get(ref(db, 'admin/password')).then((snapshot) => {
+                let dbPassword = snapshot.exists() ? snapshot.val() : "admin123";
+                
+                if (pass !== dbPassword) {
+                    alert("Wrong Password! / गलत पासवर्ड!");
+                    window.location.href = "index.html";
+                } else {
+                    document.getElementById('langToggleBtnAdmin').innerText = window.currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
+                    applyAdminLanguage();
+                    loadCategoriesAdmin(); 
+                    loadProductsAdmin(); 
+                    loadOrdersAdmin(); 
+                    loadReelsAdmin(); 
+                    loadCustomersListAdmin(); 
+                    loadBannersAdmin();
+                }
+            }).catch((error) => {
+                console.error("Auth Error:", error);
+                if (pass !== "admin123") {
+                    alert("Authentication Error! / ऑथेंटिकेशन एरर!");
+                    window.location.href = "index.html";
+                } else {
+                    document.getElementById('langToggleBtnAdmin').innerText = window.currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
+                    applyAdminLanguage();
+                    loadCategoriesAdmin(); loadProductsAdmin(); loadOrdersAdmin(); loadReelsAdmin(); loadCustomersListAdmin(); loadBannersAdmin();
+                }
+            });
+        };
 
         const adminDict = {
             "dash_title": { hi: "🛠️ Grihani Admin Dashboard", en: "🛠️ Grihani Admin Dashboard" },
@@ -137,9 +163,8 @@
                 Object.keys(data).forEach((key) => { 
                     let p = data[key];
                     let displayPrice = p.price || p.mrp || 0;
-                    let stockQty = p.stock !== undefined ? parseInt(p.stock) : 10; // डिफ़ॉल्ट स्टॉक 10 मान लें अगर पुराना प्रोडक्ट है
+                    let stockQty = p.stock !== undefined ? parseInt(p.stock) : 10;
 
-                    // नॉर्मल प्रोडक्ट लिस्ट
                     adminListDiv.innerHTML += `
                         <div class="admin-item">
                             <span>${p.name} <small>(₹${displayPrice}) | Stock: <b>${stockQty}</b></small></span>
@@ -149,7 +174,6 @@
                             </div>
                         </div>`; 
 
-                    // अगर स्टॉक 0 है तो आउट ऑफ़ स्टॉक वाले अलग ब्लॉक में दिखाएं
                     if (stockQty <= 0) {
                         hasOutOfStock = true;
                         outOfStockDiv.innerHTML += `
@@ -377,7 +401,6 @@
                 <div class="manage-section" style="border-left: 4px solid #9b59b6;"><h3 data-lang-key="reg_customers">👥 Registered Customers</h3><div id="adminCustomerList"></div></div>
             </div>
             <div class="column">
-                <!-- 🔴 आउट ऑफ़ स्टॉक प्रोडक्ट्स का अलग ब्लॉक -->
                 <div class="manage-section" style="border-left: 4px solid #c0392b;">
                     <h3 data-lang-key="out_of_stock_title">🔴 Out of Stock Products</h3>
                     <div id="adminOutOfStockList" style="max-height: 140px; overflow-y: auto;"></div>
