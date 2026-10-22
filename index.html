@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-LLXJXD7KN2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-LLXJXD7KN2');
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Grihani Cosmetic - Online Store</title>
@@ -189,9 +180,13 @@
                 Object.keys(data).forEach((key) => {
                     let item = data[key];
                     if (currentCategory === 'All' || item.category === currentCategory) {
-                        let btnText = currentLang === 'hi' ? 'कार्ट में डालें' : 'Add to Cart';
-                        let safeProduct = encodeURIComponent(JSON.stringify(item));
-                        let displayImg = item.image ? item.image : (item.images && item.images.length > 0 ? item.images[0] : '');
+                        let stockQty = item.stock !== undefined ? parseInt(item.stock) : 10;
+                        let isOutOfStock = stockQty <= 0;
+
+                        let btnText = isOutOfStock ? (currentLang === 'hi' ? 'स्टॉक खत्म' : 'Out of Stock') : (currentLang === 'hi' ? 'कार्ट में डालें' : 'Add to Cart');
+                        let btnClass = isOutOfStock ? 'cart-btn disabled-btn' : 'cart-btn';
+                        let cardClickAction = isOutOfStock ? '' : `onclick="openProductModal('${encodeURIComponent(JSON.stringify(item))}')"`;
+                        let outOfStockBadge = isOutOfStock ? `<div class="out-of-stock-overlay">OUT OF STOCK</div>` : '';
 
                         let sellingPrice = parseFloat(item.price) || 0;
                         let mrpPrice = parseFloat(item.mrp) || sellingPrice;
@@ -205,16 +200,17 @@
                         }
 
                         appDiv.innerHTML += `
-                            <div class="product-card" onclick="openProductModal('${safeProduct}')">
+                            <div class="product-card" ${cardClickAction}>
+                                ${outOfStockBadge}
                                 <span class="cat-tag">${item.category}</span>
-                                <img src="${displayImg}" class="product-img">
+                                <img src="${item.image || (item.images && item.images[0] ? item.images[0] : '')}" class="product-img">
                                 <div class="product-title">${item.name}</div>
                                 <div class="product-price-box">
                                     <span class="product-price"><span style="font-size:14px; vertical-align:top;">₹</span>${sellingPrice}</span>
                                     ${mrpHtml}
                                     ${discountHtml}
                                 </div>
-                                <button class="cart-btn">${btnText}</button>
+                                <button class="${btnClass}" ${isOutOfStock ? 'disabled' : ''}>${btnText}</button>
                             </div>`;
                     }
                 });
@@ -226,12 +222,8 @@
             let searchInputDesktop = document.getElementById('searchInput');
             let searchInputMob = document.getElementById('searchInputMob');
             
-            if(searchInputDesktop && searchInputDesktop.value) {
-                input = searchInputDesktop.value.toLowerCase();
-            }
-            if(searchInputMob && searchInputMob.value) {
-                input = searchInputMob.value.toLowerCase();
-            }
+            if(searchInputDesktop && searchInputDesktop.value) input = searchInputDesktop.value.toLowerCase();
+            if(searchInputMob && searchInputMob.value) input = searchInputMob.value.toLowerCase();
             
             let cards = document.querySelectorAll('.product-card');
             cards.forEach(card => {
@@ -244,6 +236,9 @@
 
         window.openProductModal = function(prodStr) {
             let p = JSON.parse(decodeURIComponent(prodStr));
+            let stockQty = p.stock !== undefined ? parseInt(p.stock) : 10;
+            if(stockQty <= 0) return; // अगर आउट ऑफ़ स्टॉक है तो पॉपअप न खुले
+
             window.currentProductImages = p.images ? p.images : (p.image ? [p.image] : []);
             window.currentImageIndex = 0;
             
@@ -286,9 +281,7 @@
 
         window.updateModalImageView = function() {
             let mainImg = document.getElementById('pmImg');
-            if(window.currentProductImages.length > 0) {
-                mainImg.src = window.currentProductImages[window.currentImageIndex];
-            }
+            if(window.currentProductImages.length > 0) mainImg.src = window.currentProductImages[window.currentImageIndex];
 
             let thumbContainer = document.getElementById('pmThumbnails');
             thumbContainer.innerHTML = '';
@@ -320,15 +313,10 @@
             }
         }
 
-        window.changeMainImage = function(index) {
-            window.currentImageIndex = index;
-            updateModalImageView();
-        }
-
+        window.changeMainImage = function(index) { window.currentImageIndex = index; updateModalImageView(); }
         window.changeZoomImage = function(index) {
             window.currentImageIndex = index;
-            let zoomImg = document.getElementById('fullscreenZoomImg');
-            zoomImg.src = window.currentProductImages[index];
+            document.getElementById('fullscreenZoomImg').src = window.currentProductImages[index];
             updateModalImageView();
         }
 
@@ -336,43 +324,24 @@
             let imgElement = document.getElementById('pmImg');
             if(!imgElement) return;
             let startX = 0;
-
-            imgElement.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-            }, {passive: true});
-
+            imgElement.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, {passive: true});
             imgElement.addEventListener('touchend', (e) => {
-                let endX = e.changedTouches[0].clientX;
-                let diff = startX - endX;
+                let diff = startX - e.changedTouches[0].clientX;
                 if (Math.abs(diff) > 50) { 
-                    if (diff > 0) {
-                        if (window.currentImageIndex < window.currentProductImages.length - 1) {
-                            window.currentImageIndex++;
-                            updateModalImageView();
-                        }
-                    } else {
-                        if (window.currentImageIndex > 0) {
-                            window.currentImageIndex--;
-                            updateModalImageView();
-                        }
-                    }
+                    if (diff > 0 && window.currentImageIndex < window.currentProductImages.length - 1) { window.currentImageIndex++; updateModalImageView(); }
+                    else if (diff < 0 && window.currentImageIndex > 0) { window.currentImageIndex--; updateModalImageView(); }
                 }
             }, {passive: true});
         }
 
         window.openFullscreenZoom = function() {
             if(window.currentProductImages.length === 0) return;
-            let zoomImg = document.getElementById('fullscreenZoomImg');
-            zoomImg.src = window.currentProductImages[window.currentImageIndex];
-            
+            document.getElementById('fullscreenZoomImg').src = window.currentProductImages[window.currentImageIndex];
             updateModalImageView();
             document.getElementById('fullscreenZoomModal').style.display = 'flex';
         }
 
-        window.closeFullscreenZoom = function() {
-            document.getElementById('fullscreenZoomModal').style.display = 'none';
-        }
-
+        window.closeFullscreenZoom = function() { document.getElementById('fullscreenZoomModal').style.display = 'none'; }
         window.closeProductModal = function() { document.getElementById('productDetailModal').style.display = 'none'; }
 
         window.loadReels = function() {
@@ -404,23 +373,15 @@
             document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
             applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
             checkSavedLocation(); 
-            
             let savedPhone = localStorage.getItem('grihani_user_phone');
-            if(savedPhone) { syncUserData(savedPhone); }
+            if(savedPhone) syncUserData(savedPhone);
         }
 
         window.openLoginModal = function() { 
-            if(localStorage.getItem('grihani_user_phone')) { openOrdersPage(); } 
-            else { 
-                resetLoginUI();
-                document.getElementById('loginModal').style.display = 'flex'; 
-            }
+            if(localStorage.getItem('grihani_user_phone')) openOrdersPage(); 
+            else { resetLoginUI(); document.getElementById('loginModal').style.display = 'flex'; }
         }
-        window.closeLoginModal = function() { 
-            document.getElementById('loginModal').style.display = 'none'; 
-            resetLoginUI();
-        }
-
+        window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; resetLoginUI(); }
         window.resetLoginUI = function() {
             document.getElementById('step1Phone').style.display = 'block';
             document.getElementById('step2OTP').style.display = 'none';
@@ -432,53 +393,33 @@
 
         function setupRecaptcha() {
             if(!window.recaptchaVerifier) {
-                window.recaptchaVerifier = new RecaptchaVerifier(window.auth, 'recaptcha-container', {
-                    'size': 'invisible'
-                });
+                window.recaptchaVerifier = new RecaptchaVerifier(window.auth, 'recaptcha-container', { 'size': 'invisible' });
             }
         }
 
         window.sendOTP = function() {
             let phone = document.getElementById('regPhone').value.trim();
             if(phone.length !== 10) return showToast(currentLang === 'hi' ? "कृपया 10 अंकों का मोबाइल नंबर डालें!" : "Please enter a valid 10-digit mobile number!");
-            
             let btn = document.getElementById('sendOtpBtn');
             btn.innerText = currentLang === 'hi' ? "भेज रहे हैं..." : "Sending...";
-            
             setupRecaptcha();
-            let appVerifier = window.recaptchaVerifier;
-            let numberForAuth = "+91" + phone;
-
-            signInWithPhoneNumber(window.auth, numberForAuth, appVerifier)
+            signInWithPhoneNumber(window.auth, "+91" + phone, window.recaptchaVerifier)
                 .then((confirmationResult) => {
                     window.confirmationResult = confirmationResult;
                     document.getElementById('step1Phone').style.display = 'none';
-                    document.getElementById('displayPhoneOTP').innerText = numberForAuth;
+                    document.getElementById('displayPhoneOTP').innerText = "+91" + phone;
                     document.getElementById('step2OTP').style.display = 'block';
                 }).catch((error) => {
-                    console.error("OTP Error:", error);
-                    let errMsg = currentLang === 'hi' ? "सर्वर व्यस्त है, कृपया कुछ देर बाद प्रयास करें।" : "Server is busy, please try again later.";
-                    if(error.code === 'auth/too-many-requests' || error.code === 'auth/quota-exceeded') {
-                        errMsg = currentLang === 'hi' ? "आज के OTP की लिमिट खत्म हो गई है। कृपया कल प्रयास करें।" : "Daily OTP limit reached. Please try again tomorrow.";
-                    } else if (error.code === 'auth/invalid-phone-number') {
-                        errMsg = currentLang === 'hi' ? "कृपया सही मोबाइल नंबर दर्ज करें।" : "Please enter a valid mobile number.";
-                    }
-                    showToast(errMsg);
+                    showToast(currentLang === 'hi' ? "सर्वर व्यस्त है।" : "Server busy.");
                     btn.innerText = '📲 Send OTP';
-                    if(window.recaptchaVerifier) window.recaptchaVerifier.render().then(widgetId => grecaptcha.reset(widgetId));
                 });
         }
 
         window.verifyOTP = function() {
             let code = document.getElementById('otpInput').value.trim();
-            if(code.length !== 6) return showToast(currentLang === 'hi' ? "6 अंकों का OTP दर्ज करें!" : "Enter 6-digit OTP!");
-
-            let btn = document.getElementById('verifyOtpBtn');
-            btn.innerText = currentLang === 'hi' ? "चेक कर रहे हैं..." : "Verifying...";
-
+            if(code.length !== 6) return showToast("Enter 6-digit OTP!");
             window.confirmationResult.confirm(code).then((result) => {
                 let phone = document.getElementById('regPhone').value.trim();
-                
                 get(child(ref(window.db), `customers/${phone}`)).then((snapshot) => {
                     if (snapshot.exists()) {
                         let cData = snapshot.val();
@@ -486,43 +427,28 @@
                         localStorage.setItem('grihani_user_name', cData.name); 
                         localStorage.setItem('grihani_user_phone', phone); 
                         localStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
-                        
                         document.getElementById('loginModal').style.display = 'none'; 
                         updateUserUI(cData.name); 
-                        showToast((currentLang === 'hi' ? "स्वागत है, " : "Welcome, ") + cData.name + "!");
                         mergeAndListenCart(phone);
                     } else {
                         document.getElementById('step2OTP').style.display = 'none';
                         document.getElementById('step3Details').style.display = 'block';
                     }
                 });
-
-            }).catch((error) => {
-                showToast(currentLang === 'hi' ? "गलत OTP! कृपया दोबारा प्रयास करें।" : "Invalid OTP! Please try again.");
-                btn.innerText = '✅ Verify OTP';
-            });
+            }).catch(() => { showToast("Invalid OTP!"); });
         }
 
         window.completeRegistration = function() {
             let name = document.getElementById('regName').value.trim();
             let address = document.getElementById('regAddress').value.trim();
             let phone = document.getElementById('regPhone').value.trim();
-
-            if(!name || !address) return showToast(currentLang === 'hi' ? "नाम और पता ज़रूरी है!" : "Name and Address are required!");
-
-            set(ref(window.db, 'customers/' + phone), { 
-                name: name, 
-                phone: phone, 
-                addresses: [address], 
-                date: new Date().toLocaleString() 
-            }).then(() => {
+            if(!name || !address) return showToast("Name and Address required!");
+            set(ref(window.db, 'customers/' + phone), { name, phone, addresses: [address], date: new Date().toLocaleString() }).then(() => {
                 localStorage.setItem('grihani_user_name', name); 
                 localStorage.setItem('grihani_user_phone', phone); 
                 localStorage.setItem('grihani_user_addresses', JSON.stringify([address]));
-                
                 document.getElementById('loginModal').style.display = 'none'; 
                 updateUserUI(name); 
-                showToast(currentLang === 'hi' ? "✨ Grihani Cosmetic में आपका स्वागत है, " + name + "!" : "✨ Welcome to Grihani Cosmetic, " + name + "!");
                 mergeAndListenCart(phone);
             });
         }
@@ -530,19 +456,17 @@
         function showToast(msg) {
             let existing = document.getElementById('grihaniToast');
             if(existing) existing.remove();
-
             let toast = document.createElement('div');
             toast.id = 'grihaniToast';
             toast.innerHTML = `<span>🛍️ <b>Grihani Cosmetic</b><br>${msg}</span>`;
             toast.style.cssText = "position:fixed; top:20px; right:20px; background:#131921; color:#fff; padding:15px 20px; border-radius:8px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:14px; border-left:5px solid #febd69;";
-            
             document.body.appendChild(toast);
             setTimeout(() => { toast.remove(); }, 4000);
         }
 
         window.syncCartToCloud = function() {
             let phone = localStorage.getItem('grihani_user_phone');
-            if(phone) { set(ref(window.db, 'carts/' + phone.replace(/[^0-9]/g, '')), cart); } 
+            if(phone) set(ref(window.db, 'carts/' + phone.replace(/[^0-9]/g, '')), cart);
             else { updateCartCount(); renderCartItems(); }
         }
 
@@ -567,7 +491,7 @@
         }
 
         window.addNewAddress = function() {
-            let newAdd = prompt(currentLang === 'hi' ? "अपना नया पूरा पता दर्ज करें:" : "Enter your new full address:");
+            let newAdd = prompt("Enter your new full address:");
             if(newAdd && newAdd.trim() !== "") {
                 let phone = localStorage.getItem('grihani_user_phone');
                 let addrs = JSON.parse(localStorage.getItem('grihani_user_addresses') || "[]");
@@ -575,7 +499,7 @@
                 update(ref(window.db, 'customers/' + phone), { addresses: addrs }).then(() => {
                     localStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
                     renderProfileInfo();
-                    showToast(currentLang === 'hi' ? "📍 नया पता जुड़ गया!" : "📍 New Address Added!");
+                    showToast("📍 New Address Added!");
                 });
             }
         }
@@ -584,41 +508,27 @@
             document.getElementById('profileName').innerText = localStorage.getItem('grihani_user_name');
             document.getElementById('profilePhone').innerText = localStorage.getItem('grihani_user_phone');
             let addrs = JSON.parse(localStorage.getItem('grihani_user_addresses') || "[]");
-            let addrsHtml = addrs.map((a, i) => `<div class="address-box"><b>${i+1}.</b> ${a}</div>`).join('');
-            document.getElementById('profileAddresses').innerHTML = addrsHtml;
+            document.getElementById('profileAddresses').innerHTML = addrs.map((a, i) => `<div class="address-box"><b>${i+1}.</b> ${a}</div>`).join('');
         }
 
         function updateUserUI(name) { 
-            let firstName = name.split(" ")[0];
-            document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + firstName;
-            fetchMyOrders(); 
-            renderProfileInfo();
+            document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + name.split(" ")[0];
+            fetchMyOrders(); renderProfileInfo();
         }
-        window.logoutUser = function() { if(confirm(currentLang === 'hi' ? "क्या आप लॉग आउट करना चाहते हैं?" : "Do you want to logout?")) { localStorage.clear(); location.reload(); } }
-        
-        window.filterCategory = function(cat, btnElement) { 
-            currentCategory = cat; 
-            loadProducts(); 
-            let searchInput = document.getElementById('searchInput');
-            let searchInputMob = document.getElementById('searchInputMob');
-            if(searchInput) searchInput.value = '';
-            if(searchInputMob) searchInputMob.value = '';
-        }
+        window.logoutUser = function() { if(confirm("Logout?")) { localStorage.clear(); location.reload(); } }
+        window.filterCategory = function(cat) { currentCategory = cat; loadProducts(); }
         
         window.addToCart = function(product, sColor, sSize) { 
             let existingItem = cart.find(item => item.name === product.name && item.selectedColor === sColor && item.selectedSize === sSize); 
             if(existingItem) existingItem.qty += 1; else cart.push({ ...product, selectedColor: sColor, selectedSize: sSize, qty: 1 }); 
-            showToast(product.name + (currentLang === 'hi' ? " कार्ट में जुड़ गया!" : " added to cart!")); 
+            showToast(product.name + " added to cart!"); 
             syncCartToCloud();
         }
 
         window.updateCartCount = function() { 
-            let total = 0; 
-            cart.forEach(item => total += item.qty); 
-            let cCount = document.getElementById('cartCount');
-            let cCountMob = document.getElementById('cartCountMob');
-            if(cCount) cCount.innerText = total; 
-            if(cCountMob) cCountMob.innerText = total; 
+            let total = 0; cart.forEach(item => total += item.qty); 
+            document.getElementById('cartCount').innerText = total; 
+            document.getElementById('cartCountMob').innerText = total; 
         }
         window.increaseQty = function(index) { cart[index].qty += 1; syncCartToCloud(); }
         window.decreaseQty = function(index) { cart[index].qty -= 1; if(cart[index].qty === 0) cart.splice(index, 1); syncCartToCloud(); }
@@ -647,151 +557,61 @@
             Object.keys(liveActiveOrders).forEach(key => { if(liveActiveOrders[key].customerPhone === phone) myOrders.push({...liveActiveOrders[key], id: key}); });
             Object.keys(liveHistoryOrders).forEach(key => { if(liveHistoryOrders[key].customerPhone === phone) myOrders.push({...liveHistoryOrders[key], id: key}); });
             
-            if(myOrders.length === 0) { ordersDiv.innerHTML = `<div style="text-align:center; padding:30px; border:1px solid #d5d9d9; border-radius:8px;"><h3 style="color:#777; margin-bottom:10px;">📦 ${currentLang === 'hi' ? 'कोई ऑर्डर नहीं मिला' : 'No Orders Found'}</h3></div>`; return; }
+            if(myOrders.length === 0) { ordersDiv.innerHTML = `<div style="text-align:center; padding:30px; border:1px solid #d5d9d9; border-radius:8px;"><h3 style="color:#777;">No Orders Found</h3></div>`; return; }
             myOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             let htmlString = '';
             myOrders.forEach(order => {
                 let statusColor = 'status-new'; let statusText = (order.status || 'New').toLowerCase(); 
-                let displayStatus = currentLang === 'hi' ? "नया ऑर्डर 🕒" : "New Order 🕒";
+                let displayStatus = "New Order 🕒";
                 let isShip = statusText.includes('ship'), isDel = statusText.includes('deliver'), isCan = statusText.includes('cancel');
-                if(isShip) { statusColor = 'status-shipping'; displayStatus = currentLang === 'hi' ? "रास्ते में है 🚚" : "Shipped 🚚"; }
-                else if(isDel) { statusColor = 'status-delivered'; displayStatus = currentLang === 'hi' ? "डिलीवर हो गया ✅" : "Delivered ✅"; }
-                else if(isCan) { statusColor = 'status-cancelled'; displayStatus = currentLang === 'hi' ? "रद्द ❌" : "Cancelled ❌"; }
+                if(isShip) { statusColor = 'status-shipping'; displayStatus = "Shipped 🚚"; }
+                else if(isDel) { statusColor = 'status-delivered'; displayStatus = "Delivered ✅"; }
+                else if(isCan) { statusColor = 'status-cancelled'; displayStatus = "Cancelled ❌"; }
 
-                let progressHtml = '';
-                if(!isCan) {
-                    progressHtml = `<div style="display:flex; justify-content:space-between; font-size:10px; margin: 15px 0 5px 0; color:#888; text-align:center; font-weight:bold;"><div style="color: ${statusText === 'new' || isShip || isDel ? '#f39c12' : '#ccc'};">📝<br>${currentLang === 'hi' ? 'ऑर्डर बुक' : 'Booked'}</div><div style="color: ${isShip || isDel ? '#3498db' : '#ccc'};">🚚<br>${currentLang === 'hi' ? 'डिस्पैच' : 'Dispatched'}</div><div style="color: ${isDel ? '#27ae60' : '#ccc'};">✅<br>${currentLang === 'hi' ? 'डिलीवर' : 'Delivered'}</div></div><div style="height:4px; background:#eee; margin-bottom:15px; border-radius:2px; position:relative; overflow:hidden;"><div style="height:4px; background:${isDel ? '#27ae60' : (isShip ? '#3498db' : '#f39c12')}; width: ${isDel ? '100%' : (isShip ? '50%' : '15%')}; transition: width 0.5s; border-radius:2px;"></div></div>`;
-                }
-
-                let trackingHtml = '';
-                if(order.tracking) {
-                    trackingHtml = '<div style="margin-top:12px; padding:10px; background:#f4f9fc; border-radius:6px; border-left:4px solid #3498db; transition: all 0.3s ease;">';
-                    trackingHtml += `<strong style="font-size:12px; color:#2980b9; margin-bottom:8px; display:block;">📍 ${currentLang === 'hi' ? 'लाइव ट्रैकिंग अपडेट्स:' : 'Live Tracking:'}</strong>`;
-                    let steps = Object.keys(order.tracking).map(k => order.tracking[k]);
-                    steps.forEach(t => { trackingHtml += `<div style="margin-bottom:8px; font-size:12px; display:flex; gap:8px;"><span style="color:#3498db;">🔹</span><div><b style="color:#333;">${t.msg}</b> <div style="font-size:10px; color:#7f8c8d; margin-top:2px;">🕒 ${t.time}</div></div></div>`; });
-                    if(order.courierLink) { trackingHtml += `<a href="${order.courierLink}" target="_blank" style="display:block; text-align:center; background:#2980b9; color:white; text-decoration:none; font-size:13px; font-weight:bold; padding:8px; border-radius:4px; margin-top:10px;">📍 ${currentLang === 'hi' ? 'अपना कूरियर यहाँ ट्रैक करें' : 'Track Courier Here'}</a>`; }
-                    trackingHtml += '</div>';
-                }
-
-                let itemsHtml = order.items.map(i => {
-                    let varText = ''; if(i.selectedColor) varText += i.selectedColor + ' '; if(i.selectedSize) varText += i.selectedSize;
-                    let varDisplay = varText ? `<span style="color:#e67e22; font-size:10px;">(${varText.trim()})</span>` : '';
-                    return `<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #ddd;"><span>🛍️ ${i.name} ${varDisplay} <b>(x${i.qty})</b></span> <span style="font-weight:bold; color:#333;">₹${i.price * i.qty}</span></div>`;
-                }).join('');
+                let itemsHtml = order.items.map(i => `<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span>${i.name} (x${i.qty})</span> <b>₹${i.price * i.qty}</b></div>`).join('');
                 
-                let payOnlineLaterBtn = '';
-                if(order.paymentMode === 'Cash on Delivery (COD)' && !isDel && !isCan) {
-                    payOnlineLaterBtn = `<button onclick="payCodOnline('${order.id}', '${order.total}', '${order.customerName}', '${order.customerPhone}')" style="background:#ffd814; color:#0f1111; border:1px solid #fcd200; padding:8px 12px; border-radius:100px; font-size:12px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px; box-shadow: 0 2px 5px rgba(213,217,217,.5); animation: pulse 2s infinite;">💳 ${currentLang === 'hi' ? 'अभी ऑनलाइन पेमेंट करें (Pay Now)' : 'Pay Online Now'}</button>`;
-                }
-
-                let safeOrderData = encodeURIComponent(JSON.stringify({...order, id: order.id}));
-                let invoiceBtnHtml = `<button onclick="downloadInvoice('${safeOrderData}')" style="background:#fff; color:#0f1111; border:1px solid #d5d9d9; padding:8px 12px; border-radius:100px; font-size:12px; font-weight:bold; cursor:pointer; width:100%; margin-top:10px; box-shadow: 0 2px 5px rgba(213,217,217,.5);">🧾 ${currentLang === 'hi' ? 'इनवॉइस / बिल डाउनलोड करें' : 'Download Invoice / Bill'}</button>`;
-
                 htmlString += `
                     <div class="order-history-card">
-                        <div class="order-history-header"><span>📅 ${currentLang === 'hi' ? 'ऑर्डर:' : 'Order:'} ${order.date.split(',')[0]} <span style="font-size:10px; color:#888;">${order.date.split(',')[1]}</span></span><span class="order-status ${statusColor}">${displayStatus}</span></div>
-                        ${progressHtml}
-                        <div class="order-history-items" style="background:#f9f9f9; padding:10px; border-radius:6px; margin-bottom:12px; border:1px solid #eee;">
-                            <strong style="font-size:11px; color:#111; display:block; margin-bottom:8px; text-transform:uppercase;">${currentLang === 'hi' ? 'खरीदे गए आइटम:' : 'Purchased Items:'}</strong>${itemsHtml}
-                            <div style="margin-top:8px; font-size:11px; color:#555; padding-top:8px; border-top:1px dashed #ddd;">📍 <b>${currentLang === 'hi' ? 'डिलीवरी का पता:' : 'Delivery Address:'}</b><br>${order.customerAddress}</div>
-                        </div>
-                        ${trackingHtml}
-                        <div class="order-history-total" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;"><span style="font-size:11px; color:#555;">${currentLang === 'hi' ? 'पेमेंट:' : 'Payment:'} <b>${order.paymentMode === 'Online Paid' ? '✅ Online Paid' : order.paymentMode}</b></span><span>${currentLang === 'hi' ? 'कुल बिल:' : 'Total:'} <b style="color:#B12704; font-size:16px;">${order.total}</b></span></div>
-                        ${payOnlineLaterBtn}${invoiceBtnHtml}
-                    </div>
-                `;
+                        <div class="order-history-header"><span>📅 ${order.date}</span><span class="order-status ${statusColor}">${displayStatus}</span></div>
+                        <div style="background:#f9f9f9; padding:8px; border-radius:4px; margin-bottom:8px;">${itemsHtml}</div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px;"><span>Payment: <b>${order.paymentMode}</b></span><span>Total: <b style="color:#B12704;">${order.total}</b></span></div>
+                    </div>`;
             });
             ordersDiv.innerHTML = htmlString;
         }
 
-        window.payCodOnline = function(orderId, amountStr, name, phone) {
-            let amountNum = parseInt(amountStr.replace(/[^0-9]/g, '')) * 100;
-            var rzp = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": amountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response) { update(ref(window.db, 'orders/' + orderId), { paymentMode: "Online Paid", paymentId: response.razorpay_payment_id }).then(() => { showToast(currentLang === 'hi' ? "✅ आपका ऑनलाइन पेमेंट सफल रहा!" : "✅ Payment Successful!"); }); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } });
-            rzp.open();
-        }
-
-        window.downloadInvoice = function(orderStr) {
-            let order = JSON.parse(decodeURIComponent(orderStr));
-            let invoiceWindow = window.open('', '_blank');
-            let itemsHtml = order.items.map(i => {
-                let varText = ''; if(i.selectedColor) varText += i.selectedColor + ' '; if(i.selectedSize) varText += i.selectedSize;
-                let finalName = varText ? `${i.name} (${varText.trim()})` : i.name;
-                return `<tr><td style="padding:10px; border:1px solid #ddd;">${finalName}</td><td style="padding:10px; border:1px solid #ddd; text-align:center;">${i.qty}</td><td style="padding:10px; border:1px solid #ddd; text-align:right;">₹${i.price}</td><td style="padding:10px; border:1px solid #ddd; text-align:right;">₹${i.price * i.qty}</td></tr>`;
-            }).join('');
-            let scrOpen = "<scr" + "ipt>"; let scrClose = "</scr" + "ipt>";
-            let displayBillNo = order.billNumber ? order.billNumber : "N/A";
-
-            let html = `<html><head><title>Invoice - ${displayBillNo}</title></head>
-            <body style="font-family: Arial, sans-serif; padding:40px; color:#0f1111; max-width:800px; margin:auto;">
-                <h1 style="color:#0f1111; text-align:center; margin-bottom:5px;">GRIHANI COSMETIC</h1><p style="text-align:center; font-size:14px; color:#555; margin-top:0;">Ramkrishna Nagar, Patna, Bihar, India</p>
-                <hr style="border:1px solid #eee; margin:20px 0;"><h2 style="text-align:center; background:#f4f4f4; padding:10px;">TAX INVOICE / BILL</h2>
-                <div style="display:flex; justify-content:space-between; margin-bottom:30px; font-size:14px; line-height:1.6;">
-                    <div><b style="color:#0f1111;">Billed To:</b><br>${order.customerName}<br>Phone: ${order.customerPhone}<br>Address: ${order.customerAddress}</div>
-                    <div style="text-align:right;"><b style="color:#0f1111;">Order Details:</b><br>Invoice No: <b>${displayBillNo}</b><br>Date: ${order.date}<br>Payment Mode: ${order.paymentMode}<br>Status: ${order.status}</div>
-                </div>
-                <table style="width:100%; border-collapse: collapse; margin-bottom:20px; font-size:14px;">
-                    <tr style="background:#232f3e; color:white;"><th style="padding:10px; border:1px solid #232f3e; text-align:left;">Item Name</th><th style="padding:10px; border:1px solid #232f3e;">Qty</th><th style="padding:10px; border:1px solid #232f3e; text-align:right;">Price</th><th style="padding:10px; border:1px solid #232f3e; text-align:right;">Total</th></tr>
-                    ${itemsHtml}
-                </table>
-                <h3 style="text-align:right; color:#B12704; padding-top:10px; border-top:2px solid #eee;">Grand Total: ${order.total}</h3>
-                <p style="text-align:center; margin-top:40px; font-size:13px; color:#777;">Thank you for shopping with Grihani Cosmetic!</p>
-                ${scrOpen}window.onload = function() { window.print(); }${scrClose}
-            </body></html>`;
-            invoiceWindow.document.write(html); invoiceWindow.document.close();
-        }
-
         window.renderCartItems = function() {
             let cartDiv = document.getElementById('cartItemsList'); cartDiv.innerHTML = ''; let total = 0;
-            if(cart.length === 0) cartDiv.innerHTML = `<p style="text-align:center; color:#777; padding:20px;" data-lang-key="empty_cart">${dict["empty_cart"][currentLang]}</p>`;
+            if(cart.length === 0) cartDiv.innerHTML = `<p style="text-align:center; color:#777; padding:20px;">Your cart is empty.</p>`;
             else cart.forEach((item, index) => {
                 let itemTotal = parseInt(item.price) * item.qty; total += itemTotal;
-                let varText = ''; if(item.selectedColor) varText += item.selectedColor + ' '; if(item.selectedSize) varText += item.selectedSize;
-                let varDisplay = varText ? `<div style="font-size:11px; color:#007185; margin-bottom:5px;">${varText.trim()}</div>` : '';
-                let displayImg = item.image ? item.image : (item.images && item.images.length > 0 ? item.images[0] : '');
-                
-                cartDiv.innerHTML += `<div class="cart-item"><img src="${displayImg}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div>${varDisplay}<div class="cart-item-price">₹${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div><div class="item-total">₹${itemTotal}</div></div>`;
-            }); document.getElementById('totalAmount').innerText = "₹" + total;
+                let displayImg = item.image || (item.images && item.images[0] ? item.images[0] : '');
+                cartDiv.innerHTML += `<div class="cart-item"><img src="${displayImg}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div><div class="cart-item-price">₹${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div><div class="item-total">₹${itemTotal}</div></div>`;
+            }); 
+            document.getElementById('totalAmount').innerText = "₹" + total;
         }
 
         window.openCheckoutForm = function() {
-            if(cart.length === 0) return showToast(currentLang === 'hi' ? "कार्ट खाली है!" : "Cart is empty!");
+            if(cart.length === 0) return showToast("Cart is empty!");
             if(!localStorage.getItem('grihani_user_phone')) { openLoginModal(); return; }
-            
-            let addrs = [];
-            try {
-                let savedAddrs = localStorage.getItem('grihani_user_addresses');
-                if(savedAddrs) { addrs = JSON.parse(savedAddrs); } 
-            } catch(e) { console.error(e); }
-            
-            let cNameEl = document.getElementById('confirmName');
-            if(cNameEl) cNameEl.innerText = localStorage.getItem('grihani_user_name') || 'User'; 
-            
-            let cPhoneEl = document.getElementById('confirmPhone');
-            if(cPhoneEl) cPhoneEl.innerText = localStorage.getItem('grihani_user_phone') || 'N/A'; 
-
+            let addrs = JSON.parse(localStorage.getItem('grihani_user_addresses') || "[]");
+            document.getElementById('confirmName').innerText = localStorage.getItem('grihani_user_name') || 'User'; 
+            document.getElementById('confirmPhone').innerText = localStorage.getItem('grihani_user_phone') || 'N/A'; 
             let sel = document.getElementById('checkoutAddressSelect');
-            if(sel) {
-                if(addrs && addrs.length > 0) { sel.innerHTML = addrs.map(a => `<option value="${a}">${a}</option>`).join(''); } 
-                else { sel.innerHTML = `<option value="Saved Address">Please add an address in your profile</option>`; }
-            }
+            sel.innerHTML = addrs.length > 0 ? addrs.map(a => `<option value="${a}">${a}</option>`).join('') : `<option value="Default">Add address in profile</option>`;
             document.getElementById('checkoutModal').style.display = 'flex';
         }
-        
         window.closeCheckoutForm = function() { document.getElementById('checkoutModal').style.display = 'none'; }
 
         window.confirmOrder = function() {
             let name = localStorage.getItem('grihani_user_name') || 'Customer';
             let phone = localStorage.getItem('grihani_user_phone') || '0000000000';
-            let addrSelect = document.getElementById('checkoutAddressSelect');
-            let address = addrSelect ? addrSelect.value : "Address not provided"; 
+            let address = document.getElementById('checkoutAddressSelect').value;
             let payMode = document.getElementById('payMode').value;
-            let totalAmountText = document.getElementById('totalAmount').innerText.replace(/[^0-9]/g, '');
-            let totalAmountNum = parseInt(totalAmountText) * 100; 
+            let totalAmountNum = parseInt(document.getElementById('totalAmount').innerText.replace(/[^0-9]/g, '')) * 100; 
             
-            if(isNaN(totalAmountNum) || totalAmountNum <= 0) return showToast("Error in calculation.");
             closeCheckoutForm();
-            
             if(payMode === 'Online UPI') {
                 var rzp1 = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response){ saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum, address); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } }); 
                 rzp1.open();
@@ -799,8 +619,24 @@
         }
 
         function saveOrderData(paymentMode, paymentId, totalAmountNum, finalAddress) {
-            set(push(ref(window.db, 'orders')), { customerName: localStorage.getItem('grihani_user_name') || 'Customer', customerPhone: localStorage.getItem('grihani_user_phone') || 'N/A', customerAddress: finalAddress, paymentMode: paymentMode, paymentId: paymentId, items: cart, total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New' }).then(() => { 
-                showToast(currentLang === 'hi' ? "🎉 आपका ऑर्डर सफलतापूलवक दर्ज हो गया है!" : "🎉 Order Placed Successfully!"); 
+            // ऑर्डर के साथ स्टॉक कम करने का लॉजिक
+            cart.forEach(cartItem => {
+                get(ref(window.db, 'products')).then((snapshot) => {
+                    if(snapshot.exists()) {
+                        let prods = snapshot.val();
+                        Object.keys(prods).forEach(pKey => {
+                            if(prods[pKey].name === cartItem.name) {
+                                let currentStock = parseInt(prods[pKey].stock || 10);
+                                let newStock = Math.max(0, currentStock - cartItem.qty);
+                                update(ref(window.db, `products/${pKey}`), { stock: newStock });
+                            }
+                        });
+                    }
+                });
+            });
+
+            set(push(ref(window.db, 'orders')), { customerName: localStorage.getItem('grihani_user_name') || 'Customer', customerPhone: localStorage.getItem('grihani_user_phone') || 'N/A', customerAddress: finalAddress, paymentMode, paymentId, items: cart, total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New' }).then(() => { 
+                showToast("🎉 Order Placed Successfully!"); 
                 cart = []; syncCartToCloud(); closeCart(); window.openOrdersPage(); 
             });
         }
@@ -829,10 +665,8 @@
         .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 8px; color: #333; outline: none; cursor: pointer; font-size: 11px; max-width:90px; }
         .amz-search-input { flex-grow: 1; border: none; padding: 0 8px; outline: none; font-size: 14px; width: 100%; }
         .amz-search-btn { background: #febd69; border: none; width: 40px; cursor: pointer; font-size: 16px; color: #333; display:flex; justify-content:center; align-items:center; flex-shrink: 0; }
-        .amz-search-btn:hover { background: #f3a847; }
-
+        
         .amz-mobile-search-cart-row { display: none; background-color: #131921; padding: 6px 8px; width: 100%; align-items: center; gap: 8px; }
-
         .amz-nav-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
         .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
         .amz-nav-item:hover { border: 1px solid white; }
@@ -847,16 +681,13 @@
         .amz-cart-text { font-size: 13px; font-weight: bold; margin-bottom: 2px; }
 
         .amz-nav-bottom { background-color: #232f3e; display: flex; padding: 6px 12px; align-items: center; gap: 10px; font-size: 13px; color: white; width: 100%; overflow-x: auto; }
-        .amz-menu-icon { font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid transparent; padding: 4px; border-radius:2px; white-space: nowrap; flex-shrink: 0; }
-        .amz-menu-icon:hover { border: 1px solid white; }
+        .amz-menu-icon { font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px; white-space: nowrap; flex-shrink: 0; }
         .amz-nav-links { display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
         .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius:2px; }
-        .amz-nav-links button:hover { border: 1px solid white; }
 
-        .banner-container { width: 100%; height: 280px; position: relative; overflow: hidden; background: #eaeded; } 
+        .banner-container { width: 98%; max-width: 1450px; height: 320px; margin: 10px auto; position: relative; overflow: hidden; background: #eaeded; border-radius: 6px; } 
         .banner-slide { width: 100%; height: 100%; position: absolute; top: 0; left: 0; } 
-        /* ✅ यहाँ object-fit को contain कर दिया गया है ताकि डेस्कटॉप पर बैनर कटे नहीं */
-        .banner-slide img { width: 100%; height: 100%; object-fit: contain; background-color: #eaeded; } 
+        .banner-slide img { width: 100%; height: 100%; object-fit: fill; border-radius: 6px; } 
 
         .reels-section { padding: 10px 15px; background: transparent; z-index:5; position:relative; margin-top:-70px; } 
         .reels-section h4 { font-size: 18px; color: #0f1111; background:white; padding:8px 12px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
@@ -867,11 +698,14 @@
         .insta-link-btn { position: relative; z-index: 2; background: #E1306C; color: white; font-size: 9px; padding: 4px; text-align: center; text-decoration: none; font-weight: bold; display: block; }
         
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding: 15px; max-width: 1400px; margin: 0 auto; z-index: 5; position: relative; } 
-        .product-card { border: none; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; background: #fff; display:flex; flex-direction:column; cursor: pointer; z-index:5; border-radius: 6px;} 
+        .product-card { border: none; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; background: #fff; display:flex; flex-direction:column; cursor: pointer; z-index:5; border-radius: 6px; } 
         .cat-tag { display:none; } 
         .product-img { width: 100%; height: 180px; object-fit: contain; margin-bottom: 12px; background:#f9f9f9; mix-blend-mode: multiply; } 
         .product-title { font-size: 14px; color: #007185; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:18px; flex-grow:1;} 
-        .product-title:hover { color: #c45500; text-decoration: underline; }
+        
+        /* आउट ऑफ़ स्टॉक प्रोडक्ट कार्ड पर धुंधलापन और बैज */
+        .product-card.out-of-stock { opacity: 0.65; cursor: not-allowed; }
+        .out-of-stock-overlay { position: absolute; top: 10px; left: 10px; background: #c0392b; color: white; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; z-index: 10; }
         
         .product-price-box { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
         .product-price { font-size: 20px; color: #B12704; font-weight: bold; } 
@@ -879,10 +713,10 @@
         .product-discount-badge { background-color: #cc0c39; color: #fff; font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 3px; }
 
         .cart-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 8px 0; width: 100%; border-radius: 100px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; } 
-        .cart-btn:hover { background: #f7ca00; border-color: #f2c200; }
+        .cart-btn.disabled-btn { background: #e0e0e0; border-color: #ccc; color: #777; cursor: not-allowed; box-shadow: none; }
         
         #cartPage, #ordersPage { display: none; padding: 15px; flex-grow: 1; max-width:1100px; margin:15px auto; background:white; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; } 
-        .back-btn { color: #007185; cursor: pointer; display: inline-block; font-size: 13px; margin-bottom: 15px; font-weight: bold; } .back-btn:hover { text-decoration:underline; color:#c45500; }
+        .back-btn { color: #007185; cursor: pointer; display: inline-block; font-size: 13px; margin-bottom: 15px; font-weight: bold; }
         
         .cart-item { display: flex; align-items: center; background: white; padding: 12px 0; border-bottom: 1px solid #ddd; } .cart-item img { width: 70px; height: 70px; object-fit: contain; margin-right: 12px; flex-shrink: 0; } .cart-item-info { flex-grow: 1; } .cart-item-title { font-size: 14px; color:#007185; margin-bottom: 4px; } .cart-item-price { font-size: 14px; font-weight:bold; color: #B12704; margin-bottom: 5px; } .qty-controls { display: flex; align-items: center; background: #f0f2f2; border-radius: 6px; width: fit-content; border:1px solid #d5d9d9; } .qty-btn { background: none; border: none; padding: 3px 10px; font-size: 14px; cursor: pointer; color: #0f1111; } .qty-display { font-size: 13px; padding: 0 6px; min-width: 18px; text-align: center; background:white; height:100%; display:flex; align-items:center; border-left:1px solid #d5d9d9; border-right:1px solid #d5d9d9;} .item-total { font-weight: bold; color: #B12704; font-size: 14px; flex-shrink: 0; margin-left: 10px; } 
         .checkout-footer { background: #f3f3f3; padding: 15px; margin-top:15px; text-align:right; border-radius: 6px;} .total-bill { font-size: 18px; margin-bottom: 12px; font-weight: bold; } .checkout-btn { background: #ffd814; color: #0f1111; padding: 10px 25px; border: 1px solid #fcd200; border-radius: 6px; font-size: 13px; cursor: pointer; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; }
@@ -895,18 +729,13 @@
         .address-section { margin-top: 15px; border-top: 1px solid #ddd; padding-top: 12px; }
         .address-box { background: white; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #d5d9d9; font-size: 12px; line-height: 1.4; color: #333; }
         .add-address-btn { background: white; border: 1px dashed #007185; color: #007185; padding: 6px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .add-address-btn:hover { background: #f0f8ff; }
 
-        .order-history-card { background: white; padding: 15px; margin-bottom: 15px; border: 1px solid #d5d9d9; border-radius:6px; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; border-bottom: 1px solid #eaeded; padding-bottom: 8px; color: #555; flex-wrap: wrap; gap: 5px; } .order-status { font-weight: bold; } .status-new { color: #e67e22; } .status-shipping { color: #007185; } .status-delivered { color: #067d62; } .status-cancelled { color: #B12704; } .order-history-total { font-size: 14px; color: #0f1111; background: #f0f2f2; padding: 10px; margin-top:12px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px;}
+        .order-history-card { background: white; padding: 15px; margin-bottom: 15px; border: 1px solid #d5d9d9; border-radius:6px; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; border-bottom: 1px solid #eaeded; padding-bottom: 8px; color: #555; } .order-status { font-weight: bold; } .status-new { color: #e67e22; } .status-shipping { color: #007185; } .status-delivered { color: #067d62; } .status-cancelled { color: #B12704; }
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 15px; } 
         .modal-content { background: white; width: 100%; max-width: 400px; padding: 20px; border-radius: 8px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; } 
-        .modal-content h3 { font-weight: normal; font-size: 20px; margin-bottom: 15px; }
-        .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #a6a6a6; border-radius: 4px; font-size: 13px; box-shadow: 0 1px 2px rgba(15,17,17,.15) inset; } 
-        .modal-input:focus { border-color: #e77600; box-shadow: 0 0 3px 2px rgba(228,121,17,.5); outline:none; }
-        .confirm-order-btn, .login-existing-btn { border: 1px solid; padding: 10px; width: 100%; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; } 
-        .confirm-order-btn { background: #ffd814; border-color: #fcd200; color: #0f1111; } .confirm-order-btn:hover { background: #f7ca00; border-color: #f2c200; }
-        .login-existing-btn { background: #fff; border-color: #d5d9d9; color: #0f1111; } .login-existing-btn:hover { background:#f7fafa; }
+        .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #a6a6a6; border-radius: 4px; font-size: 13px; } 
+        .confirm-order-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 10px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 8px; width: 100%; font-size: 12px; cursor: pointer; text-decoration:underline; }
         
         .pd-modal-layout { max-width: 850px; display: flex; flex-direction: row; gap: 20px; padding-top: 40px; }
@@ -915,11 +744,11 @@
         .pd-img { width: 100%; height: 320px; object-fit: contain; background:#f9f9f9; margin-bottom: 8px; border-radius: 8px; border: 1px solid #eee; mix-blend-mode: multiply; cursor: zoom-in; }
         
         .pd-dots-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; }
-        .pd-dot { width: 8px; height: 8px; background-color: #bbb; border-radius: 50%; cursor: pointer; transition: background-color 0.3s; }
+        .pd-dot { width: 8px; height: 8px; background-color: #bbb; border-radius: 50%; cursor: pointer; }
         .pd-dot-active { background-color: #e77600; width: 20px; border-radius: 4px; }
 
-        .pd-thumbnails { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin; width: 100%; }
-        .pd-thumb-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; background: #f9f9f9; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .pd-thumbnails { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
+        .pd-thumb-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; background: #f9f9f9; }
         .pd-thumb-active { border-color: #e77600; }
 
         .zoom-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; flex-direction: column; justify-content: space-between; align-items: center; padding: 25px; }
@@ -927,16 +756,44 @@
         .zoom-main-area img { max-width: 90vw; max-height: 72vh; object-fit: contain; border-radius: 4px; }
         .zoom-thumbnails-bar { display: flex; gap: 12px; overflow-x: auto; padding: 10px; max-width: 100%; background: rgba(255,255,255,0.1); border-radius: 8px; }
 
-        .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; line-height:24px; font-weight: bold;}
+        .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; font-weight: bold;}
         .pd-price { font-size: 26px; color: #B12704; margin-bottom: 12px; font-weight: bold; }
-        .pd-desc-box { padding: 8px 0; font-size: 13px; color: #0f1111; margin-bottom: 12px; border-top: 1px solid #eaeded; line-height: 1.4; }
+        .pd-desc-box { padding: 8px 0; font-size: 13px; color: #0f1111; margin-bottom: 12px; border-top: 1px solid #eaeded; }
         .pd-variant-group { margin-bottom: 12px; }
         .pd-variant-group label { display: block; font-size: 13px; margin-bottom: 4px; color: #555; font-weight: bold; }
         .pd-variant-group select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d5d9d9; font-size: 13px; background:#f0f2f2;}
         
-        .whatsapp-float { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: #FFF; border-radius: 50px; text-align: center; font-size: 24px; box-shadow: 2px 2px 8px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; transition: all 0.3s ease; }
-        .whatsapp-float:hover { transform: scale(1.1); box-shadow: 2px 2px 12px rgba(0,0,0,0.4); }
-        .whatsapp-float img { width: 28px; height: 28px; filter: brightness(0) invert(1); }
+        /* 🔥 अत्यधिक आकर्षक और प्रीमियम ग्लोइंग WhatsApp फ्लोटिंग बटन 🔥 */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background-color: #25d366;
+            color: #FFF;
+            border-radius: 50px;
+            text-align: center;
+            font-size: 28px;
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.6);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            transition: all 0.3s ease;
+            animation: pulse-whatsapp 2s infinite;
+        }
+        .whatsapp-float:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(37, 211, 102, 0.9);
+        }
+        .whatsapp-float img { width: 34px; height: 34px; filter: brightness(0) invert(1); }
+
+        @keyframes pulse-whatsapp {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
         
         @media(max-width: 768px) {
             .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
@@ -944,46 +801,25 @@
             .amz-logo span { font-size: 14px; }
             .amz-location { padding: 2px; margin-right: 2px; }
             .amz-loc-line2 { max-width: 60px; font-size: 10px; }
-            
             .amz-search-bar { display: none !important; }
             .amz-nav-right .amz-nav-cart { display: none !important; }
-
             .amz-mobile-search-cart-row { display: flex !important; width: 100%; background-color: #131921; padding: 6px 8px; align-items: center; gap: 6px; }
             .amz-mobile-search-cart-row .amz-search-bar { display: flex !important; flex-grow: 1; height: 36px; margin: 0; }
-            
-            .amz-nav-item { padding: 2px 3px; }
-            .amz-line1 { font-size: 9px; }
-            .amz-line2 { font-size: 10px; }
-            
-            .banner-container { height: 160px; } 
+            .banner-container { height: 160px; width: 100%; border-radius: 0; } 
+            .banner-slide img { border-radius: 0; }
             .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
             .product-card { padding: 10px; }
             .product-img { height: 130px; } 
-            .product-title { font-size: 12px; line-height: 16px; }
-            .product-price { font-size: 18px; margin-bottom: 8px; }
-            .cart-btn { padding: 6px 0; font-size: 11px; }
-            .reels-section { padding: 8px; margin-top: -40px; }
-            .reels-section h4 { font-size: 14px; padding: 6px 10px; }
-            .reel-card { min-width: 100px; height: 160px; }
-            #cartPage, #ordersPage { padding: 10px; margin-top: 10px; } 
-            .account-layout { flex-direction: column; gap: 15px; }
-            .account-sidebar { width: 100%; padding: 12px; }
-            .cart-item img { width: 55px; height: 55px; margin-right: 8px; }
-            .cart-item-title { font-size: 12px; }
-            .cart-item-price { font-size: 12px; }
-            .item-total { font-size: 12px; }
-            
-            .modal-content { padding: 15px; max-width: 92%; }
-            .pd-modal-layout { flex-direction: column; padding-top: 35px; gap: 10px; }
-            .pd-img { height: 230px; margin-bottom: 6px; }
+            .whatsapp-float { width: 50px; height: 50px; bottom: 20px; right: 20px; }
+            .whatsapp-float img { width: 28px; height: 28px; }
         }
     </style>
 </head>
 <body>
     <div class="website-container">
-        <!-- Floating WhatsApp Button -->
-        <a href="https://wa.me/919955400139?text=I need help " class="whatsapp-float" target="_blank">
-            <svg viewBox="0 0 32 32" width="28" height="28" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
+        <!-- 🔥 अट्रैक्टिव ग्लोइंग WhatsApp फ्लोटिंग बटन -->
+        <a href="https://wa.me/15553670749?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
+            <svg viewBox="0 0 32 32" width="34" height="34" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
         <!-- HEADER -->
@@ -1002,9 +838,8 @@
                     </div>
                 </div>
 
-                <!-- Desktop Search Bar -->
                 <div class="amz-search-bar">
-                    <select id="amzCategorySelect" class="amz-search-select" onchange="filterCategory(this.value, null)">
+                    <select id="amzCategorySelect" class="amz-search-select" onchange="filterCategory(this.value)">
                         <option value="All">All</option>
                     </select>
                     <input type="text" id="searchInput" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
@@ -1012,9 +847,7 @@
                 </div>
 
                 <div class="amz-nav-right">
-                    <div class="amz-nav-item" onclick="toggleLanguage()">
-                        <span class="amz-lang-text" id="langToggleBtn">🇮🇳 HI</span>
-                    </div>
+                    <div class="amz-nav-item" onclick="toggleLanguage()"><span class="amz-lang-text" id="langToggleBtn">🇮🇳 HI</span></div>
                     <div class="amz-nav-item" onclick="openLoginModal()">
                         <span class="amz-line1" id="userGreeting" data-lang-key="hello_sign_in">Hello, sign in</span>
                         <span class="amz-line2" data-lang-key="account_lists">Account & Lists</span>
@@ -1031,23 +864,20 @@
                 </div>
             </div>
 
-            <!-- Mobile Search Bar & Cart Row -->
             <div class="amz-mobile-search-cart-row">
                 <div class="amz-search-bar" style="margin: 0; display: flex; height: 38px; flex-grow: 1;">
-                    <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value, null)">
-                        <option value="All">All</option>
-                    </select>
+                    <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value)"><option value="All">All</option></select>
                     <input type="text" id="searchInputMob" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
                     <button class="amz-search-btn" onclick="searchProducts()">🔍</button>
                 </div>
-                <div class="amz-nav-cart" onclick="openCart()" style="background: #232f3e; padding: 6px 10px; border-radius: 4px; flex-shrink: 0; border: 1px solid #3a4553; display: flex; align-items: center; justify-content: center; height: 38px; position: relative;">
+                <div class="amz-nav-cart" onclick="openCart()" style="background: #232f3e; padding: 6px 10px; border-radius: 4px; position: relative;">
                     <span class="amz-cart-icon" style="font-size: 22px;">🛒</span>
-                    <span id="cartCountMob" class="amz-cart-count" style="left: 20px; top: 0px; font-size: 13px; color: #f08804; font-weight: bold;">0</span>
+                    <span id="cartCountMob" class="amz-cart-count" style="left: 20px; top: 0px; font-size: 13px; color: #f08804;">0</span>
                 </div>
             </div>
 
             <div class="amz-nav-bottom">
-                <div class="amz-menu-icon" onclick="filterCategory('All', null)">☰ <span data-lang-key="all_txt">All</span></div>
+                <div class="amz-menu-icon" onclick="filterCategory('All')">☰ <span data-lang-key="all_txt">All</span></div>
                 <div id="categoryFilters" class="amz-nav-links"></div>
             </div>
         </header>
@@ -1060,91 +890,68 @@
 
         <div id="cartPage">
             <div class="back-btn" onclick="closeCart()" data-lang-key="btn_back_store">← Back to Store</div>
-            <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 20px;" data-lang-key="cart_title">Your Shopping Cart</h2>
-            <div class="cart-items-container" id="cartItemsList"></div>
+            <h2 style="margin-bottom: 15px; font-size: 20px;" data-lang-key="cart_title">Your Shopping Cart</h2>
+            <div id="cartItemsList"></div>
             <div class="checkout-footer">
-                <div class="total-bill"><span data-lang-key="total_bill">Total Bill:</span> <span id="totalAmount" style="color:#B12704; font-weight:bold;">₹0</span></div>
+                <div class="total-bill"><span data-lang-key="total_bill">Total Bill:</span> <span id="totalAmount" style="color:#B12704;">₹0</span></div>
                 <button class="checkout-btn" onclick="openCheckoutForm()" data-lang-key="btn_checkout">Proceed to Buy</button>
             </div>
         </div>
 
         <div id="ordersPage">
             <div class="back-btn" onclick="closeOrdersPage()" data-lang-key="btn_back_store">← Back to Store</div>
-            
             <div class="account-layout">
                 <div class="account-sidebar">
                     <h3 style="color: #800020; margin-bottom: 12px; font-size: 18px;" data-lang-key="profile_title">👤 My Profile</h3>
-                    <div class="profile-info">
-                        <p><strong>Name:</strong> <span id="profileName"></span></p>
-                        <p><strong>Phone:</strong> <span id="profilePhone"></span></p>
-                    </div>
-                    
+                    <div class="profile-info"><p><strong>Name:</strong> <span id="profileName"></span></p><p><strong>Phone:</strong> <span id="profilePhone"></span></p></div>
                     <div class="address-section">
                         <h4 style="margin-bottom: 8px; color:#555; font-size: 14px;" data-lang-key="saved_address_title">📍 Saved Addresses</h4>
                         <div id="profileAddresses"></div>
                         <button class="add-address-btn" onclick="addNewAddress()" data-lang-key="add_address_btn">+ Add New Address</button>
                     </div>
-                    
-                    <button onclick="logoutUser()" style="width:100%; margin-top:15px; padding:8px; background:#fff; border:1px solid #d5d9d9; border-radius:4px; font-weight:bold; cursor:pointer; color:#0f1111; font-size:12px;" data-lang-key="logout_btn">Logout</button>
+                    <button onclick="logoutUser()" style="width:100%; margin-top:15px; padding:8px; background:#fff; border:1px solid #d5d9d9; border-radius:4px; font-weight:bold; cursor:pointer;">Logout</button>
                 </div>
-
                 <div class="account-orders">
-                    <h2 style="color: #0f1111; margin-bottom: 15px; font-size: 20px;" data-lang-key="order_history_title">📦 My Order History</h2>
+                    <h2 style="margin-bottom: 15px; font-size: 20px;" data-lang-key="order_history_title">📦 My Order History</h2>
                     <div id="myOrdersList"></div>
                 </div>
             </div>
         </div>
 
-        <!-- 🔥 DETAILED PRODUCT POPUP 🔥 -->
+        <!-- PRODUCT MODAL -->
         <div id="productDetailModal" class="modal-overlay">
             <div class="modal-content pd-modal-layout">
                 <div style="width: 100%; text-align: right; position: absolute; right: 15px; top: 12px; z-index: 10;">
                     <span onclick="closeProductModal()" style="font-size: 26px; cursor: pointer; color: #333; background: #fff; padding: 0 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">&times;</span>
                 </div>
-                
                 <div class="pd-gallery-section">
                     <img id="pmImg" src="" class="pd-img" onclick="openFullscreenZoom()" title="Click to Zoom">
                     <div id="pmDotsContainer" class="pd-dots-container"></div>
                     <div id="pmThumbnails" class="pd-thumbnails"></div>
                 </div>
-
                 <div class="pd-details-section">
                     <div id="pmTitle" class="pd-title">Product Name</div>
                     <div id="pmPrice" class="pd-price">₹0</div>
-                    <div class="pd-desc-box">
-                        <strong data-lang-key="prod_desc">Description:</strong><br>
-                        <span id="pmDescText" style="margin-top:4px; display:block;"></span>
-                    </div>
-                    <div id="pmColorDiv" class="pd-variant-group" style="display: none;">
-                        <label data-lang-key="select_color">Select Color:</label>
-                        <select id="pmColorSelect"></select>
-                    </div>
-                    <div id="pmSizeDiv" class="pd-variant-group" style="display: none;">
-                        <label data-lang-key="select_size">Select Size:</label>
-                        <select id="pmSizeSelect"></select>
-                    </div>
-                    <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 10px;">
-                        🛒 <span data-lang-key="btn_checkout">Add to Cart</span>
-                    </button>
+                    <div class="pd-desc-box"><strong data-lang-key="prod_desc">Description:</strong><br><span id="pmDescText" style="margin-top:4px; display:block;"></span></div>
+                    <div id="pmColorDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_color">Select Color:</label><select id="pmColorSelect"></select></div>
+                    <div id="pmSizeDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_size">Select Size:</label><select id="pmSizeSelect"></select></div>
+                    <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 10px;">🛒 Add to Cart</button>
                 </div>
             </div>
         </div>
 
-        <!-- 🔥 FULL-SCREEN ZOOM LIGHTBOX MODAL 🔥 -->
+        <!-- FULLSCREEN ZOOM -->
         <div id="fullscreenZoomModal" class="zoom-modal-overlay">
-            <div style="width: 100%; text-align: right; padding: 5px 15px;">
-                <span onclick="closeFullscreenZoom()" style="font-size: 38px; color: #fff; cursor: pointer; font-weight: bold; background: rgba(0,0,0,0.5); padding: 0 12px; border-radius: 50%;">&times;</span>
-            </div>
-            <div class="zoom-main-area">
-                <img id="fullscreenZoomImg" src="">
-            </div>
+            <div style="width: 100%; text-align: right; padding: 5px 15px;"><span onclick="closeFullscreenZoom()" style="font-size: 38px; color: #fff; cursor: pointer; font-weight: bold;">&times;</span></div>
+            <div class="zoom-main-area"><img id="fullscreenZoomImg" src=""></div>
             <div id="zoomThumbnails" class="zoom-thumbnails-bar"></div>
         </div>
 
+        <!-- LOCATION MODAL -->
         <div id="locationModal" class="modal-overlay">
-            <div class="modal-content" id="loginContentBox" style="max-width:400px; display:block;">
+            <div class="modal-content" style="max-width:400px; display:block;">
                 <h3 data-lang-key="update_loc">Update location</h3>
-                <button class="confirm-order-btn" onclick="fetchCurrentLocation()" style="background:#f0f2f2; color:#0f1111; border-color:#d5d9d9; margin-bottom:12px; font-size:13px;">📍 <span data-lang-key="use_current_loc">Use Current Location</span></button>
+                <button class="confirm-order-btn" onclick="fetchCurrentLocation()" style="background:#f0f2f2; color:#0f1111; border:1px solid #d5d9d9; margin-bottom:12px;">📍 Use Current Location</button>
                 <div style="text-align:center; margin-bottom:8px; color:#777; font-size:11px;">OR</div>
                 <input type="text" id="manualLocationInput" class="modal-input" placeholder="Enter City or Pincode">
                 <button class="confirm-order-btn" onclick="saveManualLocation()" data-lang-key="save_btn">Save</button>
@@ -1152,19 +959,17 @@
             </div>
         </div>
 
-        <!-- 🔥 OTP LOGIN MODAL 🔥 -->
+        <!-- LOGIN MODAL -->
         <div id="loginModal" class="modal-overlay">
-            <div class="modal-content" id="loginContentBox" style="max-width:400px; display:block;">
-                <h3 data-lang-key="login_title" style="text-align:center; margin-bottom:15px;">✨ Grihani Cosmetic</h3>
-                
+            <div class="modal-content" style="max-width:400px; display:block;">
+                <h3 style="text-align:center; margin-bottom:15px;">✨ Grihani Cosmetic</h3>
                 <div id="step1Phone">
                     <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Mobile Number</label>
                     <input type="tel" id="regPhone" class="modal-input" placeholder="Enter 10 digit number">
                     <div id="recaptcha-container"></div>
                     <button id="sendOtpBtn" class="confirm-order-btn" onclick="sendOTP()">📲 Send OTP</button>
-                    <button class="cancel-order-btn" onclick="closeLoginModal()" data-lang-key="close_btn">❌ Close</button>
+                    <button class="cancel-order-btn" onclick="closeLoginModal()">❌ Close</button>
                 </div>
-
                 <div id="step2OTP" style="display:none;">
                     <p style="font-size:12px; margin-bottom:12px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
                     <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Enter 6-Digit OTP</label>
@@ -1172,37 +977,34 @@
                     <button id="verifyOtpBtn" class="confirm-order-btn" onclick="verifyOTP()">✅ Verify OTP</button>
                     <button class="cancel-order-btn" onclick="resetLoginUI()">← Back</button>
                 </div>
-
                 <div id="step3Details" style="display:none;">
-                    <p style="font-size:12px; margin-bottom:12px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified! Enter details to continue.</p>
+                    <p style="font-size:12px; margin-bottom:12px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified!</p>
                     <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Full Name</label>
                     <input type="text" id="regName" class="modal-input" placeholder="Your Name">
                     <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Delivery Address</label>
-                    <textarea id="regAddress" class="modal-input" placeholder="Full Delivery Address" rows="3"></textarea>
+                    <textarea id="regAddress" class="modal-input" placeholder="Full Address" rows="3"></textarea>
                     <button class="confirm-order-btn" onclick="completeRegistration()">🚀 Complete Registration</button>
                 </div>
             </div>
         </div>
 
+        <!-- CHECKOUT MODAL -->
         <div id="checkoutModal" class="modal-overlay">
             <div class="modal-content" style="max-width:400px; display:block;">
                 <h3 data-lang-key="confirm_title">Confirm Your Order</h3>
-                
                 <div style="background: #f9f9f9; padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; border: 1px solid #d5d9d9;">
                     <p style="margin-bottom:4px;"><strong>Name:</strong> <span id="confirmName" style="color: #007185;"></span></p>
                     <p style="margin-bottom:0;"><strong>Mobile:</strong> <span id="confirmPhone" style="color: #007185;"></span></p>
                 </div>
-
-                <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display:block;" data-lang-key="select_delivery_addr">Select Delivery Address:</label>
+                <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display:block;">Select Delivery Address:</label>
                 <select id="checkoutAddressSelect" class="modal-input" style="background:#fff; border-color:#800020;"></select>
-                
-                <label style="font-size: 13px; font-weight: bold; margin-top:8px; margin-bottom: 6px; display:block;" data-lang-key="pay_mode_title">Select Payment Mode:</label>
+                <label style="font-size: 13px; font-weight: bold; margin-top:8px; margin-bottom: 6px; display:block;">Select Payment Mode:</label>
                 <select id="payMode" class="modal-input" style="background:#f0f2f2;">
-                    <option value="Cash on Delivery (COD)" data-lang-key="cod_opt">Cash on Delivery (COD)</option>
-                    <option value="Online UPI" data-lang-key="online_opt">Pay Online (UPI/Card)</option>
+                    <option value="Cash on Delivery (COD)">Cash on Delivery (COD)</option>
+                    <option value="Online UPI">Pay Online (UPI/Card)</option>
                 </select>
-                <button class="confirm-order-btn" onclick="confirmOrder()" data-lang-key="confirm_order_btn">✅ Place Your Order</button>
-                <button class="cancel-order-btn" onclick="closeCheckoutForm()" data-lang-key="close_btn">❌ Close</button>
+                <button class="confirm-order-btn" onclick="confirmOrder()">✅ Place Your Order</button>
+                <button class="cancel-order-btn" onclick="closeCheckoutForm()">❌ Close</button>
             </div>
         </div>
     </div>
