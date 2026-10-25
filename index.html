@@ -7,11 +7,13 @@
     
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, get, child, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    <!-- Firebase Compat SDKs (यह बिना सर्वर के भी एकदम सही काम करेगा) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
+    <script>
+        // Firebase कॉन्फ़िगरेशन
         const firebaseConfig = {
             apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
             authDomain: "grihanicosmeticapp.firebaseapp.com",
@@ -21,9 +23,11 @@
             messagingSenderId: "921623248962",
             appId: "1:921623248962:web:413b6e003eca864b7caddb"
         };
-        const app = initializeApp(firebaseConfig);
-        window.db = getDatabase(app);
-        window.auth = getAuth(app); 
+        
+        // Firebase इनिशियलाइज़
+        firebase.initializeApp(firebaseConfig);
+        window.db = firebase.database();
+        window.auth = firebase.auth(); 
 
         let cart = []; let currentCategory = 'All'; let currentSlide = 0;
         let currentLang = localStorage.getItem('grihani_lang') || 'en'; 
@@ -122,7 +126,7 @@
 
         window.sliderInterval = null;
         window.loadBanners = function() {
-            onValue(ref(window.db, 'banners'), (snapshot) => {
+            window.db.ref('banners').on('value', (snapshot) => {
                 const data = snapshot.val();
                 let slider = document.getElementById('masterBannerSlider');
                 slider.innerHTML = '';
@@ -152,7 +156,7 @@
         }
 
         window.loadCategories = function() {
-            onValue(ref(window.db, 'categories'), (snapshot) => {
+            window.db.ref('categories').on('value', (snapshot) => {
                 const data = snapshot.val(); 
                 let filterDiv = document.getElementById('categoryFilters');
                 let searchSelect = document.getElementById('amzCategorySelect');
@@ -173,7 +177,7 @@
         }
 
         window.loadProducts = function() {
-            onValue(ref(window.db, 'products'), (snapshot) => {
+            window.db.ref('products').on('value', (snapshot) => {
                 const data = snapshot.val(); let appDiv = document.getElementById('appProducts'); appDiv.innerHTML = '';
                 if (!data) return appDiv.innerHTML = `<p style="grid-column: span 4; text-align:center; color:#777; margin-top:30px;">${currentLang === 'hi' ? 'कोई प्रोडक्ट नहीं है।' : 'No products available.'}</p>`;
                 
@@ -237,7 +241,7 @@
         window.openProductModal = function(prodStr) {
             let p = JSON.parse(decodeURIComponent(prodStr));
             let stockQty = p.stock !== undefined ? parseInt(p.stock) : 10;
-            if(stockQty <= 0) return; // अगर आउट ऑफ़ स्टॉक है तो पॉपअप न खुले
+            if(stockQty <= 0) return;
 
             window.currentProductImages = p.images ? p.images : (p.image ? [p.image] : []);
             window.currentImageIndex = 0;
@@ -345,7 +349,7 @@
         window.closeProductModal = function() { document.getElementById('productDetailModal').style.display = 'none'; }
 
         window.loadReels = function() {
-            onValue(ref(window.db, 'reels'), (snapshot) => {
+            window.db.ref('reels').on('value', (snapshot) => {
                 const data = snapshot.val(); let reelFeed = document.getElementById('appReelsFeed'); reelFeed.innerHTML = '';
                 if(!data) return reelFeed.innerHTML = '<p style="font-size:12px; color:#777; padding:10px;">No reels available.</p>';
                 Object.keys(data).forEach(key => {
@@ -357,7 +361,7 @@
 
         window.syncUserData = function(phone) {
             let cleanPhone = phone.replace(/[^0-9]/g, '');
-            get(child(ref(window.db), `customers/${cleanPhone}`)).then((snapshot) => {
+            window.db.ref(`customers/${cleanPhone}`).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
                     let cData = snapshot.val();
                     let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
@@ -369,8 +373,6 @@
             startCartListener(cleanPhone);
         }
 
-        // फिक्स: window.onload को बदलकर एक साधारण function बना दिया है 
-        // और इसे तुरंत कॉल किया गया है, ताकि मोबाइल में कोई दिक्कत ना आए।
         function initApp() {
             document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
             applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
@@ -379,7 +381,7 @@
             if(savedPhone) syncUserData(savedPhone);
         }
         
-        initApp(); // इसे तुरंत कॉल करें
+        window.onload = initApp;
 
         window.openLoginModal = function() { 
             if(localStorage.getItem('grihani_user_phone')) openOrdersPage(); 
@@ -397,7 +399,7 @@
 
         function setupRecaptcha() {
             if(!window.recaptchaVerifier) {
-                window.recaptchaVerifier = new RecaptchaVerifier(window.auth, 'recaptcha-container', { 'size': 'invisible' });
+                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
             }
         }
 
@@ -407,7 +409,7 @@
             let btn = document.getElementById('sendOtpBtn');
             btn.innerText = currentLang === 'hi' ? "भेज रहे हैं..." : "Sending...";
             setupRecaptcha();
-            signInWithPhoneNumber(window.auth, "+91" + phone, window.recaptchaVerifier)
+            window.auth.signInWithPhoneNumber("+91" + phone, window.recaptchaVerifier)
                 .then((confirmationResult) => {
                     window.confirmationResult = confirmationResult;
                     document.getElementById('step1Phone').style.display = 'none';
@@ -424,7 +426,7 @@
             if(code.length !== 6) return showToast("Enter 6-digit OTP!");
             window.confirmationResult.confirm(code).then((result) => {
                 let phone = document.getElementById('regPhone').value.trim();
-                get(child(ref(window.db), `customers/${phone}`)).then((snapshot) => {
+                window.db.ref(`customers/${phone}`).once('value').then((snapshot) => {
                     if (snapshot.exists()) {
                         let cData = snapshot.val();
                         let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
@@ -447,7 +449,7 @@
             let address = document.getElementById('regAddress').value.trim();
             let phone = document.getElementById('regPhone').value.trim();
             if(!name || !address) return showToast("Name and Address required!");
-            set(ref(window.db, 'customers/' + phone), { name, phone, addresses: [address], date: new Date().toLocaleString() }).then(() => {
+            window.db.ref('customers/' + phone).set({ name, phone, addresses: [address], date: new Date().toLocaleString() }).then(() => {
                 localStorage.setItem('grihani_user_name', name); 
                 localStorage.setItem('grihani_user_phone', phone); 
                 localStorage.setItem('grihani_user_addresses', JSON.stringify([address]));
@@ -470,26 +472,26 @@
 
         window.syncCartToCloud = function() {
             let phone = localStorage.getItem('grihani_user_phone');
-            if(phone) set(ref(window.db, 'carts/' + phone.replace(/[^0-9]/g, '')), cart);
+            if(phone) window.db.ref('carts/' + phone.replace(/[^0-9]/g, '')).set(cart);
             else { updateCartCount(); renderCartItems(); }
         }
 
         window.startCartListener = function(cleanPhone) {
-            onValue(ref(window.db, `carts/${cleanPhone}`), (snapshot) => {
+            window.db.ref(`carts/${cleanPhone}`).on('value', (snapshot) => {
                 cart = snapshot.val() || []; updateCartCount();
                 if (document.getElementById('cartPage').style.display === 'block') renderCartItems();
             });
         }
 
         window.mergeAndListenCart = function(cleanPhone) {
-            get(child(ref(window.db), `carts/${cleanPhone}`)).then((snapshot) => {
+            window.db.ref(`carts/${cleanPhone}`).once('value').then((snapshot) => {
                 let cloudCart = snapshot.val() || [];
                 if (cart.length > 0) {
                     cart.forEach(lItem => {
                         let exist = cloudCart.find(c => c.name === lItem.name && c.selectedColor === lItem.selectedColor && c.selectedSize === lItem.selectedSize);
                         if(exist) exist.qty += lItem.qty; else cloudCart.push(lItem);
                     });
-                    set(ref(window.db, `carts/${cleanPhone}`), cloudCart).then(() => { startCartListener(cleanPhone); });
+                    window.db.ref(`carts/${cleanPhone}`).set(cloudCart).then(() => { startCartListener(cleanPhone); });
                 } else { startCartListener(cleanPhone); }
             });
         }
@@ -500,7 +502,7 @@
                 let phone = localStorage.getItem('grihani_user_phone');
                 let addrs = JSON.parse(localStorage.getItem('grihani_user_addresses') || "[]");
                 addrs.push(newAdd.trim());
-                update(ref(window.db, 'customers/' + phone), { addresses: addrs }).then(() => {
+                window.db.ref('customers/' + phone).update({ addresses: addrs }).then(() => {
                     localStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
                     renderProfileInfo();
                     showToast("📍 New Address Added!");
@@ -550,8 +552,8 @@
         window.fetchMyOrders = function() {
             let phone = localStorage.getItem('grihani_user_phone');
             if(!phone) return;
-            onValue(ref(window.db, 'orders'), (snapshot) => { liveActiveOrders = snapshot.val() || {}; window.renderLiveOrders(phone); });
-            onValue(ref(window.db, 'order_history'), (snapshot) => { liveHistoryOrders = snapshot.val() || {}; window.renderLiveOrders(phone); });
+            window.db.ref('orders').on('value', (snapshot) => { liveActiveOrders = snapshot.val() || {}; window.renderLiveOrders(phone); });
+            window.db.ref('order_history').on('value', (snapshot) => { liveHistoryOrders = snapshot.val() || {}; window.renderLiveOrders(phone); });
         }
 
         window.renderLiveOrders = function(phone) {
@@ -624,21 +626,22 @@
 
         function saveOrderData(paymentMode, paymentId, totalAmountNum, finalAddress) {
             cart.forEach(cartItem => {
-                get(ref(window.db, 'products')).then((snapshot) => {
+                window.db.ref('products').once('value').then((snapshot) => {
                     if(snapshot.exists()) {
                         let prods = snapshot.val();
                         Object.keys(prods).forEach(pKey => {
                             if(prods[pKey].name === cartItem.name) {
                                 let currentStock = parseInt(prods[pKey].stock || 10);
                                 let newStock = Math.max(0, currentStock - cartItem.qty);
-                                update(ref(window.db, `products/${pKey}`), { stock: newStock });
+                                window.db.ref(`products/${pKey}`).update({ stock: newStock });
                             }
                         });
                     }
                 });
             });
 
-            set(push(ref(window.db, 'orders')), { customerName: localStorage.getItem('grihani_user_name') || 'Customer', customerPhone: localStorage.getItem('grihani_user_phone') || 'N/A', customerAddress: finalAddress, paymentMode, paymentId, items: cart, total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New' }).then(() => { 
+            let newOrderRef = window.db.ref('orders').push();
+            newOrderRef.set({ customerName: localStorage.getItem('grihani_user_name') || 'Customer', customerPhone: localStorage.getItem('grihani_user_phone') || 'N/A', customerAddress: finalAddress, paymentMode, paymentId, items: cart, total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New' }).then(() => { 
                 showToast("🎉 Order Placed Successfully!"); 
                 cart = []; syncCartToCloud(); closeCart(); window.openOrdersPage(); 
             });
@@ -824,7 +827,7 @@
     <div class="website-container">
         <!-- 🔥 अट्रैक्टिव ग्लोइंग WhatsApp फ्लोटिंग बटन -->
         <a href="https://wa.me/15553670749?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
-            <svg viewBox="0 0 32 32" width="34" height="34" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.4.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
+            <svg viewBox="0 0 32 32" width="34" height="34" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
         <!-- HEADER -->
