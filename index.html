@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- ब्राउज़र को पुरानी फाइल सेव करने से रोकने वाले टैग्स -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <title>Grihani Cosmetic - Online Store</title>
     
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -13,6 +18,15 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
+        // 🚨 ऑटो-क्लीनर: कस्टमर के डिवाइस से पुराने सर्विस वर्कर को अपने आप डिलीट करने का कोड
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+
         // Firebase कॉन्फ़िगरेशन
         const firebaseConfig = {
             apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
@@ -677,7 +691,7 @@
         .amz-search-btn { background: #febd69; border: none; width: 45px; cursor: pointer; font-size: 18px; color: #333; display:flex; justify-content:center; align-items:center; }
         .amz-search-btn:hover { background: #f3a847; }
         
-        .amz-mobile-search-cart-row { display: none; } /* Hidden on desktop by default */
+        .amz-mobile-search-cart-row { display: none; } 
         
         .amz-nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 6px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
@@ -829,8 +843,8 @@
             .amz-loc-icon { font-size: 14px; margin-top: 6px;}
             .amz-loc-line2 { max-width: 75px; font-size: 11px; }
             
-            .amz-search-bar { display: none !important; } /* Hide desktop search */
-            .amz-nav-right .amz-nav-cart { display: none !important; } /* Hide desktop cart */
+            .amz-search-bar { display: none !important; }
+            .amz-nav-right .amz-nav-cart { display: none !important; }
             
             .amz-mobile-search-cart-row { display: flex !important; width: 100%; background-color: #131921; padding: 8px 10px; align-items: center; gap: 8px; }
             .amz-mobile-search-cart-row .amz-search-bar { display: flex !important; flex-grow: 1; height: 38px; margin: 0; min-width: auto;}
