@@ -7,7 +7,7 @@
     
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-    <!-- Firebase Compat SDKs (यह बिना सर्वर के भी एकदम सही काम करेगा) -->
+    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -169,7 +169,7 @@
                 
                 let categories = data ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
                 Object.keys(categories).forEach((catKey) => { 
-                    filterDiv.innerHTML += `<button onclick="filterCategory('${catKey}', this)">${categories[catKey]}</button>`; 
+                    filterDiv.innerHTML += `<button onclick="filterCategory('${catKey}')">${categories[catKey]}</button>`; 
                     if(searchSelect) searchSelect.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
                     if(searchSelectMob) searchSelectMob.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
                 });
@@ -378,7 +378,10 @@
             applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
             checkSavedLocation(); 
             let savedPhone = localStorage.getItem('grihani_user_phone');
-            if(savedPhone) syncUserData(savedPhone);
+            if(savedPhone) {
+                document.getElementById('myOrdersBtn').style.display = 'flex';
+                syncUserData(savedPhone);
+            }
         }
         
         window.onload = initApp;
@@ -519,6 +522,7 @@
 
         function updateUserUI(name) { 
             document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + name.split(" ")[0];
+            document.getElementById('myOrdersBtn').style.display = 'flex';
             fetchMyOrders(); renderProfileInfo();
         }
         window.logoutUser = function() { if(confirm("Logout?")) { localStorage.clear(); location.reload(); } }
@@ -819,7 +823,6 @@
             .whatsapp-float { width: 50px; height: 50px; bottom: 20px; right: 20px; }
             .whatsapp-float img { width: 28px; height: 28px; }
 
-            /* 🔥 मोबाइल व्यू के लिए अकाउंट लेआउट फिक्स: My Profile के नीचे Order History दिखेगी 🔥 */
             .account-layout { display: flex !important; flex-direction: column !important; gap: 15px !important; }
             .account-sidebar { width: 100% !important; flex: none !important; }
             .account-orders { width: 100% !important; flex: none !important; }
@@ -1007,7 +1010,7 @@
                     <p style="margin-bottom:4px;"><strong>Name:</strong> <span id="confirmName" style="color: #007185;"></span></p>
                     <p style="margin-bottom:0;"><strong>Mobile:</strong> <span id="confirmPhone" style="color: #007185;"></span></p>
                 </div>
-                <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display:block;">Select Delivery Address:</label>
+                <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display: block;">Select Delivery Address:</label>
                 <select id="checkoutAddressSelect" class="modal-input" style="background:#fff; border-color:#800020;"></select>
                 <label style="font-size: 13px; font-weight: bold; margin-top:8px; margin-bottom: 6px; display:block;">Select Payment Mode:</label>
                 <select id="payMode" class="modal-input" style="background:#f0f2f2;">
