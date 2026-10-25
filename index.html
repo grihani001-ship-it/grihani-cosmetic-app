@@ -5,14 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Grihani Cosmetic - Online Store</title>
     
+    <!-- PWA Manifest & Theme -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#131921">
+    
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-    <!-- Firebase Compat SDKs (यह बिना सर्वर के भी एकदम सही काम करेगा) -->
+    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((reg) => { console.log('PWA Service Worker registered', reg); })
+                    .catch((err) => { console.log('PWA Service Worker failed', err); });
+            });
+        }
+
         // Firebase कॉन्फ़िगरेशन
         const firebaseConfig = {
             apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
@@ -24,7 +37,6 @@
             appId: "1:921623248962:web:413b6e003eca864b7caddb"
         };
         
-        // Firebase इनिशियलाइज़
         firebase.initializeApp(firebaseConfig);
         window.db = firebase.database();
         window.auth = firebase.auth(); 
@@ -819,7 +831,6 @@
             .whatsapp-float { width: 50px; height: 50px; bottom: 20px; right: 20px; }
             .whatsapp-float img { width: 28px; height: 28px; }
 
-            /* 🔥 मोबाइल व्यू के लिए अकाउंट लेआउट फिक्स: My Profile के नीचे Order History दिखेगी 🔥 */
             .account-layout { display: flex !important; flex-direction: column !important; gap: 15px !important; }
             .account-sidebar { width: 100% !important; flex: none !important; }
             .account-orders { width: 100% !important; flex: none !important; }
@@ -829,7 +840,7 @@
 <body>
     <div class="website-container">
         
-        <a href="https://wa.me/919955400139?text= Help" class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
+        <a href="https://wa.me/15553670749?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
             <svg viewBox="0 0 32 32" width="34" height="34" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
