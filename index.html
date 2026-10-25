@@ -124,12 +124,12 @@
                 });
             } else { showToast("Geolocation is not supported."); }
         }
-        function updateLocationUI(loc) {
+        window.updateLocationUI = function(loc) {
             localStorage.setItem('grihani_user_location', loc);
             let locEl = document.getElementById('userLocationText');
             locEl.innerText = loc; locEl.removeAttribute('data-lang-key');
         }
-        function checkSavedLocation() {
+        window.checkSavedLocation = function() {
             let savedLoc = localStorage.getItem('grihani_user_location');
             let locEl = document.getElementById('userLocationText');
             if(savedLoc) { locEl.innerText = savedLoc; locEl.removeAttribute('data-lang-key'); } 
@@ -703,11 +703,11 @@
         .amz-nav-links { display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
         .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius:2px; }
 
-        .banner-container { width: 98%; max-width: 1450px; height: 320px; margin: 10px auto; position: relative; overflow: hidden; background: #eaeded; border-radius: 6px; } 
+        .banner-container { width: 98%; max-width: 1450px; height: 320px; margin: 10px auto; position: relative; overflow: hidden; background: #eaeded; border-radius: 6px; display: block; } 
         .banner-slide { width: 100%; height: 100%; position: absolute; top: 0; left: 0; } 
         .banner-slide img { width: 100%; height: 100%; object-fit: fill; border-radius: 6px; } 
 
-        .reels-section { padding: 10px 15px; background: transparent; z-index:5; position:relative; margin-top:-70px; } 
+        .reels-section { padding: 10px 15px; background: transparent; z-index:5; position:relative; margin-top:-70px; display: block; } 
         .reels-section h4 { font-size: 18px; color: #0f1111; background:white; padding:8px 12px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
         .reels-container { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: thin; padding: 10px 0; background:white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
         .reel-card { min-width: 130px; height: 200px; background: #000; overflow: hidden; position: relative; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; cursor:pointer; border-radius: 4px;} 
