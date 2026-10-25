@@ -709,7 +709,6 @@
         .product-img { width: 100%; height: 180px; object-fit: contain; margin-bottom: 12px; background:#f9f9f9; mix-blend-mode: multiply; } 
         .product-title { font-size: 14px; color: #007185; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:18px; flex-grow:1;} 
         
-        /* आउट ऑफ़ स्टॉक प्रोडक्ट कार्ड पर धुंधलापन और बैज */
         .product-card.out-of-stock { opacity: 0.65; cursor: not-allowed; }
         .out-of-stock-overlay { position: absolute; top: 10px; left: 10px; background: #c0392b; color: white; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; z-index: 10; }
         
@@ -769,12 +768,12 @@
         .pd-variant-group label { display: block; font-size: 13px; margin-bottom: 4px; color: #555; font-weight: bold; }
         .pd-variant-group select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d5d9d9; font-size: 13px; background:#f0f2f2;}
         
-        /* 🔥 अत्यधिक आकर्षक और प्रीमियम ग्लोइंग WhatsApp फ्लोटिंग बटन 🔥 */
+        /* 🔥 व्हाट्सएप फ्लोटिंग बटन (#25d366 रंग से हाइलाइटेड) 🔥 */
         .whatsapp-float {
             position: fixed;
             bottom: 25px;
             right: 25px;
-            background-color: #25d366;
+            background-color: #25d366; /* यहाँ से आप व्हाट्सएप का बैकग्राउंड कलर बदल सकते हैं */
             color: #FFF;
             border-radius: 50px;
             text-align: center;
@@ -802,8 +801,8 @@
         }
         
         @media(max-width: 768px) {
-            /* मोबाइल के लिए फिक्स किया गया CSS */
-            .reels-section { margin-top: -25px; padding: 10px 8px; }
+            .reels-section { margin-top: 0px; padding: 10px 8px; display: block !important; }
+            .reels-container { display: flex !important; }
             .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
             .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
             .amz-logo span { font-size: 14px; }
@@ -813,10 +812,10 @@
             .amz-nav-right .amz-nav-cart { display: none !important; }
             .amz-mobile-search-cart-row { display: flex !important; width: 100%; background-color: #131921; padding: 6px 8px; align-items: center; gap: 6px; }
             .amz-mobile-search-cart-row .amz-search-bar { display: flex !important; flex-grow: 1; height: 36px; margin: 0; }
-            .banner-container { height: 160px; width: 100%; border-radius: 0; } 
+            .banner-container { height: 160px; width: 100%; border-radius: 0; display: block !important; } 
             .banner-slide img { border-radius: 0; }
-            .products-grid { grid-template-columns: repeat(2, 1fr); padding: 8px; gap: 8px; } 
-            .product-card { padding: 10px; }
+            .products-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; padding: 8px; gap: 8px; } 
+            .product-card { padding: 10px; display: flex !important; }
             .product-img { height: 130px; } 
             .whatsapp-float { width: 50px; height: 50px; bottom: 20px; right: 20px; }
             .whatsapp-float img { width: 28px; height: 28px; }
@@ -825,8 +824,11 @@
 </head>
 <body>
     <div class="website-container">
-        <!-- 🔥 अट्रैक्टिव ग्लोइंग WhatsApp फ्लोटिंग बटन -->
-        <a href="https://wa.me/15553670749?text=Hello! I need help with Grihani Cosmetic." class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
+        
+        <!-- 🔥 WHATSAPP LINK & NUMBER HIGHLIGHT: 
+             नीचे दिए गए href लिंक में "15553670749" की जगह अपना व्हाट्सएप नंबर (देश के कोड के साथ, जैसे 91 के साथ) डाल सकते हैं। 
+             इसे नीचे #25d366 रंग से खास तौर पर हाइलाइट किया गया है। -->
+        <a href="https://wa.me/919955400139?text=Help" class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
             <svg viewBox="0 0 32 32" width="34" height="34" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
         </a>
 
@@ -873,7 +875,7 @@
             </div>
 
             <div class="amz-mobile-search-cart-row">
-                <div class="amz-search-bar" style="margin: 0; display: flex; height: 38px; flex-grow: 1;">
+                <div class="amz-search-bar" style="margin: 0; display: flex; height: 36px; flex-grow: 1;">
                     <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value)"><option value="All">All</option></select>
                     <input type="text" id="searchInputMob" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
                     <button class="amz-search-btn" onclick="searchProducts()">🔍</button>
