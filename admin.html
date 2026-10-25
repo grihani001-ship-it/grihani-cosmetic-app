@@ -1,142 +1,17 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>गृहणी कॉस्मेटिक एडमिन डैशबोर्ड</title>
-    <!-- Firebase SDKs -->
+    <title>Grihani Admin Panel</title>
+    
+    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
-        
-        /* Login Screen CSS */
-        #login-section { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0e1626; }
-        .login-container { background: #1a2639; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 100%; max-width: 400px; color: white; }
-        .login-container h2 { text-align: center; margin-bottom: 25px; color: #f39c12; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-size: 14px; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #34495e; background: #0e1626; color: #fff; border-radius: 5px; box-sizing: border-box; }
-        .login-btn { width: 100%; padding: 12px; background: #f39c12; border: none; color: #fff; font-size: 16px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .login-btn:hover { background: #e67e22; }
-        .error-msg { color: #e74c3c; text-align: center; margin-top: 15px; font-size: 14px; }
-        
-        /* Dashboard CSS */
-        #admin-dashboard { display: none; }
-        .header { background: #0e1626; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { margin: 0; font-size: 22px; color: #f39c12; }
-        .logout-btn { padding: 8px 15px; background: #e74c3c; border: none; color: #fff; border-radius: 4px; cursor: pointer; }
-        
-        .dashboard-container { display: flex; padding: 20px; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .sidebar { width: 250px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: max-content; }
-        .sidebar button { display: block; width: 100%; padding: 12px; margin-bottom: 10px; background: #ecf0f1; border: none; text-align: left; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .sidebar button:hover, .sidebar button.active { background: #f39c12; color: white; }
-        
-        .main-content { flex: 1; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .section-title { margin-top: 0; border-bottom: 2px solid #f39c12; padding-bottom: 10px; margin-bottom: 20px; }
-        
-        .admin-form .form-group input, .admin-form .form-group select, .admin-form .form-group textarea { background: #fff; border: 1px solid #ccc; color: #333; }
-        .submit-btn { padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        .submit-btn:hover { background: #2ecc71; }
-        
-        /* Hide sections by default */
-        .content-section { display: none; }
-        .content-section.active { display: block; }
-    </style>
-</head>
-<body>
-
-    <!-- लॉग इन फॉर्म -->
-    <div id="login-section">
-        <div class="login-container">
-            <h2>गृहणी कॉस्मेटिक एडमिन</h2>
-            <div class="form-group">
-                <label for="email">ईमेल आईडी</label>
-                <input type="email" id="email" placeholder="admin@example.com">
-            </div>
-            <div class="form-group">
-                <label for="password">पासवर्ड</label>
-                <input type="password" id="password" placeholder="********">
-            </div>
-            <button class="login-btn" onclick="loginAdmin()">लॉग इन करें</button>
-            <div class="error-msg" id="error-message"></div>
-        </div>
-    </div>
-
-    <!-- मुख्य एडमिन डैशबोर्ड -->
-    <div id="admin-dashboard">
-        <div class="header">
-            <h1>गृहणी कॉस्मेटिक - एडमिन पैनल</h1>
-            <button class="logout-btn" onclick="logoutAdmin()">लॉग आउट</button>
-        </div>
-        
-        <div class="dashboard-container">
-            <!-- साइडबार मेनू -->
-            <div class="sidebar">
-                <button class="active" onclick="showSection('product-section')">प्रोडक्ट अपलोड करें</button>
-                <button onclick="showSection('banner-section')">बैनर अपलोड करें</button>
-                <button onclick="showSection('manage-section')">प्रोडक्ट्स मैनेज करें</button>
-            </div>
-            
-            <!-- मुख्य कंटेंट एरिया -->
-            <div class="main-content">
-                
-                <!-- प्रोडक्ट अपलोड सेक्शन -->
-                <div id="product-section" class="content-section active admin-form">
-                    <h2 class="section-title">नया प्रोडक्ट अपलोड करें</h2>
-                    <div class="form-group">
-                        <label>प्रोडक्ट का नाम</label>
-                        <input type="text" id="prod-name" placeholder="प्रोडक्ट का नाम लिखें">
-                    </div>
-                    <div class="form-group">
-                        <label>कैटेगरी</label>
-                        <select id="prod-category">
-                            <option value="cosmetic">कॉस्मेटिक्स (Cosmetics)</option>
-                            <option value="bangles">कांच की चूड़ियां (Glass Bangles)</option>
-                            <option value="artificial_jewelry">आर्टिफिशियल ज्वेलरी</option>
-                            <option value="gift_items">गिफ्ट आइटम्स</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>कीमत (₹)</label>
-                        <input type="number" id="prod-price" placeholder="जैसे: 250">
-                    </div>
-                    <div class="form-group">
-                        <label>प्रोडक्ट का फोटो</label>
-                        <input type="file" id="prod-image" accept="image/*">
-                    </div>
-                    <button class="submit-btn" onclick="uploadProduct()">अपलोड प्रोडक्ट</button>
-                </div>
-
-                <!-- बैनर अपलोड सेक्शन -->
-                <div id="banner-section" class="content-section admin-form">
-                    <h2 class="section-title">होमपेज बैनर अपलोड करें</h2>
-                    <div class="form-group">
-                        <label>बैनर का नाम / टाइटल (ऑप्शनल)</label>
-                        <input type="text" id="banner-title" placeholder="जैसे: दिवाली सेल बैनर">
-                    </div>
-                    <div class="form-group">
-                        <label>बैनर इमेज (मोबाइल स्क्रीन के लिए सही साइज़)</label>
-                        <input type="file" id="banner-image" accept="image/*">
-                    </div>
-                    <button class="submit-btn" onclick="uploadBanner()">बैनर सेव करें</button>
-                </div>
-
-                <!-- मैनेज सेक्शन (भविष्य के लिए) -->
-                <div id="manage-section" class="content-section">
-                    <h2 class="section-title">अपलोड किए गए प्रोडक्ट्स</h2>
-                    <p>यहाँ आपके सारे प्रोडक्ट्स की लिस्ट दिखाई देगी। (डेटाबेस से कनेक्ट होने के बाद)</p>
-                </div>
-
-            </div>
-        </div>
-    </div>
 
     <script>
-        // आपका सही Firebase कॉन्फ़िगरेशन
         const firebaseConfig = {
             apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
             authDomain: "grihanicosmeticapp.firebaseapp.com",
@@ -146,18 +21,44 @@
             messagingSenderId: "921623248962",
             appId: "1:921623248962:web:413b6e003eca864b7caddb"
         };
-
-        // Firebase इनिशियलाइज करें
+        
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const db = firebase.database();
+        const auth = firebase.auth();
         const storage = firebase.storage();
 
-        // लॉग इन फंक्शन
-        function loginAdmin() {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const errorMsg = document.getElementById('error-message');
+        window.currentLangAdmin = localStorage.getItem('grihani_admin_lang') || 'en';
+        window.editingProductId = null;
+
+        // Firebase Auth स्टेट चेक (ताकि बार-बार लॉग इन न करना पड़े)
+        document.addEventListener("DOMContentLoaded", function() {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // यूजर लॉग इन है, डैशबोर्ड दिखाएं
+                    document.getElementById('login-section').style.display = 'none';
+                    document.getElementById('admin-dashboard-container').style.display = 'block';
+                    
+                    document.getElementById('langToggleBtnAdmin').innerText = window.currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
+                    applyAdminLanguage();
+                    loadCategoriesAdmin(); 
+                    loadProductsAdmin(); 
+                    loadOrdersAdmin(); 
+                    loadReelsAdmin(); 
+                    loadCustomersListAdmin(); 
+                    loadBannersAdmin();
+                } else {
+                    // यूजर लॉग इन नहीं है, लॉगिन फॉर्म दिखाएं
+                    document.getElementById('login-section').style.display = 'flex';
+                    document.getElementById('admin-dashboard-container').style.display = 'none';
+                }
+            });
+        });
+
+        // एडमिन लॉग इन फंक्शन
+        window.loginAdmin = function() {
+            const email = document.getElementById('adminEmail').value.trim();
+            const password = document.getElementById('adminPassword').value.trim();
+            const errorMsg = document.getElementById('adminErrorMsg');
 
             if (!email || !password) {
                 errorMsg.innerText = "कृपया ईमेल और पासवर्ड दोनों भरें।";
@@ -166,62 +67,420 @@
 
             auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    document.getElementById('login-section').style.display = 'none';
-                    document.getElementById('admin-dashboard').style.display = 'block';
+                    errorMsg.innerText = "";
                 })
                 .catch((error) => {
                     errorMsg.innerText = "लॉग इन फेल: " + error.message;
                 });
         }
 
-        // लॉग आउट फंक्शन
-        function logoutAdmin() {
+        // एडमिन लॉग आउट फंक्शन
+        window.logoutAdmin = function() {
             auth.signOut().then(() => {
-                document.getElementById('login-section').style.display = 'flex';
-                document.getElementById('admin-dashboard').style.display = 'none';
-                document.getElementById('email').value = '';
-                document.getElementById('password').value = '';
-                document.getElementById('error-message').innerText = '';
+                document.getElementById('adminEmail').value = '';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminErrorMsg').innerText = '';
             });
         }
 
-        // ऑथेंटिकेशन स्टेट चेक (ताकि रिफ्रेश करने पर बार-बार लॉग इन न मांगे)
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                document.getElementById('login-section').style.display = 'none';
-                document.getElementById('admin-dashboard').style.display = 'block';
-            } else {
-                document.getElementById('login-section').style.display = 'flex';
-                document.getElementById('admin-dashboard').style.display = 'none';
+        const adminDict = {
+            "dash_title": { hi: "🛠️ Grihani Admin Dashboard", en: "🛠️ Grihani Admin Dashboard" },
+            "new_orders": { hi: "📥 नए ऑर्डर्स (New Orders)", en: "📥 New Orders" },
+            "dispatch_orders": { hi: "🚚 रास्ते में हैं (Dispatched)", en: "🚚 Dispatched Orders" },
+            "reg_customers": { hi: "👥 रजिस्टर्ड कस्टमर्स", en: "👥 Registered Customers" },
+            "categories": { hi: "📁 कैटेगरीज", en: "📁 Manage Categories" },
+            "add_product": { hi: "🛍️ प्रोडक्ट जोड़ें / एडिट करें", en: "🛍️ Add / Edit Product" },
+            "out_of_stock_title": { hi: "🔴 आउट ऑफ़ स्टॉक प्रोडक्ट्स (Out of Stock)", en: "🔴 Out of Stock Products" },
+            "add_reel": { hi: "🎥 रील जोड़ें", en: "🎥 Add Reel" },
+            "manage_banners": { hi: "🖼️ मास्टर बैनर", en: "🖼️ Master Banners" },
+            "btn_add": { hi: "➕ जोड़ें", en: "➕ Add" },
+            "btn_publish": { hi: "➕ पब्लिश करें", en: "➕ Publish Product" },
+            "btn_publish_reel": { hi: "🎬 पब्लिश करें", en: "🎬 Publish Reel" },
+            "btn_publish_banner": { hi: "🖼️ अपलोड बैनर", en: "🖼️ Upload Banner" }
+        };
+
+        window.toggleLanguageAdmin = function() {
+            window.currentLangAdmin = window.currentLangAdmin === 'en' ? 'hi' : 'en';
+            localStorage.setItem('grihani_admin_lang', window.currentLangAdmin);
+            document.getElementById('langToggleBtnAdmin').innerText = window.currentLangAdmin === 'en' ? '🌐 हिंदी' : '🌐 English';
+            applyAdminLanguage(); loadOrdersAdmin(); loadProductsAdmin();
+        }
+
+        window.applyAdminLanguage = function() {
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
+                let key = el.getAttribute('data-lang-key');
+                if(adminDict[key]) el.innerText = adminDict[key][window.currentLangAdmin];
+            });
+        }
+
+        window.loadBannersAdmin = function() {
+            db.ref('banners').on('value', (snapshot) => {
+                const data = snapshot.val(); let adminListDiv = document.getElementById('adminBannerList'); adminListDiv.innerHTML = '';
+                if (!data) return adminListDiv.innerHTML = '<p style="color: #bdc3c7; font-size:12px;">No banners found.</p>';
+                Object.keys(data).forEach((key) => { 
+                    adminListDiv.innerHTML += `<div class="admin-item"><img src="${data[key].image}" style="width:50px; height:25px; object-fit:cover; border-radius:3px;"><span>Banner</span><button class="delete-btn" onclick="deleteBanner('${key}')">❌</button></div>`; 
+                });
+            });
+        }
+
+        window.addNewBannerToFirebase = async function() { 
+            let fileInput = document.getElementById('bImage'); 
+            if(fileInput.files.length === 0) return alert("Please select an image!"); 
+            try {
+                let btn = document.querySelector('[onclick="addNewBannerToFirebase()"]');
+                let oldText = btn.innerText;
+                btn.innerText = "⏳ Uploading...";
+                btn.disabled = true;
+
+                let file = fileInput.files[0];
+                let uniqueName = new Date().getTime() + '-' + file.name;
+                let sRef = storage.ref('banners/' + uniqueName);
+                
+                await sRef.put(file);
+                let downloadURL = await sRef.getDownloadURL();
+
+                await db.ref('banners').push({ image: downloadURL });
+                alert("Banner Added!"); 
+                fileInput.value = ''; 
+                btn.innerText = oldText;
+                btn.disabled = false;
+            } catch(e) {
+                console.error(e); alert("Error uploading banner!");
+                let btn = document.querySelector('[onclick="addNewBannerToFirebase()"]');
+                btn.innerText = "🖼️ Upload Banner"; btn.disabled = false;
             }
-        });
+        }
+        window.deleteBanner = function(key) { if(confirm("Delete Banner?")) db.ref('banners/' + key).remove(); }
 
-        // डैशबोर्ड के सेक्शंस बदलने का फंक्शन
-        function showSection(sectionId) {
-            // सारे सेक्शंस छुपाएं
-            const sections = document.querySelectorAll('.content-section');
-            sections.forEach(sec => sec.classList.remove('active'));
+        window.loadCategoriesAdmin = function() {
+            db.ref('categories').on('value', (snapshot) => {
+                const data = snapshot.val(); let selectBox = document.getElementById('pCategory'); let adminCatList = document.getElementById('adminCatList'); selectBox.innerHTML = ''; adminCatList.innerHTML = '';
+                let categories = data ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
+                Object.keys(categories).forEach((catKey) => { selectBox.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`; adminCatList.innerHTML += `<div class="admin-item"><span>📁 ${categories[catKey]} (${catKey})</span><button class="delete-btn" onclick="deleteCategory('${catKey}')">❌</button></div>`; });
+            });
+        }
+        window.addNewCategory = function() { let catKey = document.getElementById('catKeyInput').value.trim(), catName = document.getElementById('catNameInput').value.trim(); if(!catKey || !catName) return alert("Fill fields!"); db.ref('categories/' + catKey).set(catName).then(() => { alert("Category Added!"); document.getElementById('catKeyInput').value = ''; document.getElementById('catNameInput').value = ''; }); }
+        window.deleteCategory = function(catKey) { if(confirm("Delete?")) db.ref('categories/' + catKey).remove(); }
+
+        window.loadProductsAdmin = function() {
+            db.ref('products').on('value', (snapshot) => {
+                const data = snapshot.val(); 
+                let adminListDiv = document.getElementById('adminProductList'); 
+                let outOfStockDiv = document.getElementById('adminOutOfStockList');
+                adminListDiv.innerHTML = ''; 
+                outOfStockDiv.innerHTML = '';
+                window.allAdminProducts = data || {};
+                
+                if (!data) {
+                    adminListDiv.innerHTML = '<p style="color: #bdc3c7;">No products available.</p>';
+                    outOfStockDiv.innerHTML = '<p style="color: #bdc3c7; font-size:12px;">No out of stock products.</p>';
+                    return;
+                }
+
+                let hasOutOfStock = false;
+
+                Object.keys(data).forEach((key) => { 
+                    let p = data[key];
+                    let displayPrice = p.price || p.mrp || 0;
+                    let stockQty = p.stock !== undefined ? parseInt(p.stock) : 10;
+
+                    adminListDiv.innerHTML += `
+                        <div class="admin-item">
+                            <span>${p.name} <small>(₹${displayPrice}) | Stock: <b>${stockQty}</b></small></span>
+                            <div style="display:flex; gap:5px;">
+                                <button class="edit-btn" onclick="prepareEditProduct('${key}')">✏️ Edit</button>
+                                <button class="delete-btn" onclick="deleteProduct('${key}')">❌</button>
+                            </div>
+                        </div>`; 
+
+                    if (stockQty <= 0) {
+                        hasOutOfStock = true;
+                        outOfStockDiv.innerHTML += `
+                            <div class="admin-item" style="background: #fadbd8; border-left: 4px solid #c0392b;">
+                                <span style="color: #900c3f;">❌ ${p.name} (Stock: 0)</span>
+                                <button class="edit-btn" style="background:#27ae60;" onclick="prepareEditProduct('${key}')">🔄 Restock</button>
+                            </div>`;
+                    }
+                });
+
+                if (!hasOutOfStock) {
+                    outOfStockDiv.innerHTML = '<p style="color: #bdc3c7; font-size:12px;">✨ All products are in stock!</p>';
+                }
+            });
+        }
+
+        window.prepareEditProduct = function(key) {
+            let p = window.allAdminProducts[key];
+            if(!p) return;
             
-            // सारे बटन्स का एक्टिव कलर हटाएं
-            const buttons = document.querySelectorAll('.sidebar button');
-            buttons.forEach(btn => btn.classList.remove('active'));
+            document.getElementById('pName').value = p.name || '';
+            document.getElementById('pCategory').value = p.category || '';
+            document.getElementById('pMrp').value = p.mrp || '';
+            document.getElementById('pPrice').value = p.price || '';
+            document.getElementById('pStock').value = p.stock !== undefined ? p.stock : 10;
+            document.getElementById('pDesc').value = p.desc || '';
+            document.getElementById('pColor').value = p.color || '';
+            document.getElementById('pSize').value = p.size || '';
             
-            // जिसे क्लिक किया है उसे दिखाएं
-            document.getElementById(sectionId).classList.add('active');
-            event.target.classList.add('active');
+            window.editingProductId = key;
+            
+            let btn = document.getElementById('publishProductBtn');
+            btn.innerText = "💾 Update Product & Stock";
+            btn.style.backgroundColor = "#2980b9";
+            
+            window.scrollTo({ top: document.getElementById('addProductSection').offsetTop, behavior: 'smooth' });
         }
 
-        // प्रोडक्ट अपलोड करने का बेसिक फंक्शन
-        function uploadProduct() {
-            alert("प्रोडक्ट अपलोड का काम शुरू हो गया है। डेटाबेस से कनेक्ट हो रहा है...");
-            // यहाँ डेटाबेस में सेव करने का कोड आएगा
+        window.saveProductToFirebase = async function() { 
+            let name = document.getElementById('pName').value, category = document.getElementById('pCategory').value;
+            let mrp = document.getElementById('pMrp').value;
+            let price = document.getElementById('pPrice').value;
+            let stock = parseInt(document.getElementById('pStock').value) || 0;
+            let fileInput = document.getElementById('pImage'); 
+            let desc = document.getElementById('pDesc').value.trim();
+            let color = document.getElementById('pColor').value.trim();
+            let size = document.getElementById('pSize').value.trim();
+
+            if(!name || !price) return alert("Fill name and offer price! / नाम और ऑफर प्राइस ज़रूर भरें!"); 
+            if(!mrp) mrp = price;
+
+            const uploadImageAndGetURL = async (file) => {
+                const uniqueName = new Date().getTime() + '-' + file.name;
+                const fileRef = storage.ref('products/' + uniqueName);
+                await fileRef.put(file);
+                return await fileRef.getDownloadURL();
+            };
+
+            try {
+                let btn = document.getElementById('publishProductBtn');
+                let originalText = btn.innerText;
+                btn.innerText = "⏳ Saving... Please wait";
+                btn.disabled = true;
+
+                let imagesArray = [];
+                if (fileInput.files.length > 0) {
+                    let imagePromises = Array.from(fileInput.files).map(file => uploadImageAndGetURL(file));
+                    imagesArray = await Promise.all(imagePromises);
+                } else if (window.editingProductId && window.allAdminProducts[window.editingProductId]) {
+                    imagesArray = window.allAdminProducts[window.editingProductId].images || [window.allAdminProducts[window.editingProductId].image];
+                }
+
+                if (imagesArray.length === 0) {
+                    alert("Please select at least one image! / कृपया कम से कम एक फोटो चुनें!");
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+
+                let productData = { name, category, mrp, price, stock, desc, color, size, images: imagesArray };
+
+                if (window.editingProductId) {
+                    await db.ref('products/' + window.editingProductId).update(productData);
+                    alert("Product & Stock Updated Successfully! / प्रोडक्ट और स्टॉक अपडेट हो गया!");
+                    window.editingProductId = null;
+                    btn.innerText = "➕ Publish Product";
+                    btn.style.backgroundColor = "#27ae60";
+                } else {
+                    await db.ref('products').push(productData);
+                    alert("Product Added Successfully! / नया प्रोडक्ट जुड़ गया!");
+                    btn.innerText = "➕ Publish Product";
+                }
+                
+                document.getElementById('pName').value = ''; 
+                document.getElementById('pMrp').value = ''; 
+                document.getElementById('pPrice').value = ''; 
+                document.getElementById('pStock').value = '';
+                document.getElementById('pDesc').value = ''; 
+                document.getElementById('pColor').value = ''; 
+                document.getElementById('pSize').value = '';
+                fileInput.value = ''; 
+                btn.disabled = false;
+
+            } catch(error) {
+                alert("सेव करने में समस्या आई।");
+                console.error(error);
+                let btn = document.getElementById('publishProductBtn');
+                btn.disabled = false;
+                btn.innerText = "➕ Publish Product";
+            }
         }
 
-        // बैनर अपलोड करने का बेसिक फंक्शन
-        function uploadBanner() {
-            alert("बैनर अपलोड हो रहा है...");
-            // यहाँ स्टोरेज और डेटाबेस में बैनर सेव करने का कोड आएगा
+        window.deleteProduct = function(key) { 
+            if(confirm("Delete this product?")) {
+                db.ref('products/' + key).remove();
+                if(window.editingProductId === key) {
+                    window.editingProductId = null;
+                    document.getElementById('publishProductBtn').innerText = "➕ Publish Product";
+                    document.getElementById('publishProductBtn').style.backgroundColor = "#27ae60";
+                }
+            } 
         }
+
+        window.addNewReelToFirebase = function() { let title = document.getElementById('rTitle').value, videoUrl = document.getElementById('rVideoUrl').value, instaUrl = document.getElementById('rInstaUrl').value; if(!title || !videoUrl) return alert("Fill fields!"); db.ref('reels').push({ title, url: videoUrl, instaUrl: instaUrl || '#' }).then(() => { alert("Reel Published!"); document.getElementById('rTitle').value = ''; document.getElementById('rVideoUrl').value = ''; }); }
+        window.deleteReel = function(key) { if(confirm("Delete?")) db.ref('reels/' + key).remove(); }
+        window.loadReelsAdmin = function() { db.ref('reels').on('value', (snapshot) => { const data = snapshot.val(); let adminReelList = document.getElementById('adminReelList'); adminReelList.innerHTML = ''; if(!data) return adminReelList.innerHTML = '<p style="color: #bdc3c7; font-size:13px;">No reels.</p>'; Object.keys(data).forEach(key => { adminReelList.innerHTML += `<div class="admin-item"><span>🎥 ${data[key].title}</span><button class="delete-btn" onclick="deleteReel('${key}')">❌</button></div>`; }); }); }
+
+        window.loadCustomersListAdmin = function() { db.ref('customers').on('value', (snapshot) => { const data = snapshot.val(); let custDiv = document.getElementById('adminCustomerList'); custDiv.innerHTML = ''; if(!data) return; Object.keys(data).forEach((key) => { let c = data[key]; custDiv.innerHTML += `<div class="order-card" style="border-left-color: #800020;"><p>👤 ${c.name} | 📞 ${c.phone}</p><p>📍 ${c.address}</p><p style="font-size:11px; color:#7f8c8d;">📅 ${c.date}</p></div>`; }); }); }
+        
+        window.loadOrdersAdmin = function() {
+            db.ref('orders').on('value', (snapshot) => {
+                const data = snapshot.val();
+                let newOrdersDiv = document.getElementById('adminNewOrders'), dispatchedDiv = document.getElementById('adminDispatchedOrders');
+                newOrdersDiv.innerHTML = ''; dispatchedDiv.innerHTML = '';
+                if (!data) return;
+                
+                Object.keys(data).forEach((key) => {
+                    let order = data[key], itemsList = '';
+                    if(order.items) order.items.forEach(item => {
+                        let variant = '';
+                        if(item.selectedColor || item.selectedSize) variant = ` (${item.selectedColor || ''} ${item.selectedSize || ''})`;
+                        itemsList += `${item.name}${variant}(x${item.qty}), `;
+                    });
+                    
+                    let trackingInfo = order.courierLink ? `<p style="font-size:11px; color:#2980b9; margin-top:4px;">🔗 Link Added</p>` : '';
+                    let billInfo = order.billNumber ? `<p style="font-size:11px; color:#27ae60; margin-top:2px;">🧾 Bill: ${order.billNumber}</p>` : '';
+                    let onlineStatus = order.paymentMode === "Online Paid" ? `<span style="background:#27ae60; color:white; padding:2px 5px; border-radius:3px;">✅ Online Paid</span>` : order.paymentMode;
+
+                    let cardHtml = `<div class="order-card"><p>👤 ${order.customerName} (${order.customerPhone})</p><p>📍 ${order.customerAddress}</p><p style="color:#800020; font-size:12px; margin:6px 0;">🛍️ ${itemsList}</p><p>💳 ${onlineStatus} | 💰 ${order.total}</p><p style="font-size:11px; color:#7f8c8d;">📅 ${order.date}</p>${trackingInfo}${billInfo}`;
+                    
+                    let btnLoc = window.currentLangAdmin === 'hi' ? '📍 लोकेशन अपडेट करें' : '📍 Update Location';
+                    let btnDel = window.currentLangAdmin === 'hi' ? '✨ डिलीवर (समाप्त करें)' : '✨ Mark Delivered';
+                    let btnCan = window.currentLangAdmin === 'hi' ? '❌ रद्द करें' : '❌ Cancel Order';
+                    let btnDisp = window.currentLangAdmin === 'hi' ? '🚚 डिस्पैच करें' : '🚚 Dispatch';
+
+                    if (order.status === 'Dispatched') {
+                        dispatchedDiv.innerHTML += cardHtml + `<button class="track-btn" onclick="addTrackingUpdate('${key}')">${btnLoc}</button><button class="complete-order-btn" onclick="markDelivered('${key}')">${btnDel}</button><button class="cancel-order-btn" onclick="markCancelled('${key}')">${btnCan}</button></div>`;
+                    } else {
+                        newOrdersDiv.innerHTML += cardHtml + `<button class="dispatch-btn" onclick="markDispatched('${key}')">${btnDisp}</button><button class="cancel-order-btn" onclick="markCancelled('${key}')">${btnCan}</button></div>`;
+                    }
+                });
+            });
+        }
+
+        window.markDispatched = function(key) { 
+            let courierLink = prompt("Paste Courier Tracking Link (Leave empty if none):");
+            let billNumber = prompt("Enter Tohands Bill Number:");
+            let updateData = { status: 'Dispatched' };
+            if(courierLink && courierLink.trim() !== '') updateData.courierLink = courierLink.trim();
+            if(billNumber && billNumber.trim() !== '') updateData.billNumber = billNumber.trim();
+
+            db.ref('orders/' + key).update(updateData).then(() => {
+                db.ref(`orders/${key}/tracking`).push({ msg: window.currentLangAdmin === 'hi' ? "सामान डिस्पैच (पैक होकर निकल) चुका है।" : "Order Dispatched.", time: new Date().toLocaleString() });
+            }); 
+        }
+        
+        window.addTrackingUpdate = function(key) { let msg = prompt("Enter tracking location/status:"); if(msg) { db.ref(`orders/${key}/tracking`).push({ msg: msg, time: new Date().toLocaleString() }).then(() => { alert("📍 Tracking Updated!"); }); } }
+        window.markDelivered = function(key) { if(confirm("Successfully Delivered?")) { let deliveryTime = new Date().toLocaleString(); db.ref('orders/' + key).once('value').then((snapshot) => { if(snapshot.exists()) { let orderData = snapshot.val(); orderData.status = 'Delivered'; orderData.deliveredAt = deliveryTime; if(!orderData.tracking) orderData.tracking = {}; let newKey = db.ref('dummy').push().key; orderData.tracking[newKey] = { msg: "Delivered Successfully!", time: deliveryTime }; db.ref('order_history/' + key).set(orderData).then(() => { db.ref('orders/' + key).remove(); alert("✅ Delivered!"); }); } }); } }
+        window.markCancelled = function(key) { if(confirm("Cancel this order?")) { let cancelTime = new Date().toLocaleString(); db.ref('orders/' + key).once('value').then((snapshot) => { if(snapshot.exists()) { let orderData = snapshot.val(); orderData.status = 'Cancelled'; orderData.deliveredAt = "Cancelled on " + cancelTime; db.ref('order_history/' + key).set(orderData).then(() => { db.ref('orders/' + key).remove(); alert("❌ Cancelled!"); }); } }); } }
     </script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: #1e272e; color: white; display: flex; flex-direction:column; align-items: center; padding: 20px; min-height: 100vh; }
+        
+        /* Login Screen CSS */
+        #login-section { display: flex; justify-content: center; align-items: center; height: 90vh; width: 100%; }
+        .login-container { background: #2c3e50; padding: 40px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.6); width: 100%; max-width: 400px; color: white; }
+        .login-container h2 { text-align: center; margin-bottom: 25px; color: #f1c40f; }
+        .login-btn { width: 100%; padding: 12px; background: #f1c40f; border: none; color: #1e272e; font-size: 16px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .login-btn:hover { background: #d4ac0d; }
+        .error-msg { color: #e74c3c; text-align: center; margin-top: 15px; font-size: 14px; font-weight: bold; }
+
+        /* Dashboard CSS */
+        #admin-dashboard-container { display: none; width: 100%; max-width: 800px; }
+        .header-bar { width: 100%; display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .lang-btn { background: #f1c40f; color: #1e272e; border: none; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .logout-btn { background: #e74c3c; color: white; border: none; padding: 6px 15px; border-radius: 15px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        
+        .admin-panel { width: 100%; padding: 25px; background-color: #2c3e50; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .admin-panel h2 { text-align: center; color: #f1c40f; margin-bottom: 20px; }
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; } 
+        .manage-section { background-color: #34495e; padding: 15px; border-radius: 8px; margin-bottom: 15px; } .manage-section h3 { margin-bottom: 10px; border-bottom: 1px solid #7f8c8d; padding-bottom: 5px; color: #fff; font-size: 16px; }
+        .form-group { margin-bottom: 10px; } .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: none; border-radius: 4px; font-size: 13px; background: #fff; color: #333; } .form-group input[type="file"] { background-color: #fff; color: #333; }
+        .add-btn { background-color: #27ae60; color: white; border: none; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; }
+        .add-btn:disabled { background-color: #7f8c8d; cursor: not-allowed; } 
+        .admin-item { display: flex; justify-content: space-between; align-items: center; background: #ecf0f1; color: #333; padding: 8px; margin-bottom: 6px; border-radius: 4px; font-size: 13px; font-weight: bold; } 
+        .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .edit-btn { background-color: #2980b9; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .order-card { background-color: #ecf0f1; color: #2c3e50; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 5px solid #e67e22; box-shadow: 0 2px 5px rgba(0,0,0,0.2); } .order-card p { margin-bottom: 4px; font-size: 13px; font-weight: bold; }
+        .dispatch-btn { background-color: #e67e22; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; width: 100%; }
+        .track-btn { background-color: #3498db; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; width: 100%; }
+        .complete-order-btn { background-color: #27ae60; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; width: 100%; }
+        .cancel-order-btn { background-color: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 6px; width: 100%; font-size:12px; }
+        
+        @media(max-width: 768px) { 
+            body { padding: 10px; }
+            .grid-layout { grid-template-columns: 1fr; } 
+            .admin-panel { padding: 15px; }
+            h2 { font-size: 20px; }
+            .manage-section { padding: 12px; }
+            .form-group input, .form-group select, .form-group textarea { font-size: 16px; padding: 10px; } 
+            .add-btn, .dispatch-btn, .track-btn, .complete-order-btn, .cancel-order-btn { padding: 12px; font-size: 15px; } 
+            .admin-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .delete-btn, .edit-btn { align-self: flex-end; padding: 6px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. एडमिन लॉगिन सेक्शन -->
+    <div id="login-section">
+        <div class="login-container">
+            <h2>गृहणी एडमिन लॉग इन</h2>
+            <div class="form-group">
+                <label>ईमेल आईडी</label>
+                <input type="email" id="adminEmail" placeholder="admin@example.com">
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>पासवर्ड</label>
+                <input type="password" id="adminPassword" placeholder="********">
+            </div>
+            <button class="login-btn" onclick="loginAdmin()">लॉग इन करें</button>
+            <div class="error-msg" id="adminErrorMsg"></div>
+        </div>
+    </div>
+
+    <!-- 2. मुख्य एडमिन डैशबोर्ड (लॉगिन के बाद दिखेगा) -->
+    <div id="admin-dashboard-container">
+        <div class="header-bar">
+            <button id="langToggleBtnAdmin" class="lang-btn" onclick="toggleLanguageAdmin()">🌐 हिंदी</button>
+            <button class="logout-btn" onclick="logoutAdmin()">लॉग आउट</button>
+        </div>
+        <div class="admin-panel">
+            <h2 data-lang-key="dash_title">🛠️ Grihani Admin Dashboard</h2>
+            <div class="grid-layout">
+                <div class="column">
+                    <div class="manage-section" style="border-left: 4px solid #3498db;"><h3 data-lang-key="new_orders">📥 New Orders</h3><div id="adminNewOrders"></div></div>
+                    <div class="manage-section" style="border-left: 4px solid #27ae60;"><h3 data-lang-key="dispatch_orders">🚚 Dispatched Orders</h3><div id="adminDispatchedOrders"></div></div>
+                    <div class="manage-section" style="border-left: 4px solid #9b59b6;"><h3 data-lang-key="reg_customers">👥 Registered Customers</h3><div id="adminCustomerList"></div></div>
+                </div>
+                <div class="column">
+                    <div class="manage-section" style="border-left: 4px solid #c0392b;">
+                        <h3 data-lang-key="out_of_stock_title">🔴 Out of Stock Products</h3>
+                        <div id="adminOutOfStockList" style="max-height: 140px; overflow-y: auto;"></div>
+                    </div>
+
+                    <div class="manage-section" style="border-left: 4px solid #1abc9c;"><h3 data-lang-key="manage_banners">🖼️ Master Banners</h3><div class="form-group"><input type="file" id="bImage" accept="image/*"></div><button class="add-btn" onclick="addNewBannerToFirebase()" data-lang-key="btn_publish_banner">🖼️ Upload Banner</button><div id="adminBannerList" style="margin-top: 10px; max-height: 120px; overflow-y: auto;"></div></div>
+                    <div class="manage-section" style="border-left: 4px solid #f1c40f;"><h3 data-lang-key="categories">📁 Manage Categories</h3><div class="form-group"><input type="text" id="catKeyInput" placeholder="Code (e.g. Bridal)"></div><div class="form-group"><input type="text" id="catNameInput" placeholder="Name to Display"></div><button class="add-btn" onclick="addNewCategory()" data-lang-key="btn_add">➕ Add</button><div id="adminCatList" style="margin-top: 10px;"></div></div>
+                    
+                    <div class="manage-section" id="addProductSection" style="border-left: 4px solid #e67e22;">
+                        <h3 data-lang-key="add_product">🛍️ Add / Edit Product</h3>
+                        <div class="form-group"><input type="text" id="pName" placeholder="Product Name / नाम *"></div>
+                        <div class="form-group"><select id="pCategory"></select></div>
+                        <div class="form-group"><input type="number" id="pMrp" placeholder="MRP (₹) / मूल कीमत"></div>
+                        <div class="form-group"><input type="number" id="pPrice" placeholder="Offer Price (₹) * / ऑफर प्राइस"></div>
+                        <div class="form-group"><input type="number" id="pStock" placeholder="Stock Quantity (ex: 15) / स्टॉक संख्या *"></div>
+                        <div class="form-group"><textarea id="pDesc" placeholder="Description / विवरण" rows="2"></textarea></div>
+                        <div class="form-group"><input type="text" id="pColor" placeholder="Colors (ex: Red, Blue)"></div>
+                        <div class="form-group"><input type="text" id="pSize" placeholder="Sizes (ex: S, M, L)"></div>
+                        <div class="form-group"><input type="file" id="pImage" multiple accept="image/*"></div>
+                        <button class="add-btn" id="publishProductBtn" onclick="saveProductToFirebase()" data-lang-key="btn_publish">➕ Publish Product</button>
+                        <div id="adminProductList" style="margin-top: 10px; max-height: 150px; overflow-y: auto;"></div>
+                    </div>
+
+                    <div class="manage-section" style="border-left: 4px solid #e74c3c;"><h3 data-lang-key="add_reel">🎥 Add Reel</h3><div class="form-group"><input type="text" id="rTitle" placeholder="Title"></div><div class="form-group"><input type="text" id="rVideoUrl" placeholder="MP4 Video Link"></div><div class="form-group"><input type="text" id="rInstaUrl" placeholder="Instagram Link (Optional)"></div><button class="add-btn" onclick="addNewReelToFirebase()" data-lang-key="btn_publish_reel">🎬 Publish Reel</button><div id="adminReelList" style="margin-top: 10px;"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
