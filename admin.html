@@ -3,49 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>गृहणी एडमिन डैशबोर्ड - लॉग इन</title>
+    <title>गृहणी कॉस्मेटिक एडमिन डैशबोर्ड</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
     <style>
-        body { font-family: Arial, sans-serif; background-color: #0e1626; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-container { background: #1a2639; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
-        .login-container h2 { text-align: center; margin-bottom: 20px; color: #f39c12; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #34495e; background: #0e1626; color: #fff; border-radius: 4px; box-sizing: border-box; }
-        .login-btn { width: 100%; padding: 10px; background: #f39c12; border: none; color: #fff; font-size: 16px; border-radius: 4px; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
+        
+        /* Login Screen CSS */
+        #login-section { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0e1626; }
+        .login-container { background: #1a2639; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: 100%; max-width: 400px; color: white; }
+        .login-container h2 { text-align: center; margin-bottom: 25px; color: #f39c12; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #34495e; background: #0e1626; color: #fff; border-radius: 5px; box-sizing: border-box; }
+        .login-btn { width: 100%; padding: 12px; background: #f39c12; border: none; color: #fff; font-size: 16px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .login-btn:hover { background: #e67e22; }
-        .error-msg { color: #e74c3c; text-align: center; margin-top: 10px; font-size: 14px; }
+        .error-msg { color: #e74c3c; text-align: center; margin-top: 15px; font-size: 14px; }
+        
+        /* Dashboard CSS */
         #admin-dashboard { display: none; }
+        .header { background: #0e1626; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { margin: 0; font-size: 22px; color: #f39c12; }
+        .logout-btn { padding: 8px 15px; background: #e74c3c; border: none; color: #fff; border-radius: 4px; cursor: pointer; }
+        
+        .dashboard-container { display: flex; padding: 20px; gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .sidebar { width: 250px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: max-content; }
+        .sidebar button { display: block; width: 100%; padding: 12px; margin-bottom: 10px; background: #ecf0f1; border: none; text-align: left; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .sidebar button:hover, .sidebar button.active { background: #f39c12; color: white; }
+        
+        .main-content { flex: 1; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .section-title { margin-top: 0; border-bottom: 2px solid #f39c12; padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .admin-form .form-group input, .admin-form .form-group select, .admin-form .form-group textarea { background: #fff; border: 1px solid #ccc; color: #333; }
+        .submit-btn { padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .submit-btn:hover { background: #2ecc71; }
+        
+        /* Hide sections by default */
+        .content-section { display: none; }
+        .content-section.active { display: block; }
     </style>
 </head>
 <body>
 
     <!-- लॉग इन फॉर्म -->
-    <div class="login-container" id="login-section">
-        <h2>गृहणी एडमिन लॉग इन</h2>
-        <div class="form-group">
-            <label for="email">ईमेल आईडी</label>
-            <input type="email" id="email" placeholder="admin@example.com">
+    <div id="login-section">
+        <div class="login-container">
+            <h2>गृहणी कॉस्मेटिक एडमिन</h2>
+            <div class="form-group">
+                <label for="email">ईमेल आईडी</label>
+                <input type="email" id="email" placeholder="admin@example.com">
+            </div>
+            <div class="form-group">
+                <label for="password">पासवर्ड</label>
+                <input type="password" id="password" placeholder="********">
+            </div>
+            <button class="login-btn" onclick="loginAdmin()">लॉग इन करें</button>
+            <div class="error-msg" id="error-message"></div>
         </div>
-        <div class="form-group">
-            <label for="password">पासवर्ड</label>
-            <input type="password" id="password" placeholder="********">
-        </div>
-        <button class="login-btn" onclick="loginAdmin()">लॉग इन करें</button>
-        <div class="error-msg" id="error-message"></div>
     </div>
 
-    <!-- मुख्य एडमिन डैशबोर्ड (लॉग इन के बाद दिखेगा) -->
-    <div id="admin-dashboard" style="width: 100%; height: 100vh; padding: 20px; box-sizing: border-box;">
-        <h1>गृहणी एडमिन डैशबोर्ड में आपका स्वागत है</h1>
-        <button onclick="logoutAdmin()" style="padding: 8px 15px; background: #e74c3c; border: none; color: #fff; border-radius: 4px; cursor: pointer; margin-top: 20px;">लॉग आउट</button>
+    <!-- मुख्य एडमिन डैशबोर्ड -->
+    <div id="admin-dashboard">
+        <div class="header">
+            <h1>गृहणी कॉस्मेटिक - एडमिन पैनल</h1>
+            <button class="logout-btn" onclick="logoutAdmin()">लॉग आउट</button>
+        </div>
+        
+        <div class="dashboard-container">
+            <!-- साइडबार मेनू -->
+            <div class="sidebar">
+                <button class="active" onclick="showSection('product-section')">प्रोडक्ट अपलोड करें</button>
+                <button onclick="showSection('banner-section')">बैनर अपलोड करें</button>
+                <button onclick="showSection('manage-section')">प्रोडक्ट्स मैनेज करें</button>
+            </div>
+            
+            <!-- मुख्य कंटेंट एरिया -->
+            <div class="main-content">
+                
+                <!-- प्रोडक्ट अपलोड सेक्शन -->
+                <div id="product-section" class="content-section active admin-form">
+                    <h2 class="section-title">नया प्रोडक्ट अपलोड करें</h2>
+                    <div class="form-group">
+                        <label>प्रोडक्ट का नाम</label>
+                        <input type="text" id="prod-name" placeholder="प्रोडक्ट का नाम लिखें">
+                    </div>
+                    <div class="form-group">
+                        <label>कैटेगरी</label>
+                        <select id="prod-category">
+                            <option value="cosmetic">कॉस्मेटिक्स (Cosmetics)</option>
+                            <option value="bangles">कांच की चूड़ियां (Glass Bangles)</option>
+                            <option value="artificial_jewelry">आर्टिफिशियल ज्वेलरी</option>
+                            <option value="gift_items">गिफ्ट आइटम्स</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>कीमत (₹)</label>
+                        <input type="number" id="prod-price" placeholder="जैसे: 250">
+                    </div>
+                    <div class="form-group">
+                        <label>प्रोडक्ट का फोटो</label>
+                        <input type="file" id="prod-image" accept="image/*">
+                    </div>
+                    <button class="submit-btn" onclick="uploadProduct()">अपलोड प्रोडक्ट</button>
+                </div>
+
+                <!-- बैनर अपलोड सेक्शन -->
+                <div id="banner-section" class="content-section admin-form">
+                    <h2 class="section-title">होमपेज बैनर अपलोड करें</h2>
+                    <div class="form-group">
+                        <label>बैनर का नाम / टाइटल (ऑप्शनल)</label>
+                        <input type="text" id="banner-title" placeholder="जैसे: दिवाली सेल बैनर">
+                    </div>
+                    <div class="form-group">
+                        <label>बैनर इमेज (मोबाइल स्क्रीन के लिए सही साइज़)</label>
+                        <input type="file" id="banner-image" accept="image/*">
+                    </div>
+                    <button class="submit-btn" onclick="uploadBanner()">बैनर सेव करें</button>
+                </div>
+
+                <!-- मैनेज सेक्शन (भविष्य के लिए) -->
+                <div id="manage-section" class="content-section">
+                    <h2 class="section-title">अपलोड किए गए प्रोडक्ट्स</h2>
+                    <p>यहाँ आपके सारे प्रोडक्ट्स की लिस्ट दिखाई देगी। (डेटाबेस से कनेक्ट होने के बाद)</p>
+                </div>
+
+            </div>
+        </div>
     </div>
 
     <script>
-        // Firebase कॉन्फ़िगरेशन (अपनी डिटेल्स यहाँ भरें)
+        // आपका सही Firebase कॉन्फ़िगरेशन
         const firebaseConfig = {
             apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
             authDomain: "grihanicosmeticapp.firebaseapp.com",
@@ -58,6 +149,9 @@
 
         // Firebase इनिशियलाइज करें
         firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        const storage = firebase.storage();
 
         // लॉग इन फंक्शन
         function loginAdmin() {
@@ -70,27 +164,63 @@
                 return;
             }
 
-            firebase.auth().signInWithEmailAndPassword(email, password)
+            auth.signInWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // लॉग इन सफल
                     document.getElementById('login-section').style.display = 'none';
                     document.getElementById('admin-dashboard').style.display = 'block';
                 })
                 .catch((error) => {
-                    // ऑथेंटिकेशन एरर
-                    errorMsg.innerText = "ऑथेंटिकेशन एरर: " + error.message;
+                    errorMsg.innerText = "लॉग इन फेल: " + error.message;
                 });
         }
 
         // लॉग आउट फंक्शन
         function logoutAdmin() {
-            firebase.auth().signOut().then(() => {
-                document.getElementById('login-section').style.display = 'block';
+            auth.signOut().then(() => {
+                document.getElementById('login-section').style.display = 'flex';
                 document.getElementById('admin-dashboard').style.display = 'none';
                 document.getElementById('email').value = '';
                 document.getElementById('password').value = '';
                 document.getElementById('error-message').innerText = '';
             });
+        }
+
+        // ऑथेंटिकेशन स्टेट चेक (ताकि रिफ्रेश करने पर बार-बार लॉग इन न मांगे)
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('admin-dashboard').style.display = 'block';
+            } else {
+                document.getElementById('login-section').style.display = 'flex';
+                document.getElementById('admin-dashboard').style.display = 'none';
+            }
+        });
+
+        // डैशबोर्ड के सेक्शंस बदलने का फंक्शन
+        function showSection(sectionId) {
+            // सारे सेक्शंस छुपाएं
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(sec => sec.classList.remove('active'));
+            
+            // सारे बटन्स का एक्टिव कलर हटाएं
+            const buttons = document.querySelectorAll('.sidebar button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            // जिसे क्लिक किया है उसे दिखाएं
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // प्रोडक्ट अपलोड करने का बेसिक फंक्शन
+        function uploadProduct() {
+            alert("प्रोडक्ट अपलोड का काम शुरू हो गया है। डेटाबेस से कनेक्ट हो रहा है...");
+            // यहाँ डेटाबेस में सेव करने का कोड आएगा
+        }
+
+        // बैनर अपलोड करने का बेसिक फंक्शन
+        function uploadBanner() {
+            alert("बैनर अपलोड हो रहा है...");
+            // यहाँ स्टोरेज और डेटाबेस में बैनर सेव करने का कोड आएगा
         }
     </script>
 </body>
