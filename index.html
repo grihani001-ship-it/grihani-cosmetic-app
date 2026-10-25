@@ -8,9 +8,9 @@
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, get, child, update } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
-        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, get, child, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
@@ -237,7 +237,7 @@
         window.openProductModal = function(prodStr) {
             let p = JSON.parse(decodeURIComponent(prodStr));
             let stockQty = p.stock !== undefined ? parseInt(p.stock) : 10;
-            if(stockQty <= 0) return; // अगर आउट ऑफ़ स्टॉक है तो पॉपअप न खुले
+            if(stockQty <= 0) return; // अगर आउट ऑफ़ स्टॉक है तो पॉपअप न खुले
 
             window.currentProductImages = p.images ? p.images : (p.image ? [p.image] : []);
             window.currentImageIndex = 0;
@@ -369,13 +369,17 @@
             startCartListener(cleanPhone);
         }
 
-        window.onload = function() {
+        // फिक्स: window.onload को बदलकर एक साधारण function बना दिया है 
+        // और इसे तुरंत कॉल किया गया है, ताकि मोबाइल में कोई दिक्कत ना आए।
+        function initApp() {
             document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
             applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
             checkSavedLocation(); 
             let savedPhone = localStorage.getItem('grihani_user_phone');
             if(savedPhone) syncUserData(savedPhone);
         }
+        
+        initApp(); // इसे तुरंत कॉल करें
 
         window.openLoginModal = function() { 
             if(localStorage.getItem('grihani_user_phone')) openOrdersPage(); 
@@ -619,7 +623,6 @@
         }
 
         function saveOrderData(paymentMode, paymentId, totalAmountNum, finalAddress) {
-            // ऑर्डर के साथ स्टॉक कम करने का लॉजिक
             cart.forEach(cartItem => {
                 get(ref(window.db, 'products')).then((snapshot) => {
                     if(snapshot.exists()) {
@@ -703,7 +706,7 @@
         .product-img { width: 100%; height: 180px; object-fit: contain; margin-bottom: 12px; background:#f9f9f9; mix-blend-mode: multiply; } 
         .product-title { font-size: 14px; color: #007185; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:18px; flex-grow:1;} 
         
-        /* आउट ऑफ़ स्टॉक प्रोडक्ट कार्ड पर धुंधलापन और बैज */
+        /* आउट ऑफ़ स्टॉक प्रोडक्ट कार्ड पर धुंधलापन और बैज */
         .product-card.out-of-stock { opacity: 0.65; cursor: not-allowed; }
         .out-of-stock-overlay { position: absolute; top: 10px; left: 10px; background: #c0392b; color: white; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; z-index: 10; }
         
@@ -796,6 +799,8 @@
         }
         
         @media(max-width: 768px) {
+            /* मोबाइल के लिए फिक्स किया गया CSS */
+            .reels-section { margin-top: -25px; padding: 10px 8px; }
             .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
             .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
             .amz-logo span { font-size: 14px; }
