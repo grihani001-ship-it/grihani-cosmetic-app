@@ -24,7 +24,6 @@
             appId: "1:921623248962:web:413b6e003eca864b7caddb"
         };
         
-        // Firebase इनिशियलाइज़
         firebase.initializeApp(firebaseConfig);
         window.db = firebase.database();
         window.auth = firebase.auth(); 
@@ -656,146 +655,159 @@
         html, body { width: 100%; max-width: 100%; overflow-x: hidden; background-color: #eaeded; color: #0f1111; position: relative; }
         .website-container { width: 100%; max-width: 100%; overflow-x: hidden; position: relative; }
         
+        /* HEADER - DESKTOP */
         .amz-header { background-color: #131921; color: white; display: flex; flex-direction: column; width: 100%; position: sticky; top:0; z-index: 100; }
-        .amz-nav-top { display: flex; align-items: center; padding: 5px 10px; height: 55px; width: 100%; }
+        .amz-nav-top { display: flex; align-items: center; padding: 5px 15px; height: 60px; width: 100%; gap: 15px;}
         
-        .amz-logo { display: flex; align-items: center; padding: 4px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:8px; flex-shrink: 0;}
+        .amz-logo { display: flex; align-items: center; padding: 4px 8px; border: 1px solid transparent; cursor: pointer; border-radius:2px; flex-shrink: 0;}
         .amz-logo:hover { border: 1px solid white; }
-        .amz-logo img { width: 32px; height: 32px; border-radius: 4px; margin-right: 4px; background: white; padding:2px;}
-        .amz-logo span { font-size: 16px; font-weight: bold; }
+        .amz-logo img { width: 34px; height: 34px; border-radius: 4px; margin-right: 6px; background: white; padding:2px;}
+        .amz-logo span { font-size: 18px; font-weight: bold; letter-spacing: 0.5px;}
         
-        .amz-location { display: flex; align-items: center; padding: 4px; border: 1px solid transparent; cursor: pointer; border-radius:2px; margin-right:8px; flex-shrink: 0; }
+        .amz-location { display: flex; align-items: center; padding: 4px 8px; border: 1px solid transparent; cursor: pointer; border-radius:2px; flex-shrink: 0; }
         .amz-location:hover { border: 1px solid white; }
-        .amz-loc-icon { font-size: 14px; margin-right:2px; margin-top:6px; }
+        .amz-loc-icon { font-size: 16px; margin-right:4px; margin-top:8px; }
         .amz-loc-text { display: flex; flex-direction: column; }
-        .amz-loc-line1 { font-size: 10px; color: #ccc; }
-        .amz-loc-line2 { font-size: 12px; font-weight: bold; color: white; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+        .amz-loc-line1 { font-size: 11px; color: #ccc; }
+        .amz-loc-line2 { font-size: 13px; font-weight: bold; color: white; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 
-        .amz-search-bar { display: flex; flex-grow: 1; border-radius: 4px; overflow: hidden; background: white; height: 38px; margin: 0 10px; min-width: 120px; }
-        .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 8px; color: #333; outline: none; cursor: pointer; font-size: 11px; max-width:90px; }
-        .amz-search-input { flex-grow: 1; border: none; padding: 0 8px; outline: none; font-size: 14px; width: 100%; }
-        .amz-search-btn { background: #febd69; border: none; width: 40px; cursor: pointer; font-size: 16px; color: #333; display:flex; justify-content:center; align-items:center; flex-shrink: 0; }
+        .amz-search-bar { display: flex; flex-grow: 1; border-radius: 6px; overflow: hidden; background: white; height: 40px; min-width: 250px; }
+        .amz-search-select { background: #f3f3f3; border: none; border-right: 1px solid #ccc; padding: 0 10px; color: #333; outline: none; cursor: pointer; font-size: 12px; }
+        .amz-search-input { flex-grow: 1; border: none; padding: 0 12px; outline: none; font-size: 15px; width: 100%; color:#0f1111;}
+        .amz-search-btn { background: #febd69; border: none; width: 45px; cursor: pointer; font-size: 18px; color: #333; display:flex; justify-content:center; align-items:center; }
+        .amz-search-btn:hover { background: #f3a847; }
         
-        .amz-mobile-search-cart-row { display: none; background-color: #131921; padding: 6px 8px; width: 100%; align-items: center; gap: 8px; }
-        .amz-nav-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-        .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
+        .amz-mobile-search-cart-row { display: none; } /* Hidden on desktop by default */
+        
+        .amz-nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .amz-nav-item { display: flex; flex-direction: column; justify-content: center; padding: 6px; border: 1px solid transparent; cursor: pointer; border-radius:2px; }
         .amz-nav-item:hover { border: 1px solid white; }
-        .amz-lang-text { font-weight: bold; font-size: 13px; padding-top:8px; }
+        .amz-lang-text { font-weight: bold; font-size: 14px; padding-top:8px; }
         .amz-line1 { font-size: 11px; color: #fff; }
         .amz-line2 { font-size: 13px; font-weight: bold; color: white; }
         
-        .amz-nav-cart { display: flex; align-items: flex-end; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; position: relative; border-radius:2px; }
+        .amz-nav-cart { display: flex; align-items: flex-end; padding: 6px; border: 1px solid transparent; cursor: pointer; position: relative; border-radius:2px; }
         .amz-nav-cart:hover { border: 1px solid white; }
-        .amz-cart-icon { font-size: 24px; }
-        .amz-cart-count { color: #f08804; font-weight: bold; font-size: 14px; position: absolute; top: 0px; left: 18px; }
-        .amz-cart-text { font-size: 13px; font-weight: bold; margin-bottom: 2px; }
+        .amz-cart-icon { font-size: 28px; }
+        .amz-cart-count { color: #f08804; font-weight: bold; font-size: 15px; position: absolute; top: 0px; left: 22px; background: #131921; border-radius: 50%; padding: 0 4px;}
+        .amz-cart-text { font-size: 14px; font-weight: bold; margin-bottom: 2px; }
 
-        .amz-nav-bottom { background-color: #232f3e; display: flex; padding: 6px 12px; align-items: center; gap: 10px; font-size: 13px; color: white; width: 100%; overflow-x: auto; }
-        .amz-menu-icon { font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px; white-space: nowrap; flex-shrink: 0; }
-        .amz-nav-links { display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
-        .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius:2px; }
+        .amz-nav-bottom { background-color: #232f3e; display: flex; padding: 8px 15px; align-items: center; gap: 15px; font-size: 14px; color: white; width: 100%; overflow-x: auto; }
+        .amz-menu-icon { font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 4px 8px; white-space: nowrap; flex-shrink: 0; border: 1px solid transparent; border-radius: 2px;}
+        .amz-menu-icon:hover { border: 1px solid white; }
+        .amz-nav-links { display: flex; gap: 12px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+        .amz-nav-links button { background: none; border: 1px solid transparent; color: white; cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius:2px; font-weight: 500;}
+        .amz-nav-links button:hover { border: 1px solid white; }
 
-        .banner-container { width: 98%; max-width: 1450px; height: 320px; margin: 10px auto; position: relative; overflow: hidden; background: #eaeded; border-radius: 6px; } 
+        /* BODY COMPONENTS - DESKTOP */
+        .banner-container { width: 98%; max-width: 1450px; height: 350px; margin: 15px auto; position: relative; overflow: hidden; background: #eaeded; border-radius: 8px; } 
         .banner-slide { width: 100%; height: 100%; position: absolute; top: 0; left: 0; } 
-        .banner-slide img { width: 100%; height: 100%; object-fit: fill; border-radius: 6px; } 
+        .banner-slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; } 
 
-        .reels-section { padding: 10px 15px; background: transparent; z-index:5; position:relative; margin-top:-70px; } 
-        .reels-section h4 { font-size: 18px; color: #0f1111; background:white; padding:8px 12px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
-        .reels-container { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: thin; padding: 10px 0; background:white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 4px; } 
-        .reel-card { min-width: 130px; height: 200px; background: #000; overflow: hidden; position: relative; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; cursor:pointer; border-radius: 4px;} 
+        .reels-section { padding: 10px 20px; background: transparent; z-index:5; position:relative; margin-top:-80px; } 
+        .reels-section h4 { font-size: 20px; color: #0f1111; background:white; padding:8px 15px; display:inline-block; margin-bottom:0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 6px; } 
+        .reels-container { display: flex; gap: 15px; overflow-x: auto; scrollbar-width: thin; padding: 15px 10px; background:white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 6px; } 
+        .reel-card { min-width: 150px; height: 250px; background: #000; overflow: hidden; position: relative; flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; cursor:pointer; border-radius: 6px; transition: transform 0.2s;} 
+        .reel-card:hover { transform: scale(1.02); }
         .reel-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; } 
-        .reel-title { position: relative; z-index: 2; background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 5px; text-align: center; } 
-        .insta-link-btn { position: relative; z-index: 2; background: #E1306C; color: white; font-size: 9px; padding: 4px; text-align: center; text-decoration: none; font-weight: bold; display: block; }
+        .reel-title { position: relative; z-index: 2; background: rgba(0,0,0,0.7); color: white; font-size: 12px; padding: 8px; text-align: center; } 
+        .insta-link-btn { position: relative; z-index: 2; background: #E1306C; color: white; font-size: 11px; padding: 6px; text-align: center; text-decoration: none; font-weight: bold; display: block; }
         
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding: 15px; max-width: 1400px; margin: 0 auto; z-index: 5; position: relative; } 
-        .product-card { border: none; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; background: #fff; display:flex; flex-direction:column; cursor: pointer; z-index:5; border-radius: 6px; } 
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; padding: 20px; max-width: 1450px; margin: 0 auto; z-index: 5; position: relative; } 
+        .product-card { border: none; padding: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; background: #fff; display:flex; flex-direction:column; cursor: pointer; z-index:5; border-radius: 8px; transition: transform 0.2s, box-shadow 0.2s; } 
+        .product-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
         .cat-tag { display:none; } 
-        .product-img { width: 100%; height: 180px; object-fit: contain; margin-bottom: 12px; background:#f9f9f9; mix-blend-mode: multiply; } 
-        .product-title { font-size: 14px; color: #007185; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:18px; flex-grow:1;} 
+        .product-img { width: 100%; height: 200px; object-fit: contain; margin-bottom: 15px; background:#f9f9f9; mix-blend-mode: multiply; border-radius: 4px; padding:5px;} 
+        .product-title { font-size: 15px; color: #007185; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height:20px; flex-grow:1;} 
+        .product-title:hover { color: #c45500; text-decoration: underline; }
         
         .product-card.out-of-stock { opacity: 0.65; cursor: not-allowed; }
-        .out-of-stock-overlay { position: absolute; top: 10px; left: 10px; background: #c0392b; color: white; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; z-index: 10; }
+        .out-of-stock-overlay { position: absolute; top: 12px; left: 12px; background: #c0392b; color: white; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px; z-index: 10; }
         
-        .product-price-box { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-        .product-price { font-size: 20px; color: #B12704; font-weight: bold; } 
+        .product-price-box { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .product-price { font-size: 22px; color: #B12704; font-weight: bold; } 
         .product-mrp { font-size: 13px; color: #555; text-decoration: line-through; }
-        .product-discount-badge { background-color: #cc0c39; color: #fff; font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 3px; }
+        .product-discount-badge { background-color: #cc0c39; color: #fff; font-size: 11px; font-weight: bold; padding: 3px 6px; border-radius: 3px; }
 
-        .cart-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 8px 0; width: 100%; border-radius: 100px; cursor: pointer; font-size: 12px; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; } 
+        .cart-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 10px 0; width: 100%; border-radius: 100px; cursor: pointer; font-size: 13px; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; transition: background 0.2s;} 
+        .cart-btn:hover { background: #f7ca00; }
         .cart-btn.disabled-btn { background: #e0e0e0; border-color: #ccc; color: #777; cursor: not-allowed; box-shadow: none; }
         
-        #cartPage, #ordersPage { display: none; padding: 15px; flex-grow: 1; max-width:1100px; margin:15px auto; background:white; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; } 
-        .back-btn { color: #007185; cursor: pointer; display: inline-block; font-size: 13px; margin-bottom: 15px; font-weight: bold; }
+        #cartPage, #ordersPage { display: none; padding: 25px; flex-grow: 1; max-width:1200px; margin:20px auto; background:white; box-shadow:0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; } 
+        .back-btn { color: #007185; cursor: pointer; display: inline-block; font-size: 14px; margin-bottom: 20px; font-weight: bold; }
+        .back-btn:hover { color: #c45500; text-decoration: underline; }
         
-        .cart-item { display: flex; align-items: center; background: white; padding: 12px 0; border-bottom: 1px solid #ddd; } .cart-item img { width: 70px; height: 70px; object-fit: contain; margin-right: 12px; flex-shrink: 0; } .cart-item-info { flex-grow: 1; } .cart-item-title { font-size: 14px; color:#007185; margin-bottom: 4px; } .cart-item-price { font-size: 14px; font-weight:bold; color: #B12704; margin-bottom: 5px; } .qty-controls { display: flex; align-items: center; background: #f0f2f2; border-radius: 6px; width: fit-content; border:1px solid #d5d9d9; } .qty-btn { background: none; border: none; padding: 3px 10px; font-size: 14px; cursor: pointer; color: #0f1111; } .qty-display { font-size: 13px; padding: 0 6px; min-width: 18px; text-align: center; background:white; height:100%; display:flex; align-items:center; border-left:1px solid #d5d9d9; border-right:1px solid #d5d9d9;} .item-total { font-weight: bold; color: #B12704; font-size: 14px; flex-shrink: 0; margin-left: 10px; } 
-        .checkout-footer { background: #f3f3f3; padding: 15px; margin-top:15px; text-align:right; border-radius: 6px;} .total-bill { font-size: 18px; margin-bottom: 12px; font-weight: bold; } .checkout-btn { background: #ffd814; color: #0f1111; padding: 10px 25px; border: 1px solid #fcd200; border-radius: 6px; font-size: 13px; cursor: pointer; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; }
+        .cart-item { display: flex; align-items: center; background: white; padding: 15px 0; border-bottom: 1px solid #ddd; } .cart-item img { width: 90px; height: 90px; object-fit: contain; margin-right: 20px; flex-shrink: 0; background:#f9f9f9; padding:4px; border-radius:4px;} .cart-item-info { flex-grow: 1; } .cart-item-title { font-size: 16px; color:#007185; margin-bottom: 6px; } .cart-item-price { font-size: 16px; font-weight:bold; color: #B12704; margin-bottom: 8px; } .qty-controls { display: flex; align-items: center; background: #f0f2f2; border-radius: 6px; width: fit-content; border:1px solid #d5d9d9; } .qty-btn { background: none; border: none; padding: 5px 12px; font-size: 16px; cursor: pointer; color: #0f1111; } .qty-btn:hover { background: #e3e6e6; } .qty-display { font-size: 14px; padding: 0 10px; min-width: 25px; text-align: center; background:white; height:100%; display:flex; align-items:center; border-left:1px solid #d5d9d9; border-right:1px solid #d5d9d9;} .item-total { font-weight: bold; color: #B12704; font-size: 18px; flex-shrink: 0; margin-left: 15px; } 
+        .checkout-footer { background: #f9f9f9; padding: 20px; margin-top:20px; text-align:right; border-radius: 8px; border: 1px solid #ddd;} .total-bill { font-size: 20px; margin-bottom: 15px; font-weight: bold; color: #0f1111;} .checkout-btn { background: #ffd814; color: #0f1111; padding: 12px 30px; border: 1px solid #fcd200; border-radius: 8px; font-size: 14px; cursor: pointer; box-shadow: 0 2px 5px rgba(213,217,217,.5); font-weight: bold; } .checkout-btn:hover { background: #f7ca00; }
         
-        .account-layout { display: flex; gap: 20px; align-items: flex-start; }
-        .account-sidebar { flex: 0 0 280px; background: #f9f9f9; padding: 15px; border: 1px solid #d5d9d9; border-radius: 6px; }
+        .account-layout { display: flex; gap: 25px; align-items: flex-start; }
+        .account-sidebar { flex: 0 0 300px; background: #f9f9f9; padding: 20px; border: 1px solid #d5d9d9; border-radius: 8px; }
         .account-orders { flex-grow: 1; width: 100%; }
         
-        .profile-info p { margin-bottom: 6px; font-size: 13px; color: #333; word-break: break-all; }
-        .address-section { margin-top: 15px; border-top: 1px solid #ddd; padding-top: 12px; }
-        .address-box { background: white; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #d5d9d9; font-size: 12px; line-height: 1.4; color: #333; }
-        .add-address-btn { background: white; border: 1px dashed #007185; color: #007185; padding: 6px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .profile-info p { margin-bottom: 8px; font-size: 14px; color: #333; word-break: break-all; }
+        .address-section { margin-top: 20px; border-top: 1px solid #ddd; padding-top: 15px; }
+        .address-box { background: white; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #d5d9d9; font-size: 13px; line-height: 1.5; color: #333; }
+        .add-address-btn { background: white; border: 1px dashed #007185; color: #007185; padding: 8px; width: 100%; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; margin-top: 5px;}
+        .add-address-btn:hover { background: #f0f8ff; }
 
-        .order-history-card { background: white; padding: 15px; margin-bottom: 15px; border: 1px solid #d5d9d9; border-radius:6px; } .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; border-bottom: 1px solid #eaeded; padding-bottom: 8px; color: #555; } .order-status { font-weight: bold; } .status-new { color: #e67e22; } .status-shipping { color: #007185; } .status-delivered { color: #067d62; } .status-cancelled { color: #B12704; }
+        .order-history-card { background: white; padding: 20px; margin-bottom: 15px; border: 1px solid #d5d9d9; border-radius:8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);} .order-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #eaeded; padding-bottom: 10px; color: #555; } .order-status { font-weight: bold; padding: 4px 8px; border-radius: 4px; background: #f9f9f9;} .status-new { color: #e67e22; border: 1px solid #f39c12;} .status-shipping { color: #007185; border: 1px solid #007185;} .status-delivered { color: #067d62; border: 1px solid #067d62;} .status-cancelled { color: #B12704; border: 1px solid #B12704;}
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 15px; } 
-        .modal-content { background: white; width: 100%; max-width: 400px; padding: 20px; border-radius: 8px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; } 
-        .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #a6a6a6; border-radius: 4px; font-size: 13px; } 
-        .confirm-order-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 10px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 8px; width: 100%; font-size: 12px; cursor: pointer; text-decoration:underline; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 15px; } 
+        .modal-content { background: white; width: 100%; max-width: 450px; padding: 25px; border-radius: 8px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position: relative; } 
+        .modal-input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #a6a6a6; border-radius: 6px; font-size: 14px; } 
+        .confirm-order-btn { background: #ffd814; border: 1px solid #fcd200; color: #0f1111; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: background 0.2s;}
+        .confirm-order-btn:hover { background: #f7ca00; }
+        .cancel-order-btn { background: transparent; color: #007185; border: none; padding: 10px; width: 100%; font-size: 13px; cursor: pointer; text-decoration:underline; margin-top:5px;}
         
-        .pd-modal-layout { max-width: 850px; display: flex; flex-direction: row; gap: 20px; padding-top: 40px; }
+        .pd-modal-layout { max-width: 900px; display: flex; flex-direction: row; gap: 30px; padding-top: 40px; }
         .pd-gallery-section { flex: 1.2; display: flex; flex-direction: column; align-items: center; }
         .pd-details-section { flex: 1; display: flex; flex-direction: column; }
-        .pd-img { width: 100%; height: 320px; object-fit: contain; background:#f9f9f9; margin-bottom: 8px; border-radius: 8px; border: 1px solid #eee; mix-blend-mode: multiply; cursor: zoom-in; }
+        .pd-img { width: 100%; height: 350px; object-fit: contain; background:#f9f9f9; margin-bottom: 12px; border-radius: 8px; border: 1px solid #eee; mix-blend-mode: multiply; cursor: zoom-in; }
         
-        .pd-dots-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; }
-        .pd-dot { width: 8px; height: 8px; background-color: #bbb; border-radius: 50%; cursor: pointer; }
-        .pd-dot-active { background-color: #e77600; width: 20px; border-radius: 4px; }
+        .pd-dots-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; }
+        .pd-dot { width: 10px; height: 10px; background-color: #bbb; border-radius: 50%; cursor: pointer; }
+        .pd-dot-active { background-color: #e77600; width: 24px; border-radius: 5px; }
 
-        .pd-thumbnails { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
-        .pd-thumb-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; background: #f9f9f9; }
+        .pd-thumbnails { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; width: 100%; justify-content: center;}
+        .pd-thumb-img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; background: #f9f9f9; }
         .pd-thumb-active { border-color: #e77600; }
 
-        .zoom-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 2000; flex-direction: column; justify-content: space-between; align-items: center; padding: 25px; }
+        .zoom-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; flex-direction: column; justify-content: space-between; align-items: center; padding: 25px; }
         .zoom-main-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; width: 100%; position: relative; }
-        .zoom-main-area img { max-width: 90vw; max-height: 72vh; object-fit: contain; border-radius: 4px; }
-        .zoom-thumbnails-bar { display: flex; gap: 12px; overflow-x: auto; padding: 10px; max-width: 100%; background: rgba(255,255,255,0.1); border-radius: 8px; }
+        .zoom-main-area img { max-width: 90vw; max-height: 75vh; object-fit: contain; border-radius: 6px; }
+        .zoom-thumbnails-bar { display: flex; gap: 15px; overflow-x: auto; padding: 15px; max-width: 100%; background: rgba(255,255,255,0.1); border-radius: 10px; margin-bottom: 20px;}
 
-        .pd-title { font-size: 18px; color: #0f1111; margin-bottom: 5px; font-weight: bold;}
-        .pd-price { font-size: 26px; color: #B12704; margin-bottom: 12px; font-weight: bold; }
-        .pd-desc-box { padding: 8px 0; font-size: 13px; color: #0f1111; margin-bottom: 12px; border-top: 1px solid #eaeded; }
-        .pd-variant-group { margin-bottom: 12px; }
-        .pd-variant-group label { display: block; font-size: 13px; margin-bottom: 4px; color: #555; font-weight: bold; }
-        .pd-variant-group select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d5d9d9; font-size: 13px; background:#f0f2f2;}
+        .pd-title { font-size: 22px; color: #0f1111; margin-bottom: 8px; font-weight: bold; line-height: 1.3;}
+        .pd-price { font-size: 28px; color: #B12704; margin-bottom: 15px; font-weight: bold; }
+        .pd-desc-box { padding: 12px 0; font-size: 14px; color: #333; margin-bottom: 15px; border-top: 1px solid #eaeded; line-height: 1.5;}
+        .pd-variant-group { margin-bottom: 15px; }
+        .pd-variant-group label { display: block; font-size: 14px; margin-bottom: 6px; color: #555; font-weight: bold; }
+        .pd-variant-group select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #d5d9d9; font-size: 14px; background:#f0f2f2; cursor:pointer;}
         
         .whatsapp-float {
             position: fixed;
-            bottom: 25px;
-            right: 25px;
+            bottom: 30px;
+            right: 30px;
             background-color: #25d366;
             color: #FFF;
             border-radius: 50px;
             text-align: center;
             font-size: 28px;
-            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.6);
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.5);
             z-index: 100;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 60px;
-            height: 60px;
+            width: 65px;
+            height: 65px;
             transition: all 0.3s ease;
             animation: pulse-whatsapp 2s infinite;
         }
         .whatsapp-float:hover {
             transform: scale(1.1);
-            box-shadow: 0 6px 25px rgba(37, 211, 102, 0.9);
+            box-shadow: 0 6px 25px rgba(37, 211, 102, 0.8);
         }
-        .whatsapp-float img { width: 34px; height: 34px; filter: brightness(0) invert(1); }
+        .whatsapp-float img { width: 36px; height: 36px; filter: brightness(0) invert(1); }
 
         @keyframes pulse-whatsapp {
             0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
@@ -803,29 +815,57 @@
             100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
         }
         
+        /* ---------------------------------------------------- */
+        /* MOBILE RESPONSIVE CSS */
+        /* ---------------------------------------------------- */
         @media(max-width: 768px) {
-            .reels-section { margin-top: 0px; padding: 10px 8px; display: block !important; }
-            .reels-container { display: flex !important; }
-            .amz-nav-top { padding: 4px 6px; gap: 4px; height: 50px; }
-            .amz-logo img { width: 26px; height: 26px; margin-right: 3px; }
-            .amz-logo span { font-size: 14px; }
-            .amz-location { padding: 2px; margin-right: 2px; }
-            .amz-loc-line2 { max-width: 60px; font-size: 10px; }
-            .amz-search-bar { display: none !important; }
-            .amz-nav-right .amz-nav-cart { display: none !important; }
-            .amz-mobile-search-cart-row { display: flex !important; width: 100%; background-color: #131921; padding: 6px 8px; align-items: center; gap: 6px; }
-            .amz-mobile-search-cart-row .amz-search-bar { display: flex !important; flex-grow: 1; height: 36px; margin: 0; }
-            .banner-container { height: 160px; width: 100%; border-radius: 0; display: block !important; } 
+            .amz-header { position: sticky; top: 0; }
+            .amz-nav-top { padding: 4px 8px; gap: 6px; height: 52px; }
+            .amz-logo { padding: 2px; }
+            .amz-logo img { width: 28px; height: 28px; margin-right: 4px; }
+            .amz-logo span { font-size: 15px; }
+            
+            .amz-location { padding: 2px; margin-right: 0; }
+            .amz-loc-icon { font-size: 14px; margin-top: 6px;}
+            .amz-loc-line2 { max-width: 75px; font-size: 11px; }
+            
+            .amz-search-bar { display: none !important; } /* Hide desktop search */
+            .amz-nav-right .amz-nav-cart { display: none !important; } /* Hide desktop cart */
+            
+            .amz-mobile-search-cart-row { display: flex !important; width: 100%; background-color: #131921; padding: 8px 10px; align-items: center; gap: 8px; }
+            .amz-mobile-search-cart-row .amz-search-bar { display: flex !important; flex-grow: 1; height: 38px; margin: 0; min-width: auto;}
+            .amz-mobile-search-cart-row .amz-nav-cart { background: #232f3e; padding: 6px 12px; border-radius: 6px; display: flex !important; position: relative;}
+            
+            .banner-container { height: 180px; width: 100%; border-radius: 0; margin: 0 auto; display: block; } 
             .banner-slide img { border-radius: 0; }
-            .products-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; padding: 8px; gap: 8px; } 
-            .product-card { padding: 10px; display: flex !important; }
-            .product-img { height: 130px; } 
-            .whatsapp-float { width: 50px; height: 50px; bottom: 20px; right: 20px; }
-            .whatsapp-float img { width: 28px; height: 28px; }
-
+            
+            .reels-section { margin-top: 0px; padding: 12px 10px; display: block; }
+            .reels-section h4 { font-size: 16px; padding: 6px 10px;}
+            .reels-container { padding: 10px 5px; gap: 10px;}
+            .reel-card { min-width: 120px; height: 200px; }
+            
+            .products-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; padding: 10px; gap: 10px; } 
+            .product-card { padding: 10px; border-radius: 6px; }
+            .product-img { height: 140px; margin-bottom: 10px;} 
+            .product-title { font-size: 13px; line-height: 18px; margin-bottom: 5px;}
+            .product-price { font-size: 18px; }
+            .cart-btn { padding: 8px 0; font-size: 12px; }
+            
+            /* Account Page */
             .account-layout { display: flex !important; flex-direction: column !important; gap: 15px !important; }
-            .account-sidebar { width: 100% !important; flex: none !important; }
+            .account-sidebar { width: 100% !important; flex: none !important; padding: 15px; border-radius: 6px;}
             .account-orders { width: 100% !important; flex: none !important; }
+            #cartPage, #ordersPage { padding: 12px; margin: 10px auto; }
+            
+            /* Product Modal */
+            .pd-modal-layout { flex-direction: column !important; padding-top: 25px !important; gap: 15px; }
+            .pd-gallery-section { width: 100%; }
+            .pd-img { height: 250px; }
+            .pd-title { font-size: 18px; }
+            .pd-price { font-size: 22px; }
+            
+            .whatsapp-float { width: 55px; height: 55px; bottom: 20px; right: 20px; }
+            .whatsapp-float img { width: 30px; height: 30px; }
         }
     </style>
 </head>
@@ -879,14 +919,14 @@
             </div>
 
             <div class="amz-mobile-search-cart-row">
-                <div class="amz-search-bar" style="margin: 0; display: flex; height: 36px; flex-grow: 1;">
+                <div class="amz-search-bar">
                     <select id="amzCategorySelectMob" class="amz-search-select" onchange="filterCategory(this.value)"><option value="All">All</option></select>
                     <input type="text" id="searchInputMob" class="amz-search-input" placeholder="Search Grihani Cosmetic" onkeyup="searchProducts()">
                     <button class="amz-search-btn" onclick="searchProducts()">🔍</button>
                 </div>
-                <div class="amz-nav-cart" onclick="openCart()" style="background: #232f3e; padding: 6px 10px; border-radius: 4px; position: relative;">
-                    <span class="amz-cart-icon" style="font-size: 22px;">🛒</span>
-                    <span id="cartCountMob" class="amz-cart-count" style="left: 20px; top: 0px; font-size: 13px; color: #f08804;">0</span>
+                <div class="amz-nav-cart" onclick="openCart()">
+                    <span class="amz-cart-icon" style="font-size: 24px;">🛒</span>
+                    <span id="cartCountMob" class="amz-cart-count" style="left: 20px; top: 0px; font-size: 14px;">0</span>
                 </div>
             </div>
 
@@ -904,7 +944,7 @@
 
         <div id="cartPage">
             <div class="back-btn" onclick="closeCart()" data-lang-key="btn_back_store">← Back to Store</div>
-            <h2 style="margin-bottom: 15px; font-size: 20px;" data-lang-key="cart_title">Your Shopping Cart</h2>
+            <h2 style="margin-bottom: 20px; font-size: 24px;" data-lang-key="cart_title">Your Shopping Cart</h2>
             <div id="cartItemsList"></div>
             <div class="checkout-footer">
                 <div class="total-bill"><span data-lang-key="total_bill">Total Bill:</span> <span id="totalAmount" style="color:#B12704;">₹0</span></div>
@@ -916,17 +956,17 @@
             <div class="back-btn" onclick="closeOrdersPage()" data-lang-key="btn_back_store">← Back to Store</div>
             <div class="account-layout">
                 <div class="account-sidebar">
-                    <h3 style="color: #800020; margin-bottom: 12px; font-size: 18px;" data-lang-key="profile_title">👤 My Profile</h3>
+                    <h3 style="color: #800020; margin-bottom: 15px; font-size: 20px;" data-lang-key="profile_title">👤 My Profile</h3>
                     <div class="profile-info"><p><strong>Name:</strong> <span id="profileName"></span></p><p><strong>Phone:</strong> <span id="profilePhone"></span></p></div>
                     <div class="address-section">
-                        <h4 style="margin-bottom: 8px; color:#555; font-size: 14px;" data-lang-key="saved_address_title">📍 Saved Addresses</h4>
+                        <h4 style="margin-bottom: 10px; color:#555; font-size: 15px;" data-lang-key="saved_address_title">📍 Saved Addresses</h4>
                         <div id="profileAddresses"></div>
                         <button class="add-address-btn" onclick="addNewAddress()" data-lang-key="add_address_btn">+ Add New Address</button>
                     </div>
-                    <button onclick="logoutUser()" style="width:100%; margin-top:15px; padding:8px; background:#fff; border:1px solid #d5d9d9; border-radius:4px; font-weight:bold; cursor:pointer;">Logout</button>
+                    <button onclick="logoutUser()" style="width:100%; margin-top:20px; padding:10px; background:#fff; border:1px solid #d5d9d9; border-radius:6px; font-weight:bold; cursor:pointer; color:#d9534f;">Logout</button>
                 </div>
                 <div class="account-orders">
-                    <h2 style="margin-bottom: 15px; font-size: 20px;" data-lang-key="order_history_title">📦 My Order History</h2>
+                    <h2 style="margin-bottom: 20px; font-size: 24px;" data-lang-key="order_history_title">📦 My Order History</h2>
                     <div id="myOrdersList"></div>
                 </div>
             </div>
@@ -936,7 +976,7 @@
         <div id="productDetailModal" class="modal-overlay">
             <div class="modal-content pd-modal-layout">
                 <div style="width: 100%; text-align: right; position: absolute; right: 15px; top: 12px; z-index: 10;">
-                    <span onclick="closeProductModal()" style="font-size: 26px; cursor: pointer; color: #333; background: #fff; padding: 0 8px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">&times;</span>
+                    <span onclick="closeProductModal()" style="font-size: 28px; cursor: pointer; color: #333; background: #fff; padding: 0 10px; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: background 0.2s;">&times;</span>
                 </div>
                 <div class="pd-gallery-section">
                     <img id="pmImg" src="" class="pd-img" onclick="openFullscreenZoom()" title="Click to Zoom">
@@ -946,17 +986,17 @@
                 <div class="pd-details-section">
                     <div id="pmTitle" class="pd-title">Product Name</div>
                     <div id="pmPrice" class="pd-price">₹0</div>
-                    <div class="pd-desc-box"><strong data-lang-key="prod_desc">Description:</strong><br><span id="pmDescText" style="margin-top:4px; display:block;"></span></div>
+                    <div class="pd-desc-box"><strong data-lang-key="prod_desc">Description:</strong><br><span id="pmDescText" style="margin-top:6px; display:block;"></span></div>
                     <div id="pmColorDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_color">Select Color:</label><select id="pmColorSelect"></select></div>
                     <div id="pmSizeDiv" class="pd-variant-group" style="display: none;"><label data-lang-key="select_size">Select Size:</label><select id="pmSizeSelect"></select></div>
-                    <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 10px;">🛒 Add to Cart</button>
+                    <button id="pmAddToCartBtn" class="confirm-order-btn" style="margin-top: 15px; font-size: 15px; padding: 12px;">🛒 Add to Cart</button>
                 </div>
             </div>
         </div>
 
         <!-- FULLSCREEN ZOOM -->
         <div id="fullscreenZoomModal" class="zoom-modal-overlay">
-            <div style="width: 100%; text-align: right; padding: 5px 15px;"><span onclick="closeFullscreenZoom()" style="font-size: 38px; color: #fff; cursor: pointer; font-weight: bold;">&times;</span></div>
+            <div style="width: 100%; text-align: right; padding: 10px 20px;"><span onclick="closeFullscreenZoom()" style="font-size: 45px; color: #fff; cursor: pointer; font-weight: bold; transition: color 0.2s;">&times;</span></div>
             <div class="zoom-main-area"><img id="fullscreenZoomImg" src=""></div>
             <div id="zoomThumbnails" class="zoom-thumbnails-bar"></div>
         </div>
@@ -964,9 +1004,9 @@
         <!-- LOCATION MODAL -->
         <div id="locationModal" class="modal-overlay">
             <div class="modal-content" style="max-width:400px; display:block;">
-                <h3 data-lang-key="update_loc">Update location</h3>
-                <button class="confirm-order-btn" onclick="fetchCurrentLocation()" style="background:#f0f2f2; color:#0f1111; border:1px solid #d5d9d9; margin-bottom:12px;">📍 Use Current Location</button>
-                <div style="text-align:center; margin-bottom:8px; color:#777; font-size:11px;">OR</div>
+                <h3 data-lang-key="update_loc" style="margin-bottom: 15px;">Update location</h3>
+                <button class="confirm-order-btn" onclick="fetchCurrentLocation()" style="background:#f0f2f2; color:#0f1111; border:1px solid #d5d9d9; margin-bottom:15px;">📍 Use Current Location</button>
+                <div style="text-align:center; margin-bottom:12px; color:#777; font-size:12px;">OR</div>
                 <input type="text" id="manualLocationInput" class="modal-input" placeholder="Enter City or Pincode">
                 <button class="confirm-order-btn" onclick="saveManualLocation()" data-lang-key="save_btn">Save</button>
                 <button class="cancel-order-btn" onclick="closeLocationModal()" data-lang-key="close_btn">❌ Close</button>
@@ -976,26 +1016,26 @@
         <!-- LOGIN MODAL -->
         <div id="loginModal" class="modal-overlay">
             <div class="modal-content" style="max-width:400px; display:block;">
-                <h3 style="text-align:center; margin-bottom:15px;">✨ Grihani Cosmetic</h3>
+                <h3 style="text-align:center; margin-bottom:20px; font-size: 22px;">✨ Grihani Cosmetic</h3>
                 <div id="step1Phone">
-                    <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Mobile Number</label>
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display:block;">Mobile Number</label>
                     <input type="tel" id="regPhone" class="modal-input" placeholder="Enter 10 digit number">
                     <div id="recaptcha-container"></div>
                     <button id="sendOtpBtn" class="confirm-order-btn" onclick="sendOTP()">📲 Send OTP</button>
                     <button class="cancel-order-btn" onclick="closeLoginModal()">❌ Close</button>
                 </div>
                 <div id="step2OTP" style="display:none;">
-                    <p style="font-size:12px; margin-bottom:12px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
-                    <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Enter 6-Digit OTP</label>
+                    <p style="font-size:13px; margin-bottom:15px; color:#007185; text-align:center;">OTP sent to <b id="displayPhoneOTP"></b></p>
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display:block;">Enter 6-Digit OTP</label>
                     <input type="number" id="otpInput" class="modal-input" placeholder="XXXXXX">
                     <button id="verifyOtpBtn" class="confirm-order-btn" onclick="verifyOTP()">✅ Verify OTP</button>
                     <button class="cancel-order-btn" onclick="resetLoginUI()">← Back</button>
                 </div>
                 <div id="step3Details" style="display:none;">
-                    <p style="font-size:12px; margin-bottom:12px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified!</p>
-                    <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Full Name</label>
+                    <p style="font-size:13px; margin-bottom:15px; color:#067d62; text-align:center; font-weight:bold;">✅ Number Verified!</p>
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display:block;">Full Name</label>
                     <input type="text" id="regName" class="modal-input" placeholder="Your Name">
-                    <label style="font-size: 12px; font-weight: bold; margin-bottom: 4px; display:block;">Delivery Address</label>
+                    <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display:block;">Delivery Address</label>
                     <textarea id="regAddress" class="modal-input" placeholder="Full Address" rows="3"></textarea>
                     <button class="confirm-order-btn" onclick="completeRegistration()">🚀 Complete Registration</button>
                 </div>
@@ -1005,19 +1045,19 @@
         <!-- CHECKOUT MODAL -->
         <div id="checkoutModal" class="modal-overlay">
             <div class="modal-content" style="max-width:400px; display:block;">
-                <h3 data-lang-key="confirm_title">Confirm Your Order</h3>
-                <div style="background: #f9f9f9; padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; border: 1px solid #d5d9d9;">
-                    <p style="margin-bottom:4px;"><strong>Name:</strong> <span id="confirmName" style="color: #007185;"></span></p>
+                <h3 data-lang-key="confirm_title" style="margin-bottom: 15px;">Confirm Your Order</h3>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border: 1px solid #d5d9d9;">
+                    <p style="margin-bottom:6px;"><strong>Name:</strong> <span id="confirmName" style="color: #007185;"></span></p>
                     <p style="margin-bottom:0;"><strong>Mobile:</strong> <span id="confirmPhone" style="color: #007185;"></span></p>
                 </div>
-                <label style="font-size: 13px; font-weight: bold; margin-bottom: 6px; display: block;">Select Delivery Address:</label>
+                <label style="font-size: 14px; font-weight: bold; margin-bottom: 8px; display: block;">Select Delivery Address:</label>
                 <select id="checkoutAddressSelect" class="modal-input" style="background:#fff; border-color:#800020;"></select>
-                <label style="font-size: 13px; font-weight: bold; margin-top:8px; margin-bottom: 6px; display:block;">Select Payment Mode:</label>
-                <select id="payMode" class="modal-input" style="background:#f0f2f2;">
+                <label style="font-size: 14px; font-weight: bold; margin-top:10px; margin-bottom: 8px; display:block;">Select Payment Mode:</label>
+                <select id="payMode" class="modal-input" style="background:#f0f2f2; cursor:pointer;">
                     <option value="Cash on Delivery (COD)">Cash on Delivery (COD)</option>
                     <option value="Online UPI">Pay Online (UPI/Card)</option>
                 </select>
-                <button class="confirm-order-btn" onclick="confirmOrder()">✅ Place Your Order</button>
+                <button class="confirm-order-btn" onclick="confirmOrder()" style="margin-top: 5px;">✅ Place Your Order</button>
                 <button class="cancel-order-btn" onclick="closeCheckoutForm()">❌ Close</button>
             </div>
         </div>
