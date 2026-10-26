@@ -8,22 +8,22 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    
+    <!-- PWA Meta Tags (Android, iPhone & Desktop App लुक के लिए) -->
+    <meta name="theme-color" content="#131921">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Grihani">
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="manifest" href="manifest.json">
 
     <title>Grihani Cosmetic - Online Store</title>
 
-    <!-- AUTO PURANA CACHE & SERVICE WORKER CLEANER -->
+    <!-- 🔥 AUTO CACHE CLEANER & SAFE PWA SETUP 🔥 -->
     <script>
         (function() {
             try {
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                        for (let registration of registrations) {
-                            registration.unregister();
-                        }
-                    }).catch(function(e) {});
-                }
+                // पुराने सारे कैश (Caches) को हमेशा साफ रखो ताकि कभी ब्लैंक स्क्रीन न आए
                 if ('caches' in window) {
                     caches.keys().then(function(names) {
                         for (let name of names) {
@@ -31,8 +31,38 @@
                         }
                     }).catch(function(e) {});
                 }
+                // Safe Network-Only Service Worker रजिस्टर करो (सिर्फ PWA इंस्टॉल के लिए)
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', function() {
+                        navigator.serviceWorker.register('sw.js?v=' + new Date().getTime()).then(function(reg) {
+                            reg.update();
+                        }).catch(function(e) {});
+                    });
+                }
             } catch (e) {}
         })();
+
+        // PWA Install Button Logic
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            let btn = document.getElementById('pwaInstallBtn');
+            if(btn) btn.style.display = 'flex';
+        });
+
+        window.installPWA = function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    deferredPrompt = null;
+                    let btn = document.getElementById('pwaInstallBtn');
+                    if(btn) btn.style.display = 'none';
+                });
+            } else {
+                alert("ऐप इंस्टॉल करने के लिए ब्राउज़र के मेनू (⋮) में जाकर 'Add to Home screen' या 'Install App' पर क्लिक करें।");
+            }
+        };
     </script>
     
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -42,6 +72,726 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
+    <script>
+        // Safe Memory & LocalStorage (Firefox, Safari Private Mode, Opera सब पर चलेगा)
+        const memoryStore = {};
+        const safeStorage = {
+            getItem: function(key) {
+                try { return localStorage.getItem(key) || memoryStore[key] || null; } 
+                catch(e) { return memoryStore[key] || null; }
+            },
+            setItem: function(key, val) {
+                memoryStore[key] = val;
+                try { localStorage.setItem(key, val); } catch(e) {}
+            },
+            clear: function() {
+                for (let k in memoryStore) delete memoryStore[k];
+                try { localStorage.clear(); } catch(e) {}
+            }
+        };
+
+        // Firebase कॉन्फ़िगरेशन
+        const DB_URL = "https://grihanicosmeticapp-default-rtdb.firebaseio.com";
+        const firebaseConfig = {
+            apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
+            authDomain: "grihanicosmeticapp.firebaseapp.com",
+            databaseURL: DB_URL,
+            projectId: "grihanicosmeticapp",
+            storageBucket: "grihanicosmeticapp.firebasestorage.app",
+            messagingSenderId: "921623248962",
+            appId: "1:921623248962:web:413b6e003eca864b7caddb"
+        };
+        
+        // Firebase इनिशियलाइज़
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            window.db = firebase.database();
+            window.auth = firebase.auth();
+        } catch(e) {
+            console.warn("Firebase init fallback mode:", e);
+        }
+
+        // Universal Data Fetcher (HTTP + Realtime)
+        function fetchUniversalData(path, callback) {
+            let loaded = false;
+            
+            fetch(`${DB_URL}/${path}.json?nocache=${new Date().getTime()}`, { cache: "no-store" })
+                .then(res => res.json())
+                .then(data => {
+                    if (!loaded && data !== undefined && !(data && data.error)) {
+                        loaded = true;
+                        callback(data);
+                    }
+                }).catch(err => {});
+
+            if (window.db) {
+                try {
+                    window.db.ref(path).on('value', (snapshot) => {
+                        loaded = true;
+                        callback(snapshot.val());
+                    });
+                } catch(e) {}
+            }
+        }
+
+        let cart = []; 
+        let currentCategory = 'All'; 
+        let currentSlide = 0;
+        let currentLang = safeStorage.getItem('grihani_lang') || 'en'; 
+        window.currentProductImages = []; 
+        window.currentImageIndex = 0;
+        window.productsMap = {};
+        let touchSwipeInitialized = false;
+        
+        const dict = {
+            "deliver_to": { hi: "डिलीवर करें", en: "Deliver to" },
+            "update_loc": { hi: "लोकेशन अपडेट करें", en: "Update location" },
+            "use_current_loc": { hi: "वर्तमान लोकेशन का उपयोग करें", en: "Use Current Location" },
+            "save_btn": { hi: "सेव करें", en: "Save" },
+            "hello_sign_in": { hi: "नमस्ते, साइन इन करें", en: "Hello, sign in" },
+            "account_lists": { hi: "अकाउंट और लिस्ट", en: "Account & Lists" },
+            "returns": { hi: "रिटर्न्स", en: "Returns" },
+            "and_orders": { hi: "और ऑर्डर्स", en: "& Orders" },
+            "cart_txt": { hi: "कार्ट", en: "Cart" },
+            "all_txt": { hi: "सभी (All)", en: "All" },
+            "title_reels": { hi: "🔥 ट्रेंडिंग रील्स", en: "🔥 Trending Reels" },
+            "cart_title": { hi: "आपकी शॉपिंग कार्ट", en: "Your Shopping Cart" },
+            "btn_back_store": { hi: "← वापस स्टोर पर जाएं", en: "← Back to Store" },
+            "empty_cart": { hi: "आपका कार्ट खाली है।", en: "Your cart is empty." },
+            "total_bill": { hi: "कुल बिल:", en: "Total Bill:" },
+            "btn_checkout": { hi: "ऑर्डर करें (Checkout)", en: "Proceed to Buy" },
+            "order_history_title": { hi: "📦 मेरे ऑर्डर्स (Order History)", en: "📦 My Order History" },
+            "login_title": { hi: "✨ Grihani Cosmetic", en: "✨ Grihani Cosmetic" },
+            "close_btn": { hi: "❌ बंद करें", en: "❌ Close" },
+            "confirm_title": { hi: "ऑर्डर की पुष्टि करें", en: "Confirm Your Order" },
+            "pay_mode_title": { hi: "पेमेंट का तरीका चुनें:", en: "Select Payment Mode:" },
+            "cod_opt": { hi: "कैश ऑन डिलीवरी (COD)", en: "Cash on Delivery (COD)" },
+            "online_opt": { hi: "ऑनलाइन पेमेंट", en: "Pay Online (UPI/Card)" },
+            "confirm_order_btn": { hi: "✅ पेमेंट और ऑर्डर पक्का करें", en: "✅ Place Your Order" },
+            "prod_desc": { hi: "विवरण:", en: "Description:" },
+            "select_color": { hi: "रंग चुनें:", en: "Select Color:" },
+            "select_size": { hi: "साइज चुनें:", en: "Select Size:" },
+            "profile_title": { hi: "👤 मेरी प्रोफाइल", en: "👤 My Profile" },
+            "saved_address_title": { hi: "📍 सेव किए गए पते", en: "📍 Saved Addresses" },
+            "add_address_btn": { hi: "+ नया पता जोड़ें", en: "+ Add New Address" },
+            "select_delivery_addr": { hi: "डिलीवरी का पता चुनें:", en: "Select Delivery Address:" }
+        };
+
+        window.toggleLanguage = function() {
+            currentLang = currentLang === 'en' ? 'hi' : 'en';
+            safeStorage.setItem('grihani_lang', currentLang);
+            document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
+            applyLanguage(); renderProductsUI(window.productsMap); fetchMyOrders(); renderCartItems(); 
+            if(safeStorage.getItem('grihani_user_phone')) renderProfileInfo();
+        };
+
+        function applyLanguage() {
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
+                let key = el.getAttribute('data-lang-key');
+                if(dict[key]) el.innerText = dict[key][currentLang];
+            });
+            if(safeStorage.getItem('grihani_user_name')) {
+                document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + safeStorage.getItem('grihani_user_name').split(" ")[0];
+            }
+        }
+
+        window.openLocationModal = function() { document.getElementById('locationModal').style.display = 'flex'; };
+        window.closeLocationModal = function() { document.getElementById('locationModal').style.display = 'none'; };
+        window.saveManualLocation = function() {
+            let loc = document.getElementById('manualLocationInput').value;
+            if(loc && loc.trim() !== '') { updateLocationUI(loc.trim()); closeLocationModal(); }
+        };
+        window.fetchCurrentLocation = function() {
+            if (navigator.geolocation) {
+                document.getElementById('userLocationText').innerText = currentLang === 'hi' ? "खोज रहे हैं..." : "Detecting...";
+                closeLocationModal();
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    let lat = position.coords.latitude; let lon = position.coords.longitude;
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        let city = data.address.city || data.address.town || data.address.village || data.address.county || data.address.state || "Unknown";
+                        let pin = data.address.postcode || "";
+                        let finalLoc = city + (pin ? " " + pin : "");
+                        updateLocationUI(finalLoc);
+                    }).catch(e => { showToast("Could not fetch location!"); checkSavedLocation(); });
+                }, function(error) {
+                    showToast(currentLang === 'hi' ? "कृपया मोबाइल की लोकेशन/GPS चालू करें!" : "Please enable Location/GPS permission!");
+                    checkSavedLocation();
+                });
+            } else { showToast("Geolocation is not supported."); }
+        };
+        function updateLocationUI(loc) {
+            safeStorage.setItem('grihani_user_location', loc);
+            let locEl = document.getElementById('userLocationText');
+            if(locEl) { locEl.innerText = loc; locEl.removeAttribute('data-lang-key'); }
+        }
+        function checkSavedLocation() {
+            let savedLoc = safeStorage.getItem('grihani_user_location');
+            let locEl = document.getElementById('userLocationText');
+            if(!locEl) return;
+            if(savedLoc) { locEl.innerText = savedLoc; locEl.removeAttribute('data-lang-key'); } 
+            else { locEl.innerText = currentLang === 'hi' ? dict["update_loc"]["hi"] : dict["update_loc"]["en"]; locEl.setAttribute('data-lang-key', 'update_loc'); }
+        }
+
+        window.sliderInterval = null;
+        window.loadBanners = function() {
+            fetchUniversalData('banners', (data) => {
+                let slider = document.getElementById('masterBannerSlider');
+                if(!slider) return;
+                slider.innerHTML = '';
+                if(!data) {
+                    slider.innerHTML = '<div class="banner-slide" style="display:block;"><img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&auto=format&fit=crop&q=80" alt="Banner"></div>';
+                    return;
+                }
+                let isFirst = true;
+                Object.keys(data).forEach(key => {
+                    slider.innerHTML += `<div class="banner-slide" style="display:${isFirst ? 'block' : 'none'};"><img src="${data[key].image}" alt="Banner"></div>`;
+                    isFirst = false;
+                });
+                startBannerSlider();
+            });
+        };
+
+        window.startBannerSlider = function() {
+            clearInterval(window.sliderInterval);
+            const slides = document.querySelectorAll('.banner-slide');
+            if(slides.length <= 1) return;
+            currentSlide = 0;
+            window.sliderInterval = setInterval(() => { 
+                slides.forEach(s => s.style.display = 'none');
+                currentSlide = (currentSlide + 1) % slides.length; 
+                if(slides[currentSlide]) slides[currentSlide].style.display = 'block'; 
+            }, 4000);
+        };
+
+        window.loadCategories = function() {
+            fetchUniversalData('categories', (data) => {
+                let filterDiv = document.getElementById('categoryFilters');
+                let searchSelect = document.getElementById('amzCategorySelect');
+                let searchSelectMob = document.getElementById('amzCategorySelectMob');
+                if(!filterDiv) return;
+                
+                filterDiv.innerHTML = ''; 
+                let selectHtml = `<option value="All">All</option>`;
+                if(searchSelect) searchSelect.innerHTML = selectHtml;
+                if(searchSelectMob) searchSelectMob.innerHTML = selectHtml;
+                
+                let categories = data ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
+                Object.keys(categories).forEach((catKey) => { 
+                    filterDiv.innerHTML += `<button onclick="filterCategory('${catKey}', this)">${categories[catKey]}</button>`; 
+                    if(searchSelect) searchSelect.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
+                    if(searchSelectMob) searchSelectMob.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
+                });
+            });
+        };
+
+        function renderProductsUI(data) {
+            let appDiv = document.getElementById('appProducts'); 
+            if(!appDiv) return;
+            appDiv.innerHTML = '';
+            window.productsMap = data || {};
+            
+            if (!data || Object.keys(data).length === 0) {
+                appDiv.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; color:#777; margin-top:30px;">${currentLang === 'hi' ? 'कोई प्रोडक्ट नहीं है।' : 'No products available.'}</p>`;
+                return;
+            }
+            
+            Object.keys(data).forEach((key) => {
+                let item = data[key];
+                if (!item) return;
+                if (currentCategory === 'All' || item.category === currentCategory) {
+                    let stockQty = item.stock !== undefined ? parseInt(item.stock) : 10;
+                    let isOutOfStock = stockQty <= 0;
+
+                    let btnText = isOutOfStock ? (currentLang === 'hi' ? 'स्टॉक खत्म' : 'Out of Stock') : (currentLang === 'hi' ? 'कार्ट में डालें' : 'Add to Cart');
+                    let btnClass = isOutOfStock ? 'cart-btn disabled-btn' : 'cart-btn';
+                    let cardClickAction = isOutOfStock ? '' : `onclick="openProductModalByKey('${key}')"`;
+                    let outOfStockBadge = isOutOfStock ? `<div class="out-of-stock-overlay">OUT OF STOCK</div>` : '';
+
+                    let sellingPrice = parseFloat(item.price) || 0;
+                    let mrpPrice = parseFloat(item.mrp) || sellingPrice;
+                    let discountHtml = '';
+                    let mrpHtml = '';
+
+                    if (mrpPrice > sellingPrice) {
+                        let discountPercent = Math.round(((mrpPrice - sellingPrice) / mrpPrice) * 100);
+                        discountHtml = `<span class="product-discount-badge">${discountPercent}% OFF</span>`;
+                        mrpHtml = `<span class="product-mrp">₹${mrpPrice}</span>`;
+                    }
+
+                    appDiv.innerHTML += `
+                        <div class="product-card" ${cardClickAction}>
+                            ${outOfStockBadge}
+                            <span class="cat-tag">${item.category || ''}</span>
+                            <img src="${item.image || (item.images && item.images[0] ? item.images[0] : '')}" class="product-img" alt="${item.name || 'Product'}">
+                            <div class="product-title">${item.name || ''}</div>
+                            <div class="product-price-box">
+                                <span class="product-price"><span style="font-size:14px; vertical-align:top;">₹</span>${sellingPrice}</span>
+                                ${mrpHtml}
+                                ${discountHtml}
+                            </div>
+                            <button class="${btnClass}" ${isOutOfStock ? 'disabled' : ''}>${btnText}</button>
+                        </div>`;
+                }
+            });
+        }
+
+        window.loadProducts = function() {
+            fetchUniversalData('products', (data) => {
+                renderProductsUI(data);
+            });
+        };
+
+        window.searchProducts = function() {
+            let input = '';
+            let searchInputDesktop = document.getElementById('searchInput');
+            let searchInputMob = document.getElementById('searchInputMob');
+            
+            if(searchInputDesktop && searchInputDesktop.value) input = searchInputDesktop.value.toLowerCase();
+            if(searchInputMob && searchInputMob.value) input = searchInputMob.value.toLowerCase();
+            
+            let cards = document.querySelectorAll('.product-card');
+            cards.forEach(card => {
+                let title = card.querySelector('.product-title').innerText.toLowerCase();
+                let cat = card.querySelector('.cat-tag').innerText.toLowerCase();
+                if(title.includes(input) || cat.includes(input)) card.style.display = 'flex';
+                else card.style.display = 'none';
+            });
+        };
+
+        window.openProductModalByKey = function(key) {
+            let p = window.productsMap[key];
+            if(!p) return;
+            openProductModalObj(p);
+        };
+
+        function openProductModalObj(p) {
+            let stockQty = p.stock !== undefined ? parseInt(p.stock) : 10;
+            if(stockQty <= 0) return;
+
+            window.currentProductImages = p.images ? p.images : (p.image ? [p.image] : []);
+            window.currentImageIndex = 0;
+            
+            updateModalImageView();
+
+            document.getElementById('pmTitle').innerText = p.name;
+            
+            let sellingPrice = parseFloat(p.price) || 0;
+            let mrpPrice = parseFloat(p.mrp) || sellingPrice;
+            let priceModalHtml = `<span style="font-size:16px; vertical-align:top;">₹</span>${sellingPrice}`;
+            
+            if (mrpPrice > sellingPrice) {
+                let discountPercent = Math.round(((mrpPrice - sellingPrice) / mrpPrice) * 100);
+                priceModalHtml += ` <span style="font-size:14px; color:#555; text-decoration:line-through; margin-left:8px;">₹${mrpPrice}</span> <span style="background:#cc0c39; color:#fff; font-size:12px; padding:2px 6px; border-radius:3px; margin-left:6px; font-weight:bold;">${discountPercent}% OFF</span>`;
+            }
+            document.getElementById('pmPrice').innerHTML = priceModalHtml;
+
+            document.getElementById('pmDescText').innerText = p.desc || (currentLang === 'hi' ? 'इस प्रोडक्ट का कोई विवरण नहीं है।' : 'No description available.');
+            
+            let colorDiv = document.getElementById('pmColorDiv');
+            if(p.color) {
+                let opts = p.color.split(',').map(c => `<option value="${c.trim()}">${c.trim()}</option>`).join('');
+                document.getElementById('pmColorSelect').innerHTML = opts; colorDiv.style.display = 'block';
+            } else { colorDiv.style.display = 'none'; }
+
+            let sizeDiv = document.getElementById('pmSizeDiv');
+            if(p.size) {
+                let opts = p.size.split(',').map(s => `<option value="${s.trim()}">${s.trim()}</option>`).join('');
+                document.getElementById('pmSizeSelect').innerHTML = opts; sizeDiv.style.display = 'block';
+            } else { sizeDiv.style.display = 'none'; }
+
+            document.getElementById('pmAddToCartBtn').onclick = function() {
+                let selectedColor = p.color ? document.getElementById('pmColorSelect').value : null;
+                let selectedSize = p.size ? document.getElementById('pmSizeSelect').value : null;
+                addToCart({ ...p, price: sellingPrice }, selectedColor, selectedSize); closeProductModal();
+            };
+            document.getElementById('productDetailModal').style.display = 'flex';
+            setupModalTouchSwipe();
+        }
+
+        window.updateModalImageView = function() {
+            let mainImg = document.getElementById('pmImg');
+            if(window.currentProductImages.length > 0) mainImg.src = window.currentProductImages[window.currentImageIndex];
+
+            let thumbContainer = document.getElementById('pmThumbnails');
+            thumbContainer.innerHTML = '';
+            if (window.currentProductImages.length > 1) {
+                window.currentProductImages.forEach((imgUrl, index) => {
+                    let activeClass = index === window.currentImageIndex ? 'pd-thumb-active' : '';
+                    thumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeMainImage(${index})" alt="Thumb">`;
+                });
+            }
+
+            let zoomThumbContainer = document.getElementById('zoomThumbnails');
+            if(zoomThumbContainer) {
+                zoomThumbContainer.innerHTML = '';
+                if (window.currentProductImages.length > 1) {
+                    window.currentProductImages.forEach((imgUrl, index) => {
+                        let activeClass = index === window.currentImageIndex ? 'pd-thumb-active' : '';
+                        zoomThumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeZoomImage(${index})" alt="Zoom Thumb">`;
+                    });
+                }
+            }
+
+            let dotsContainer = document.getElementById('pmDotsContainer');
+            dotsContainer.innerHTML = '';
+            if (window.currentProductImages.length > 1) {
+                window.currentProductImages.forEach((_, index) => {
+                    let activeDot = index === window.currentImageIndex ? 'pd-dot-active' : '';
+                    dotsContainer.innerHTML += `<span class="pd-dot ${activeDot}" onclick="changeMainImage(${index})"></span>`;
+                });
+            }
+        };
+
+        window.changeMainImage = function(index) { window.currentImageIndex = index; updateModalImageView(); };
+        window.changeZoomImage = function(index) {
+            window.currentImageIndex = index;
+            document.getElementById('fullscreenZoomImg').src = window.currentProductImages[index];
+            updateModalImageView();
+        };
+
+        function setupModalTouchSwipe() {
+            if(touchSwipeInitialized) return;
+            let imgElement = document.getElementById('pmImg');
+            if(!imgElement) return;
+            touchSwipeInitialized = true;
+            let startX = 0;
+            imgElement.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, {passive: true});
+            imgElement.addEventListener('touchend', (e) => {
+                let diff = startX - e.changedTouches[0].clientX;
+                if (Math.abs(diff) > 50) { 
+                    if (diff > 0 && window.currentImageIndex < window.currentProductImages.length - 1) { window.currentImageIndex++; updateModalImageView(); }
+                    else if (diff < 0 && window.currentImageIndex > 0) { window.currentImageIndex--; updateModalImageView(); }
+                }
+            }, {passive: true});
+        }
+
+        window.openFullscreenZoom = function() {
+            if(window.currentProductImages.length === 0) return;
+            document.getElementById('fullscreenZoomImg').src = window.currentProductImages[window.currentImageIndex];
+            updateModalImageView();
+            document.getElementById('fullscreenZoomModal').style.display = 'flex';
+        };
+
+        window.closeFullscreenZoom = function() { document.getElementById('fullscreenZoomModal').style.display = 'none'; };
+        window.closeProductModal = function() { document.getElementById('productDetailModal').style.display = 'none'; };
+
+        window.loadReels = function() {
+            fetchUniversalData('reels', (data) => {
+                let reelFeed = document.getElementById('appReelsFeed'); 
+                if(!reelFeed) return;
+                reelFeed.innerHTML = '';
+                if(!data) {
+                    reelFeed.innerHTML = '<p style="font-size:12px; color:#777; padding:10px;">No reels available.</p>';
+                    return;
+                }
+                Object.keys(data).forEach(key => {
+                    let r = data[key]; 
+                    if(!r) return;
+                    let instaButton = (r.instaUrl && r.instaUrl !== '#') ? `<a href="${r.instaUrl}" target="_blank" class="insta-link-btn">📷 Instagram</a>` : '';
+                    reelFeed.innerHTML += `<div class="reel-card"><video class="reel-video" autoplay muted loop playsinline webkit-playsinline><source src="${r.url}" type="video/mp4"></video><div class="reel-title">${r.title || ''}</div>${instaButton}</div>`;
+                });
+            });
+        };
+
+        window.syncUserData = function(phone) {
+            let cleanPhone = phone.replace(/[^0-9]/g, '');
+            fetchUniversalData(`customers/${cleanPhone}`, (cData) => {
+                if (cData) {
+                    let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
+                    safeStorage.setItem('grihani_user_name', cData.name); 
+                    safeStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
+                    updateUserUI(cData.name);
+                }
+            });
+            startCartListener(cleanPhone);
+        };
+
+        function initApp() {
+            let langBtn = document.getElementById('langToggleBtn');
+            if(langBtn) langBtn.innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
+            applyLanguage(); loadCategories(); loadProducts(); loadReels(); loadBanners();
+            checkSavedLocation(); 
+            let savedPhone = safeStorage.getItem('grihani_user_phone');
+            if(savedPhone) syncUserData(savedPhone);
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+
+        window.openLoginModal = function() { 
+            if(safeStorage.getItem('grihani_user_phone')) openOrdersPage(); 
+            else { resetLoginUI(); document.getElementById('loginModal').style.display = 'flex'; }
+        };
+        window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; resetLoginUI(); };
+        window.resetLoginUI = function() {
+            document.getElementById('step1Phone').style.display = 'block';
+            document.getElementById('step2OTP').style.display = 'none';
+            document.getElementById('step3Details').style.display = 'none';
+            document.getElementById('regPhone').value = '';
+            document.getElementById('otpInput').value = '';
+            document.getElementById('sendOtpBtn').innerText = '📲 Send OTP';
+        };
+
+        function setupRecaptcha() {
+            if(!window.recaptchaVerifier && window.auth) {
+                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
+            }
+        }
+
+        window.sendOTP = function() {
+            let phone = document.getElementById('regPhone').value.trim();
+            if(phone.length !== 10) return showToast(currentLang === 'hi' ? "कृपया 10 अंकों का मोबाइल नंबर डालें!" : "Please enter a valid 10-digit mobile number!");
+            let btn = document.getElementById('sendOtpBtn');
+            btn.innerText = currentLang === 'hi' ? "भेज रहे हैं..." : "Sending...";
+            setupRecaptcha();
+            window.auth.signInWithPhoneNumber("+91" + phone, window.recaptchaVerifier)
+                .then((confirmationResult) => {
+                    window.confirmationResult = confirmationResult;
+                    document.getElementById('step1Phone').style.display = 'none';
+                    document.getElementById('displayPhoneOTP').innerText = "+91" + phone;
+                    document.getElementById('step2OTP').style.display = 'block';
+                }).catch((error) => {
+                    showToast(currentLang === 'hi' ? "सर्वर व्यस्त है।" : "Server busy.");
+                    btn.innerText = '📲 Send OTP';
+                });
+        };
+
+        window.verifyOTP = function() {
+            let code = document.getElementById('otpInput').value.trim();
+            if(code.length !== 6) return showToast("Enter 6-digit OTP!");
+            window.confirmationResult.confirm(code).then((result) => {
+                let phone = document.getElementById('regPhone').value.trim();
+                window.db.ref(`customers/${phone}`).once('value').then((snapshot) => {
+                    if (snapshot.exists()) {
+                        let cData = snapshot.val();
+                        let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
+                        safeStorage.setItem('grihani_user_name', cData.name); 
+                        safeStorage.setItem('grihani_user_phone', phone); 
+                        safeStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
+                        document.getElementById('loginModal').style.display = 'none'; 
+                        updateUserUI(cData.name); 
+                        mergeAndListenCart(phone);
+                    } else {
+                        document.getElementById('step2OTP').style.display = 'none';
+                        document.getElementById('step3Details').style.display = 'block';
+                    }
+                });
+            }).catch(() => { showToast("Invalid OTP!"); });
+        };
+
+        window.completeRegistration = function() {
+            let name = document.getElementById('regName').value.trim();
+            let address = document.getElementById('regAddress').value.trim();
+            let phone = document.getElementById('regPhone').value.trim();
+            if(!name || !address) return showToast("Name and Address required!");
+            window.db.ref('customers/' + phone).set({ name, phone, addresses: [address], date: new Date().toLocaleString() }).then(() => {
+                safeStorage.setItem('grihani_user_name', name); 
+                safeStorage.setItem('grihani_user_phone', phone); 
+                safeStorage.setItem('grihani_user_addresses', JSON.stringify([address]));
+                document.getElementById('loginModal').style.display = 'none'; 
+                updateUserUI(name); 
+                mergeAndListenCart(phone);
+            });
+        };
+
+        function showToast(msg) {
+            let existing = document.getElementById('grihaniToast');
+            if(existing) existing.remove();
+            let toast = document.createElement('div');
+            toast.id = 'grihaniToast';
+            toast.innerHTML = `<span>🛍️ <b>Grihani Cosmetic</b><br>${msg}</span>`;
+            toast.style.cssText = "position:fixed; top:20px; right:20px; background:#131921; color:#fff; padding:15px 20px; border-radius:8px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:14px; border-left:5px solid #febd69;";
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 4000);
+        }
+
+        window.syncCartToCloud = function() {
+            let phone = safeStorage.getItem('grihani_user_phone');
+            if(phone && window.db) window.db.ref('carts/' + phone.replace(/[^0-9]/g, '')).set(cart);
+            else { updateCartCount(); renderCartItems(); }
+        };
+
+        window.startCartListener = function(cleanPhone) {
+            fetchUniversalData(`carts/${cleanPhone}`, (data) => {
+                cart = data || []; updateCartCount();
+                if (document.getElementById('cartPage').style.display === 'block') renderCartItems();
+            });
+        };
+
+        window.mergeAndListenCart = function(cleanPhone) {
+            window.db.ref(`carts/${cleanPhone}`).once('value').then((snapshot) => {
+                let cloudCart = snapshot.val() || [];
+                if (cart.length > 0) {
+                    cart.forEach(lItem => {
+                        let exist = cloudCart.find(c => c.name === lItem.name && c.selectedColor === lItem.selectedColor && c.selectedSize === lItem.selectedSize);
+                        if(exist) exist.qty += lItem.qty; else cloudCart.push(lItem);
+                    });
+                    window.db.ref(`carts/${cleanPhone}`).set(cloudCart).then(() => { startCartListener(cleanPhone); });
+                } else { startCartListener(cleanPhone); }
+            });
+        };
+
+        window.addNewAddress = function() {
+            let newAdd = prompt("Enter your new full address:");
+            if(newAdd && newAdd.trim() !== "") {
+                let phone = safeStorage.getItem('grihani_user_phone');
+                let addrs = JSON.parse(safeStorage.getItem('grihani_user_addresses') || "[]");
+                addrs.push(newAdd.trim());
+                window.db.ref('customers/' + phone).update({ addresses: addrs }).then(() => {
+                    safeStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
+                    renderProfileInfo();
+                    showToast("📍 New Address Added!");
+                });
+            }
+        };
+
+        window.renderProfileInfo = function() {
+            document.getElementById('profileName').innerText = safeStorage.getItem('grihani_user_name') || '';
+            document.getElementById('profilePhone').innerText = safeStorage.getItem('grihani_user_phone') || '';
+            let addrs = JSON.parse(safeStorage.getItem('grihani_user_addresses') || "[]");
+            document.getElementById('profileAddresses').innerHTML = addrs.map((a, i) => `<div class="address-box"><b>${i+1}.</b> ${a}</div>`).join('');
+        };
+
+        function updateUserUI(name) { 
+            if(!name) return;
+            document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + name.split(" ")[0];
+            fetchMyOrders(); renderProfileInfo();
+        }
+        window.logoutUser = function() { if(confirm("Logout?")) { safeStorage.clear(); location.reload(); } };
+        window.filterCategory = function(cat) { currentCategory = cat; renderProductsUI(window.productsMap); };
+        
+        window.addToCart = function(product, sColor, sSize) { 
+            let existingItem = cart.find(item => item.name === product.name && item.selectedColor === sColor && item.selectedSize === sSize); 
+            if(existingItem) existingItem.qty += 1; else cart.push({ ...product, selectedColor: sColor, selectedSize: sSize, qty: 1 }); 
+            showToast(product.name + " added to cart!"); 
+            syncCartToCloud();
+        };
+
+        window.updateCartCount = function() { 
+            let total = 0; cart.forEach(item => total += item.qty); 
+            document.getElementById('cartCount').innerText = total; 
+            document.getElementById('cartCountMob').innerText = total; 
+        };
+        window.increaseQty = function(index) { cart[index].qty += 1; syncCartToCloud(); };
+        window.decreaseQty = function(index) { cart[index].qty -= 1; if(cart[index].qty === 0) cart.splice(index, 1); syncCartToCloud(); };
+        
+        window.openCart = function() { document.getElementById('homePage').style.display = 'none'; document.getElementById('ordersPage').style.display = 'none'; document.getElementById('cartPage').style.display = 'block'; renderCartItems(); };
+        window.closeCart = function() { document.getElementById('cartPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; };
+        window.openOrdersPage = function() { 
+            if(!safeStorage.getItem('grihani_user_phone')) return openLoginModal();
+            document.getElementById('homePage').style.display = 'none'; document.getElementById('cartPage').style.display = 'none'; document.getElementById('ordersPage').style.display = 'block'; 
+            renderProfileInfo();
+        };
+        window.closeOrdersPage = function() { document.getElementById('ordersPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; };
+
+        let liveActiveOrders = {}; let liveHistoryOrders = {};
+        window.fetchMyOrders = function() {
+            let phone = safeStorage.getItem('grihani_user_phone');
+            if(!phone) return;
+            fetchUniversalData('orders', (data) => { liveActiveOrders = data || {}; window.renderLiveOrders(phone); });
+            fetchUniversalData('order_history', (data) => { liveHistoryOrders = data || {}; window.renderLiveOrders(phone); });
+        };
+
+        window.renderLiveOrders = function(phone) {
+            let ordersDiv = document.getElementById('myOrdersList');
+            if(!ordersDiv) return;
+            let myOrders = [];
+            Object.keys(liveActiveOrders).forEach(key => { if(liveActiveOrders[key] && liveActiveOrders[key].customerPhone === phone) myOrders.push({...liveActiveOrders[key], id: key}); });
+            Object.keys(liveHistoryOrders).forEach(key => { if(liveHistoryOrders[key] && liveHistoryOrders[key].customerPhone === phone) myOrders.push({...liveHistoryOrders[key], id: key}); });
+            
+            if(myOrders.length === 0) { ordersDiv.innerHTML = `<div style="text-align:center; padding:30px; border:1px solid #d5d9d9; border-radius:8px;"><h3 style="color:#777;">No Orders Found</h3></div>`; return; }
+            myOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            let htmlString = '';
+            myOrders.forEach(order => {
+                let statusColor = 'status-new'; let statusText = (order.status || 'New').toLowerCase(); 
+                let displayStatus = "New Order 🕒";
+                let isShip = statusText.includes('ship'), isDel = statusText.includes('deliver'), isCan = statusText.includes('cancel');
+                if(isShip) { statusColor = 'status-shipping'; displayStatus = "Shipped 🚚"; }
+                else if(isDel) { statusColor = 'status-delivered'; displayStatus = "Delivered ✅"; }
+                else if(isCan) { statusColor = 'status-cancelled'; displayStatus = "Cancelled ❌"; }
+
+                let itemsHtml = (order.items || []).map(i => `<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span>${i.name} (x${i.qty})</span> <b>₹${i.price * i.qty}</b></div>`).join('');
+                
+                htmlString += `
+                    <div class="order-history-card">
+                        <div class="order-history-header"><span>📅 ${order.date}</span><span class="order-status ${statusColor}">${displayStatus}</span></div>
+                        <div style="background:#f9f9f9; padding:8px; border-radius:4px; margin-bottom:8px;">${itemsHtml}</div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px;"><span>Payment: <b>${order.paymentMode}</b></span><span>Total: <b style="color:#B12704;">${order.total}</b></span></div>
+                    </div>`;
+            });
+            ordersDiv.innerHTML = htmlString;
+        };
+
+        window.renderCartItems = function() {
+            let cartDiv = document.getElementById('cartItemsList'); 
+            if(!cartDiv) return;
+            cartDiv.innerHTML = ''; let total = 0;
+            if(cart.length === 0) cartDiv.innerHTML = `<p style="text-align:center; color:#777; padding:20px;">Your cart is empty.</p>`;
+            else cart.forEach((item, index) => {
+                let itemTotal = parseInt(item.price) * item.qty; total += itemTotal;
+                let displayImg = item.image || (item.images && item.images[0] ? item.images[0] : '');
+                cartDiv.innerHTML += `<div class="cart-item"><img src="${displayImg}" alt="${item.name}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div><div class="cart-item-price">₹${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div><div class="item-total">₹${itemTotal}</div></div>`;
+            }); 
+            document.getElementById('totalAmount').innerText = "₹" + total;
+        };
+
+        window.openCheckoutForm = function() {
+            if(cart.length === 0) return showToast("Cart is empty!");
+            if(!safeStorage.getItem('grihani_user_phone')) { openLoginModal(); return; }
+            let addrs = JSON.parse(safeStorage.getItem('grihani_user_addresses') || "[]");
+            document.getElementById('confirmName').innerText = safeStorage.getItem('grihani_user_name') || 'User'; 
+            document.getElementById('confirmPhone').innerText = safeStorage.getItem('grihani_user_phone') || 'N/A'; 
+            let sel = document.getElementById('checkoutAddressSelect');
+            sel.innerHTML = addrs.length > 0 ? addrs.map(a => `<option value="${a}">${a}</option>`).join('') : `<option value="Default">Add address in profile</option>`;
+            document.getElementById('checkoutModal').style.display = 'flex';
+        };
+        window.closeCheckoutForm = function() { document.getElementById('checkoutModal').style.display = 'none'; };
+
+        window.confirmOrder = function() {
+            let name = safeStorage.getItem('grihani_user_name') || 'Customer';
+            let phone = safeStorage.getItem('grihani_user_phone') || '0000000000';
+            let address = document.getElementById('checkoutAddressSelect').value;
+            let payMode = document.getElementById('payMode').value;
+            let totalAmountNum = parseInt(document.getElementById('totalAmount').innerText.replace(/[^0-9]/g, '')) * 100; 
+            
+            closeCheckoutForm();
+            if(payMode === 'Online UPI') {
+                var rzp1 = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response){ saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum, address); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } }); 
+                rzp1.open();
+            } else { saveOrderData("Cash on Delivery (COD)", "N/A", totalAmountNum, address); }
+        };
+
+        function saveOrderData(paymentMode, paymentId, totalAmountNum, finalAddress) {
+            cart.forEach(cartItem => {
+                window.db.ref('products').once('value').then((snapshot) => {
+                    if(snapshot.exists()) {
+                        let prods = snapshot.val();
+                        Object.keys(prods).forEach(pKey => {
+                            if(prods[pKey].name === cartItem.name) {
+                                let currentStock = parseInt(prods[pKey].stock || 10);
+                                let newStock = Math.max(0, currentStock - cartItem.qty);
+                                window.db.ref(`products/${pKey}`).update({ stock: newStock });
+                            }
+                        });
+                    }
+                });
+            });
+
+            let newOrderRef = window.db.ref('orders').push();
+            newOrderRef.set({ customerName: safeStorage.getItem('grihani_user_name') || 'Customer', customerPhone: safeStorage.getItem('grihani_user_phone') || 'N/A', customerAddress: finalAddress, paymentMode, paymentId, items: cart, total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New' }).then(() => { 
+                showToast("🎉 Order Placed Successfully!"); 
+                cart = []; syncCartToCloud(); closeCart(); window.openOrdersPage(); 
+            });
+        }
+    </script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
         html, body { width: 100%; max-width: 100%; overflow-x: hidden; background-color: #eaeded; color: #0f1111; position: relative; -webkit-text-size-adjust: 100%; }
@@ -74,6 +824,8 @@
         .amz-lang-text { font-weight: bold; font-size: 13px; padding-top:8px; }
         .amz-line1 { font-size: 11px; color: #fff; }
         .amz-line2 { font-size: 13px; font-weight: bold; color: white; }
+
+        .pwa-install-btn { display: none; align-items: center; gap: 4px; background: #febd69; color: #131921; font-weight: bold; font-size: 12px; padding: 6px 10px; border-radius: 4px; cursor: pointer; border: none; margin-right: 4px; }
         
         .amz-nav-cart { display: -webkit-flex; display: flex; align-items: flex-end; padding: 4px 6px; border: 1px solid transparent; cursor: pointer; position: relative; border-radius:2px; }
         .amz-nav-cart:hover { border: 1px solid white; }
@@ -254,6 +1006,9 @@
                 </div>
 
                 <div class="amz-nav-right">
+                    <!-- PWA Install Button -->
+                    <button id="pwaInstallBtn" class="pwa-install-btn" onclick="installPWA()">📲 App</button>
+
                     <div class="amz-nav-item" onclick="toggleLanguage()"><span class="amz-lang-text" id="langToggleBtn">🇮🇳 HI</span></div>
                     <div class="amz-nav-item" onclick="openLoginModal()">
                         <span class="amz-line1" id="userGreeting" data-lang-key="hello_sign_in">Hello, sign in</span>
@@ -290,11 +1045,7 @@
         </header>
         
         <div id="homePage">
-            <div class="banner-container" id="masterBannerSlider">
-                <div class="banner-slide" style="display:block;">
-                    <img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&auto=format&fit=crop&q=80" alt="Banner">
-                </div>
-            </div>
+            <div class="banner-container" id="masterBannerSlider"></div>
             <div class="reels-section"><h4 data-lang-key="title_reels">🔥 Trending Reels</h4><div class="reels-container" id="appReelsFeed"></div></div>
             <div class="products-grid" id="appProducts"></div>
         </div>
@@ -419,764 +1170,5 @@
             </div>
         </div>
     </div>
-
-    <!-- MAIN SCRIPT (Placed at the end of body so DOM elements always exist) -->
-    <script>
-        const memoryStore = {};
-        const safeStorage = {
-            getItem: function(key) {
-                try { return localStorage.getItem(key) || memoryStore[key] || null; } 
-                catch(e) { return memoryStore[key] || null; }
-            },
-            setItem: function(key, val) {
-                memoryStore[key] = val;
-                try { localStorage.setItem(key, val); } catch(e) {}
-            },
-            clear: function() {
-                for (let k in memoryStore) delete memoryStore[k];
-                try { localStorage.clear(); } catch(e) {}
-            }
-        };
-
-        const DB_URL = "https://grihanicosmeticapp-default-rtdb.firebaseio.com";
-        const firebaseConfig = {
-            apiKey: "AIzaSyBhR9J0h01e81bSpUs2rTqV9JRndL38eUQ",
-            authDomain: "grihanicosmeticapp.firebaseapp.com",
-            databaseURL: DB_URL,
-            projectId: "grihanicosmeticapp",
-            storageBucket: "grihanicosmeticapp.firebasestorage.app",
-            messagingSenderId: "921623248962",
-            appId: "1:921623248962:web:413b6e003eca864b7caddb"
-        };
-        
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            window.db = firebase.database();
-            window.auth = firebase.auth();
-        } catch(e) {
-            console.warn("Firebase init error:", e);
-        }
-
-        // Safe Universal Data Fetcher (Ignore REST errors and rely on Firebase SDK + Valid REST)
-        function fetchUniversalData(path, callback) {
-            let receivedFromSDK = false;
-
-            // 1. Primary Firebase SDK Listener
-            if (window.db) {
-                try {
-                    window.db.ref(path).on('value', (snapshot) => {
-                        receivedFromSDK = true;
-                        callback(snapshot.val());
-                    }, (err) => {
-                        console.warn("SDK read error on " + path, err);
-                    });
-                } catch(e) {}
-            }
-
-            // 2. Safe HTTP Fallback (Only triggers if SDK hasn't loaded within 1.5s and response has no error)
-            setTimeout(() => {
-                if (!receivedFromSDK) {
-                    fetch(`${DB_URL}/${path}.json?nocache=${new Date().getTime()}`)
-                        .then(res => {
-                            if (!res.ok) throw new Error("HTTP Status " + res.status);
-                            return res.json();
-                        })
-                        .then(data => {
-                            if (!receivedFromSDK && data && !data.error) {
-                                callback(data);
-                            }
-                        }).catch(err => {});
-                }
-            }, 1500);
-        }
-
-        let cart = []; 
-        let currentCategory = 'All'; 
-        let currentSlide = 0;
-        let currentLang = safeStorage.getItem('grihani_lang') || 'en'; 
-        window.currentProductImages = []; 
-        window.currentImageIndex = 0;
-        window.productsMap = {};
-        let touchSwipeInitialized = false;
-        
-        const dict = {
-            "deliver_to": { hi: "डिलीवर करें", en: "Deliver to" },
-            "update_loc": { hi: "लोकेशन अपडेट करें", en: "Update location" },
-            "use_current_loc": { hi: "वर्तमान लोकेशन का उपयोग करें", en: "Use Current Location" },
-            "save_btn": { hi: "सेव करें", en: "Save" },
-            "hello_sign_in": { hi: "नमस्ते, साइन इन करें", en: "Hello, sign in" },
-            "account_lists": { hi: "अकाउंट और लिस्ट", en: "Account & Lists" },
-            "returns": { hi: "रिटर्न्स", en: "Returns" },
-            "and_orders": { hi: "और ऑर्डर्स", en: "& Orders" },
-            "cart_txt": { hi: "कार्ट", en: "Cart" },
-            "all_txt": { hi: "सभी (All)", en: "All" },
-            "title_reels": { hi: "🔥 ट्रेंडिंग रील्स", en: "🔥 Trending Reels" },
-            "cart_title": { hi: "आपकी शॉपिंग कार्ट", en: "Your Shopping Cart" },
-            "btn_back_store": { hi: "← वापस स्टोर पर जाएं", en: "← Back to Store" },
-            "empty_cart": { hi: "आपका कार्ट खाली है।", en: "Your cart is empty." },
-            "total_bill": { hi: "कुल बिल:", en: "Total Bill:" },
-            "btn_checkout": { hi: "ऑर्डर करें (Checkout)", en: "Proceed to Buy" },
-            "order_history_title": { hi: "📦 मेरे ऑर्डर्स (Order History)", en: "📦 My Order History" },
-            "login_title": { hi: "✨ Grihani Cosmetic", en: "✨ Grihani Cosmetic" },
-            "close_btn": { hi: "❌ बंद करें", en: "❌ Close" },
-            "confirm_title": { hi: "ऑर्डर की पुष्टि करें", en: "Confirm Your Order" },
-            "pay_mode_title": { hi: "पेमेंट का तरीका चुनें:", en: "Select Payment Mode:" },
-            "cod_opt": { hi: "कैश ऑन डिलीवरी (COD)", en: "Cash on Delivery (COD)" },
-            "online_opt": { hi: "ऑनलाइन पेमेंट", en: "Pay Online (UPI/Card)" },
-            "confirm_order_btn": { hi: "✅ पेमेंट और ऑर्डर पक्का करें", en: "✅ Place Your Order" },
-            "prod_desc": { hi: "विवरण:", en: "Description:" },
-            "select_color": { hi: "रंग चुनें:", en: "Select Color:" },
-            "select_size": { hi: "साइज चुनें:", en: "Select Size:" },
-            "profile_title": { hi: "👤 मेरी प्रोफाइल", en: "👤 My Profile" },
-            "saved_address_title": { hi: "📍 सेव किए गए पते", en: "📍 Saved Addresses" },
-            "add_address_btn": { hi: "+ नया पता जोड़ें", en: "+ Add New Address" },
-            "select_delivery_addr": { hi: "डिलीवरी का पता चुनें:", en: "Select Delivery Address:" }
-        };
-
-        window.toggleLanguage = function() {
-            currentLang = currentLang === 'en' ? 'hi' : 'en';
-            safeStorage.setItem('grihani_lang', currentLang);
-            document.getElementById('langToggleBtn').innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
-            applyLanguage(); renderProductsUI(window.productsMap); fetchMyOrders(); renderCartItems(); 
-            if(safeStorage.getItem('grihani_user_phone')) renderProfileInfo();
-        };
-
-        function applyLanguage() {
-            document.querySelectorAll('[data-lang-key]').forEach(el => {
-                let key = el.getAttribute('data-lang-key');
-                if(dict[key]) el.innerText = dict[key][currentLang];
-            });
-            if(safeStorage.getItem('grihani_user_name')) {
-                document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + safeStorage.getItem('grihani_user_name').split(" ")[0];
-            }
-        }
-
-        window.openLocationModal = function() { document.getElementById('locationModal').style.display = 'flex'; };
-        window.closeLocationModal = function() { document.getElementById('locationModal').style.display = 'none'; };
-        window.saveManualLocation = function() {
-            let loc = document.getElementById('manualLocationInput').value;
-            if(loc && loc.trim() !== '') { updateLocationUI(loc.trim()); closeLocationModal(); }
-        };
-        window.fetchCurrentLocation = function() {
-            if (navigator.geolocation) {
-                document.getElementById('userLocationText').innerText = currentLang === 'hi' ? "खोज रहे हैं..." : "Detecting...";
-                closeLocationModal();
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    let lat = position.coords.latitude; let lon = position.coords.longitude;
-                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        let city = data.address.city || data.address.town || data.address.village || data.address.county || data.address.state || "Unknown";
-                        let pin = data.address.postcode || "";
-                        let finalLoc = city + (pin ? " " + pin : "");
-                        updateLocationUI(finalLoc);
-                    }).catch(e => { showToast("Could not fetch location!"); checkSavedLocation(); });
-                }, function(error) {
-                    showToast(currentLang === 'hi' ? "कृपया मोबाइल की लोकेशन/GPS चालू करें!" : "Please enable Location/GPS permission!");
-                    checkSavedLocation();
-                });
-            } else { showToast("Geolocation is not supported."); }
-        };
-        function updateLocationUI(loc) {
-            safeStorage.setItem('grihani_user_location', loc);
-            let locEl = document.getElementById('userLocationText');
-            if(locEl) { locEl.innerText = loc; locEl.removeAttribute('data-lang-key'); }
-        }
-        function checkSavedLocation() {
-            let savedLoc = safeStorage.getItem('grihani_user_location');
-            let locEl = document.getElementById('userLocationText');
-            if(!locEl) return;
-            if(savedLoc) { locEl.innerText = savedLoc; locEl.removeAttribute('data-lang-key'); } 
-            else { locEl.innerText = currentLang === 'hi' ? dict["update_loc"]["hi"] : dict["update_loc"]["en"]; locEl.setAttribute('data-lang-key', 'update_loc'); }
-        }
-
-        window.sliderInterval = null;
-        window.loadBanners = function() {
-            fetchUniversalData('banners', (data) => {
-                let slider = document.getElementById('masterBannerSlider');
-                if(!slider) return;
-                
-                let validBanners = [];
-                if (data && typeof data === 'object' && !data.error) {
-                    Object.keys(data).forEach(key => {
-                        if (data[key] && data[key].image) {
-                            validBanners.push(data[key].image);
-                        }
-                    });
-                }
-
-                if (validBanners.length === 0) {
-                    slider.innerHTML = '<div class="banner-slide" style="display:block;"><img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200&auto=format&fit=crop&q=80" alt="Banner"></div>';
-                    return;
-                }
-
-                slider.innerHTML = '';
-                validBanners.forEach((imgUrl, idx) => {
-                    slider.innerHTML += `<div class="banner-slide" style="display:${idx === 0 ? 'block' : 'none'};"><img src="${imgUrl}" alt="Banner"></div>`;
-                });
-                startBannerSlider();
-            });
-        };
-
-        window.startBannerSlider = function() {
-            clearInterval(window.sliderInterval);
-            const slides = document.querySelectorAll('.banner-slide');
-            if(slides.length <= 1) return;
-            currentSlide = 0;
-            window.sliderInterval = setInterval(() => { 
-                slides.forEach(s => s.style.display = 'none');
-                currentSlide = (currentSlide + 1) % slides.length; 
-                if(slides[currentSlide]) slides[currentSlide].style.display = 'block'; 
-            }, 4000);
-        };
-
-        window.loadCategories = function() {
-            fetchUniversalData('categories', (data) => {
-                let filterDiv = document.getElementById('categoryFilters');
-                let searchSelect = document.getElementById('amzCategorySelect');
-                let searchSelectMob = document.getElementById('amzCategorySelectMob');
-                if(!filterDiv) return;
-                
-                filterDiv.innerHTML = ''; 
-                let selectHtml = `<option value="All">All</option>`;
-                if(searchSelect) searchSelect.innerHTML = selectHtml;
-                if(searchSelectMob) searchSelectMob.innerHTML = selectHtml;
-                
-                let categories = (data && typeof data === 'object' && !data.error) ? data : { "Bridal": "Bridal", "Gifts": "Gifts", "Daily": "Daily Wear" };
-                Object.keys(categories).forEach((catKey) => { 
-                    if(typeof categories[catKey] === 'string') {
-                        filterDiv.innerHTML += `<button onclick="filterCategory('${catKey}', this)">${categories[catKey]}</button>`; 
-                        if(searchSelect) searchSelect.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
-                        if(searchSelectMob) searchSelectMob.innerHTML += `<option value="${catKey}">${categories[catKey]}</option>`;
-                    }
-                });
-            });
-        };
-
-        function renderProductsUI(data) {
-            let appDiv = document.getElementById('appProducts'); 
-            if(!appDiv) return;
-            appDiv.innerHTML = '';
-            
-            if (!data || typeof data !== 'object' || data.error || Object.keys(data).length === 0) {
-                window.productsMap = {};
-                appDiv.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; color:#777; margin-top:30px;">${currentLang === 'hi' ? 'कोई प्रोडक्ट नहीं है।' : 'No products available.'}</p>`;
-                return;
-            }
-
-            window.productsMap = data;
-            let count = 0;
-            
-            Object.keys(data).forEach((key) => {
-                let item = data[key];
-                if (!item || typeof item !== 'object' || !item.name) return;
-                
-                if (currentCategory === 'All' || item.category === currentCategory) {
-                    count++;
-                    let stockQty = item.stock !== undefined ? parseInt(item.stock) : 10;
-                    let isOutOfStock = stockQty <= 0;
-
-                    let btnText = isOutOfStock ? (currentLang === 'hi' ? 'स्टॉक खत्म' : 'Out of Stock') : (currentLang === 'hi' ? 'कार्ट में डालें' : 'Add to Cart');
-                    let btnClass = isOutOfStock ? 'cart-btn disabled-btn' : 'cart-btn';
-                    let cardClickAction = isOutOfStock ? '' : `onclick="openProductModalByKey('${key}')"`;
-                    let outOfStockBadge = isOutOfStock ? `<div class="out-of-stock-overlay">OUT OF STOCK</div>` : '';
-
-                    let sellingPrice = parseFloat(item.price) || 0;
-                    let mrpPrice = parseFloat(item.mrp) || sellingPrice;
-                    let discountHtml = '';
-                    let mrpHtml = '';
-
-                    if (mrpPrice > sellingPrice) {
-                        let discountPercent = Math.round(((mrpPrice - sellingPrice) / mrpPrice) * 100);
-                        discountHtml = `<span class="product-discount-badge">${discountPercent}% OFF</span>`;
-                        mrpHtml = `<span class="product-mrp">₹${mrpPrice}</span>`;
-                    }
-
-                    let imgSrc = item.image || (item.images && item.images[0] ? item.images[0] : '');
-
-                    appDiv.innerHTML += `
-                        <div class="product-card" ${cardClickAction}>
-                            ${outOfStockBadge}
-                            <span class="cat-tag">${item.category || ''}</span>
-                            <img src="${imgSrc}" class="product-img" alt="${item.name}">
-                            <div class="product-title">${item.name}</div>
-                            <div class="product-price-box">
-                                <span class="product-price"><span style="font-size:14px; vertical-align:top;">₹</span>${sellingPrice}</span>
-                                ${mrpHtml}
-                                ${discountHtml}
-                            </div>
-                            <button class="${btnClass}" ${isOutOfStock ? 'disabled' : ''}>${btnText}</button>
-                        </div>`;
-                }
-            });
-
-            if (count === 0) {
-                appDiv.innerHTML = `<p style="grid-column: 1 / -1; text-align:center; color:#777; margin-top:30px;">${currentLang === 'hi' ? 'इस कैटेगरी में कोई प्रोडक्ट नहीं है।' : 'No products in this category.'}</p>`;
-            }
-        }
-
-        window.loadProducts = function() {
-            fetchUniversalData('products', (data) => {
-                renderProductsUI(data);
-            });
-        };
-
-        window.searchProducts = function() {
-            let input = '';
-            let searchInputDesktop = document.getElementById('searchInput');
-            let searchInputMob = document.getElementById('searchInputMob');
-            
-            if(searchInputDesktop && searchInputDesktop.value) input = searchInputDesktop.value.toLowerCase();
-            if(searchInputMob && searchInputMob.value) input = searchInputMob.value.toLowerCase();
-            
-            let cards = document.querySelectorAll('.product-card');
-            cards.forEach(card => {
-                let title = card.querySelector('.product-title').innerText.toLowerCase();
-                let cat = card.querySelector('.cat-tag').innerText.toLowerCase();
-                if(title.includes(input) || cat.includes(input)) card.style.display = 'flex';
-                else card.style.display = 'none';
-            });
-        };
-
-        window.openProductModalByKey = function(key) {
-            let p = window.productsMap[key];
-            if(!p) return;
-            openProductModalObj(p);
-        };
-
-        function openProductModalObj(p) {
-            let stockQty = p.stock !== undefined ? parseInt(p.stock) : 10;
-            if(stockQty <= 0) return;
-
-            window.currentProductImages = p.images ? p.images : (p.image ? [p.image] : []);
-            window.currentImageIndex = 0;
-            
-            updateModalImageView();
-
-            document.getElementById('pmTitle').innerText = p.name;
-            
-            let sellingPrice = parseFloat(p.price) || 0;
-            let mrpPrice = parseFloat(p.mrp) || sellingPrice;
-            let priceModalHtml = `<span style="font-size:16px; vertical-align:top;">₹</span>${sellingPrice}`;
-            
-            if (mrpPrice > sellingPrice) {
-                let discountPercent = Math.round(((mrpPrice - sellingPrice) / mrpPrice) * 100);
-                priceModalHtml += ` <span style="font-size:14px; color:#555; text-decoration:line-through; margin-left:8px;">₹${mrpPrice}</span> <span style="background:#cc0c39; color:#fff; font-size:12px; padding:2px 6px; border-radius:3px; margin-left:6px; font-weight:bold;">${discountPercent}% OFF</span>`;
-            }
-            document.getElementById('pmPrice').innerHTML = priceModalHtml;
-
-            document.getElementById('pmDescText').innerText = p.desc || (currentLang === 'hi' ? 'इस प्रोडक्ट का कोई विवरण नहीं है।' : 'No description available.');
-            
-            let colorDiv = document.getElementById('pmColorDiv');
-            if(p.color) {
-                let opts = p.color.split(',').map(c => `<option value="${c.trim()}">${c.trim()}</option>`).join('');
-                document.getElementById('pmColorSelect').innerHTML = opts; colorDiv.style.display = 'block';
-            } else { colorDiv.style.display = 'none'; }
-
-            let sizeDiv = document.getElementById('pmSizeDiv');
-            if(p.size) {
-                let opts = p.size.split(',').map(s => `<option value="${s.trim()}">${s.trim()}</option>`).join('');
-                document.getElementById('pmSizeSelect').innerHTML = opts; sizeDiv.style.display = 'block';
-            } else { sizeDiv.style.display = 'none'; }
-
-            document.getElementById('pmAddToCartBtn').onclick = function() {
-                let selectedColor = p.color ? document.getElementById('pmColorSelect').value : null;
-                let selectedSize = p.size ? document.getElementById('pmSizeSelect').value : null;
-                addToCart({ ...p, price: sellingPrice }, selectedColor, selectedSize); closeProductModal();
-            };
-            document.getElementById('productDetailModal').style.display = 'flex';
-            setupModalTouchSwipe();
-        }
-
-        window.updateModalImageView = function() {
-            let mainImg = document.getElementById('pmImg');
-            if(window.currentProductImages.length > 0) mainImg.src = window.currentProductImages[window.currentImageIndex];
-
-            let thumbContainer = document.getElementById('pmThumbnails');
-            thumbContainer.innerHTML = '';
-            if (window.currentProductImages.length > 1) {
-                window.currentProductImages.forEach((imgUrl, index) => {
-                    let activeClass = index === window.currentImageIndex ? 'pd-thumb-active' : '';
-                    thumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeMainImage(${index})" alt="Thumb">`;
-                });
-            }
-
-            let zoomThumbContainer = document.getElementById('zoomThumbnails');
-            if(zoomThumbContainer) {
-                zoomThumbContainer.innerHTML = '';
-                if (window.currentProductImages.length > 1) {
-                    window.currentProductImages.forEach((imgUrl, index) => {
-                        let activeClass = index === window.currentImageIndex ? 'pd-thumb-active' : '';
-                        zoomThumbContainer.innerHTML += `<img src="${imgUrl}" class="pd-thumb-img ${activeClass}" onclick="changeZoomImage(${index})" alt="Zoom Thumb">`;
-                    });
-                }
-            }
-
-            let dotsContainer = document.getElementById('pmDotsContainer');
-            dotsContainer.innerHTML = '';
-            if (window.currentProductImages.length > 1) {
-                window.currentProductImages.forEach((_, index) => {
-                    let activeDot = index === window.currentImageIndex ? 'pd-dot-active' : '';
-                    dotsContainer.innerHTML += `<span class="pd-dot ${activeDot}" onclick="changeMainImage(${index})"></span>`;
-                });
-            }
-        };
-
-        window.changeMainImage = function(index) { window.currentImageIndex = index; updateModalImageView(); };
-        window.changeZoomImage = function(index) {
-            window.currentImageIndex = index;
-            document.getElementById('fullscreenZoomImg').src = window.currentProductImages[index];
-            updateModalImageView();
-        };
-
-        function setupModalTouchSwipe() {
-            if(touchSwipeInitialized) return;
-            let imgElement = document.getElementById('pmImg');
-            if(!imgElement) return;
-            touchSwipeInitialized = true;
-            let startX = 0;
-            imgElement.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, {passive: true});
-            imgElement.addEventListener('touchend', (e) => {
-                let diff = startX - e.changedTouches[0].clientX;
-                if (Math.abs(diff) > 50) { 
-                    if (diff > 0 && window.currentImageIndex < window.currentProductImages.length - 1) { window.currentImageIndex++; updateModalImageView(); }
-                    else if (diff < 0 && window.currentImageIndex > 0) { window.currentImageIndex--; updateModalImageView(); }
-                }
-            }, {passive: true});
-        }
-
-        window.openFullscreenZoom = function() {
-            if(window.currentProductImages.length === 0) return;
-            document.getElementById('fullscreenZoomImg').src = window.currentProductImages[window.currentImageIndex];
-            updateModalImageView();
-            document.getElementById('fullscreenZoomModal').style.display = 'flex';
-        };
-
-        window.closeFullscreenZoom = function() { document.getElementById('fullscreenZoomModal').style.display = 'none'; };
-        window.closeProductModal = function() { document.getElementById('productDetailModal').style.display = 'none'; };
-
-        window.loadReels = function() {
-            fetchUniversalData('reels', (data) => {
-                let reelFeed = document.getElementById('appReelsFeed'); 
-                if(!reelFeed) return;
-                reelFeed.innerHTML = '';
-                
-                let validReels = [];
-                if (data && typeof data === 'object' && !data.error) {
-                    Object.keys(data).forEach(key => {
-                        if (data[key] && data[key].url) validReels.push(data[key]);
-                    });
-                }
-
-                if(validReels.length === 0) {
-                    reelFeed.innerHTML = '<p style="font-size:12px; color:#777; padding:10px;">No reels available.</p>';
-                    return;
-                }
-                validReels.forEach(r => {
-                    let instaButton = (r.instaUrl && r.instaUrl !== '#') ? `<a href="${r.instaUrl}" target="_blank" class="insta-link-btn">📷 Instagram</a>` : '';
-                    reelFeed.innerHTML += `<div class="reel-card"><video class="reel-video" autoplay muted loop playsinline webkit-playsinline><source src="${r.url}" type="video/mp4"></video><div class="reel-title">${r.title || ''}</div>${instaButton}</div>`;
-                });
-            });
-        };
-
-        window.syncUserData = function(phone) {
-            let cleanPhone = phone.replace(/[^0-9]/g, '');
-            fetchUniversalData(`customers/${cleanPhone}`, (cData) => {
-                if (cData && !cData.error && cData.name) {
-                    let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
-                    safeStorage.setItem('grihani_user_name', cData.name); 
-                    safeStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
-                    updateUserUI(cData.name);
-                }
-            });
-            startCartListener(cleanPhone);
-        };
-
-        window.openLoginModal = function() { 
-            if(safeStorage.getItem('grihani_user_phone')) openOrdersPage(); 
-            else { resetLoginUI(); document.getElementById('loginModal').style.display = 'flex'; }
-        };
-        window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; resetLoginUI(); };
-        window.resetLoginUI = function() {
-            document.getElementById('step1Phone').style.display = 'block';
-            document.getElementById('step2OTP').style.display = 'none';
-            document.getElementById('step3Details').style.display = 'none';
-            document.getElementById('regPhone').value = '';
-            document.getElementById('otpInput').value = '';
-            document.getElementById('sendOtpBtn').innerText = '📲 Send OTP';
-        };
-
-        function setupRecaptcha() {
-            if(!window.recaptchaVerifier && window.auth) {
-                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
-            }
-        }
-
-        window.sendOTP = function() {
-            let phone = document.getElementById('regPhone').value.trim();
-            if(phone.length !== 10) return showToast(currentLang === 'hi' ? "कृपया 10 अंकों का मोबाइल नंबर डालें!" : "Please enter a valid 10-digit mobile number!");
-            let btn = document.getElementById('sendOtpBtn');
-            btn.innerText = currentLang === 'hi' ? "भेज रहे हैं..." : "Sending...";
-            setupRecaptcha();
-            window.auth.signInWithPhoneNumber("+91" + phone, window.recaptchaVerifier)
-                .then((confirmationResult) => {
-                    window.confirmationResult = confirmationResult;
-                    document.getElementById('step1Phone').style.display = 'none';
-                    document.getElementById('displayPhoneOTP').innerText = "+91" + phone;
-                    document.getElementById('step2OTP').style.display = 'block';
-                }).catch((error) => {
-                    showToast(currentLang === 'hi' ? "सर्वर व्यस्त है।" : "Server busy.");
-                    btn.innerText = '📲 Send OTP';
-                });
-        };
-
-        window.verifyOTP = function() {
-            let code = document.getElementById('otpInput').value.trim();
-            if(code.length !== 6) return showToast("Enter 6-digit OTP!");
-            window.confirmationResult.confirm(code).then((result) => {
-                let phone = document.getElementById('regPhone').value.trim();
-                window.db.ref(`customers/${phone}`).once('value').then((snapshot) => {
-                    if (snapshot.exists()) {
-                        let cData = snapshot.val();
-                        let addrs = cData.addresses ? cData.addresses : (cData.address ? [cData.address] : []);
-                        safeStorage.setItem('grihani_user_name', cData.name); 
-                        safeStorage.setItem('grihani_user_phone', phone); 
-                        safeStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
-                        document.getElementById('loginModal').style.display = 'none'; 
-                        updateUserUI(cData.name); 
-                        mergeAndListenCart(phone);
-                    } else {
-                        document.getElementById('step2OTP').style.display = 'none';
-                        document.getElementById('step3Details').style.display = 'block';
-                    }
-                });
-            }).catch(() => { showToast("Invalid OTP!"); });
-        };
-
-        window.completeRegistration = function() {
-            let name = document.getElementById('regName').value.trim();
-            let address = document.getElementById('regAddress').value.trim();
-            let phone = document.getElementById('regPhone').value.trim();
-            if(!name || !address) return showToast("Name and Address required!");
-            window.db.ref('customers/' + phone).set({ name, phone, addresses: [address], date: new Date().toLocaleString() }).then(() => {
-                safeStorage.setItem('grihani_user_name', name); 
-                safeStorage.setItem('grihani_user_phone', phone); 
-                safeStorage.setItem('grihani_user_addresses', JSON.stringify([address]));
-                document.getElementById('loginModal').style.display = 'none'; 
-                updateUserUI(name); 
-                mergeAndListenCart(phone);
-            });
-        };
-
-        function showToast(msg) {
-            let existing = document.getElementById('grihaniToast');
-            if(existing) existing.remove();
-            let toast = document.createElement('div');
-            toast.id = 'grihaniToast';
-            toast.innerHTML = `<span>🛍️ <b>Grihani Cosmetic</b><br>${msg}</span>`;
-            toast.style.cssText = "position:fixed; top:20px; right:20px; background:#131921; color:#fff; padding:15px 20px; border-radius:8px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.3); font-size:14px; border-left:5px solid #febd69;";
-            document.body.appendChild(toast);
-            setTimeout(() => { toast.remove(); }, 4000);
-        }
-
-        window.syncCartToCloud = function() {
-            let phone = safeStorage.getItem('grihani_user_phone');
-            if(phone && window.db) window.db.ref('carts/' + phone.replace(/[^0-9]/g, '')).set(cart);
-            else { updateCartCount(); renderCartItems(); }
-        };
-
-        window.startCartListener = function(cleanPhone) {
-            fetchUniversalData(`carts/${cleanPhone}`, (data) => {
-                cart = (Array.isArray(data)) ? data : []; 
-                updateCartCount();
-                if (document.getElementById('cartPage').style.display === 'block') renderCartItems();
-            });
-        };
-
-        window.mergeAndListenCart = function(cleanPhone) {
-            window.db.ref(`carts/${cleanPhone}`).once('value').then((snapshot) => {
-                let cloudCart = snapshot.val() || [];
-                if (cart.length > 0) {
-                    cart.forEach(lItem => {
-                        let exist = cloudCart.find(c => c.name === lItem.name && c.selectedColor === lItem.selectedColor && c.selectedSize === lItem.selectedSize);
-                        if(exist) exist.qty += lItem.qty; else cloudCart.push(lItem);
-                    });
-                    window.db.ref(`carts/${cleanPhone}`).set(cloudCart).then(() => { startCartListener(cleanPhone); });
-                } else { startCartListener(cleanPhone); }
-            });
-        };
-
-        window.addNewAddress = function() {
-            let newAdd = prompt("Enter your new full address:");
-            if(newAdd && newAdd.trim() !== "") {
-                let phone = safeStorage.getItem('grihani_user_phone');
-                let addrs = JSON.parse(safeStorage.getItem('grihani_user_addresses') || "[]");
-                addrs.push(newAdd.trim());
-                window.db.ref('customers/' + phone).update({ addresses: addrs }).then(() => {
-                    safeStorage.setItem('grihani_user_addresses', JSON.stringify(addrs));
-                    renderProfileInfo();
-                    showToast("📍 New Address Added!");
-                });
-            }
-        };
-
-        window.renderProfileInfo = function() {
-            document.getElementById('profileName').innerText = safeStorage.getItem('grihani_user_name') || '';
-            document.getElementById('profilePhone').innerText = safeStorage.getItem('grihani_user_phone') || '';
-            let addrs = JSON.parse(safeStorage.getItem('grihani_user_addresses') || "[]");
-            document.getElementById('profileAddresses').innerHTML = addrs.map((a, i) => `<div class="address-box"><b>${i+1}.</b> ${a}</div>`).join('');
-        };
-
-        function updateUserUI(name) { 
-            if(!name) return;
-            document.getElementById('userGreeting').innerText = (currentLang === 'hi' ? 'नमस्ते, ' : 'Hello, ') + name.split(" ")[0];
-            fetchMyOrders(); renderProfileInfo();
-        }
-        window.logoutUser = function() { if(confirm("Logout?")) { safeStorage.clear(); location.reload(); } };
-        window.filterCategory = function(cat) { currentCategory = cat; renderProductsUI(window.productsMap); };
-        
-        window.addToCart = function(product, sColor, sSize) { 
-            let existingItem = cart.find(item => item.name === product.name && item.selectedColor === sColor && item.selectedSize === sSize); 
-            if(existingItem) existingItem.qty += 1; else cart.push({ ...product, selectedColor: sColor, selectedSize: sSize, qty: 1 }); 
-            showToast(product.name + " added to cart!"); 
-            syncCartToCloud();
-        };
-
-        window.updateCartCount = function() { 
-            let total = 0; cart.forEach(item => total += item.qty); 
-            document.getElementById('cartCount').innerText = total; 
-            document.getElementById('cartCountMob').innerText = total; 
-        };
-        window.increaseQty = function(index) { cart[index].qty += 1; syncCartToCloud(); };
-        window.decreaseQty = function(index) { cart[index].qty -= 1; if(cart[index].qty === 0) cart.splice(index, 1); syncCartToCloud(); };
-        
-        window.openCart = function() { document.getElementById('homePage').style.display = 'none'; document.getElementById('ordersPage').style.display = 'none'; document.getElementById('cartPage').style.display = 'block'; renderCartItems(); };
-        window.closeCart = function() { document.getElementById('cartPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; };
-        window.openOrdersPage = function() { 
-            if(!safeStorage.getItem('grihani_user_phone')) return openLoginModal();
-            document.getElementById('homePage').style.display = 'none'; document.getElementById('cartPage').style.display = 'none'; document.getElementById('ordersPage').style.display = 'block'; 
-            renderProfileInfo();
-        };
-        window.closeOrdersPage = function() { document.getElementById('ordersPage').style.display = 'none'; document.getElementById('homePage').style.display = 'block'; };
-
-        let liveActiveOrders = {}; let liveHistoryOrders = {};
-        window.fetchMyOrders = function() {
-            let phone = safeStorage.getItem('grihani_user_phone');
-            if(!phone) return;
-            fetchUniversalData('orders', (data) => { liveActiveOrders = (data && !data.error) ? data : {}; window.renderLiveOrders(phone); });
-            fetchUniversalData('order_history', (data) => { liveHistoryOrders = (data && !data.error) ? data : {}; window.renderLiveOrders(phone); });
-        };
-
-        window.renderLiveOrders = function(phone) {
-            let ordersDiv = document.getElementById('myOrdersList');
-            if(!ordersDiv) return;
-            let myOrders = [];
-            Object.keys(liveActiveOrders).forEach(key => { if(liveActiveOrders[key] && liveActiveOrders[key].customerPhone === phone) myOrders.push({...liveActiveOrders[key], id: key}); });
-            Object.keys(liveHistoryOrders).forEach(key => { if(liveHistoryOrders[key] && liveHistoryOrders[key].customerPhone === phone) myOrders.push({...liveHistoryOrders[key], id: key}); });
-            
-            if(myOrders.length === 0) { ordersDiv.innerHTML = `<div style="text-align:center; padding:30px; border:1px solid #d5d9d9; border-radius:8px;"><h3 style="color:#777;">No Orders Found</h3></div>`; return; }
-            myOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            let htmlString = '';
-            myOrders.forEach(order => {
-                let statusColor = 'status-new'; let statusText = (order.status || 'New').toLowerCase(); 
-                let displayStatus = "New Order 🕒";
-                let isShip = statusText.includes('ship'), isDel = statusText.includes('deliver'), isCan = statusText.includes('cancel');
-                if(isShip) { statusColor = 'status-shipping'; displayStatus = "Shipped 🚚"; }
-                else if(isDel) { statusColor = 'status-delivered'; displayStatus = "Delivered ✅"; }
-                else if(isCan) { statusColor = 'status-cancelled'; displayStatus = "Cancelled ❌"; }
-
-                let itemsHtml = (order.items || []).map(i => `<div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span>${i.name} (x${i.qty})</span> <b>₹${i.price * i.qty}</b></div>`).join('');
-                
-                htmlString += `
-                    <div class="order-history-card">
-                        <div class="order-history-header"><span>📅 ${order.date}</span><span class="order-status ${statusColor}">${displayStatus}</span></div>
-                        <div style="background:#f9f9f9; padding:8px; border-radius:4px; margin-bottom:8px;">${itemsHtml}</div>
-                        <div style="display:flex; justify-content:space-between; font-size:13px;"><span>Payment: <b>${order.paymentMode}</b></span><span>Total: <b style="color:#B12704;">${order.total}</b></span></div>
-                    </div>`;
-            });
-            ordersDiv.innerHTML = htmlString;
-        };
-
-        window.renderCartItems = function() {
-            let cartDiv = document.getElementById('cartItemsList'); 
-            if(!cartDiv) return;
-            cartDiv.innerHTML = ''; let total = 0;
-            if(cart.length === 0) cartDiv.innerHTML = `<p style="text-align:center; color:#777; padding:20px;">Your cart is empty.</p>`;
-            else cart.forEach((item, index) => {
-                let itemTotal = parseInt(item.price) * item.qty; total += itemTotal;
-                let displayImg = item.image || (item.images && item.images[0] ? item.images[0] : '');
-                cartDiv.innerHTML += `<div class="cart-item"><img src="${displayImg}" alt="${item.name}"><div class="cart-item-info"><div class="cart-item-title">${item.name}</div><div class="cart-item-price">₹${item.price}</div><div class="qty-controls"><button class="qty-btn" onclick="decreaseQty(${index})">-</button><span class="qty-display">${item.qty}</span><button class="qty-btn" onclick="increaseQty(${index})">+</button></div></div><div class="item-total">₹${itemTotal}</div></div>`;
-            }); 
-            document.getElementById('totalAmount').innerText = "₹" + total;
-        };
-
-        window.openCheckoutForm = function() {
-            if(cart.length === 0) return showToast("Cart is empty!");
-            if(!safeStorage.getItem('grihani_user_phone')) { openLoginModal(); return; }
-            let addrs = JSON.parse(safeStorage.getItem('grihani_user_addresses') || "[]");
-            document.getElementById('confirmName').innerText = safeStorage.getItem('grihani_user_name') || 'User'; 
-            document.getElementById('confirmPhone').innerText = safeStorage.getItem('grihani_user_phone') || 'N/A'; 
-            let sel = document.getElementById('checkoutAddressSelect');
-            sel.innerHTML = addrs.length > 0 ? addrs.map(a => `<option value="${a}">${a}</option>`).join('') : `<option value="Default">Add address in profile</option>`;
-            document.getElementById('checkoutModal').style.display = 'flex';
-        };
-        window.closeCheckoutForm = function() { document.getElementById('checkoutModal').style.display = 'none'; };
-
-        window.confirmOrder = function() {
-            let name = safeStorage.getItem('grihani_user_name') || 'Customer';
-            let phone = safeStorage.getItem('grihani_user_phone') || '0000000000';
-            let address = document.getElementById('checkoutAddressSelect').value;
-            let payMode = document.getElementById('payMode').value;
-            let totalAmountNum = parseInt(document.getElementById('totalAmount').innerText.replace(/[^0-9]/g, '')) * 100; 
-            
-            closeCheckoutForm();
-            if(payMode === 'Online UPI') {
-                var rzp1 = new Razorpay({ "key": "rzp_live_TdDiIxmQqRizQi", "amount": totalAmountNum, "currency": "INR", "name": "Grihani Cosmetic", "handler": function (response){ saveOrderData("Online Paid", response.razorpay_payment_id, totalAmountNum, address); }, "prefill": { "name": name, "contact": phone }, "theme": { "color": "#131921" } }); 
-                rzp1.open();
-            } else { saveOrderData("Cash on Delivery (COD)", "N/A", totalAmountNum, address); }
-        };
-
-        function saveOrderData(paymentMode, paymentId, totalAmountNum, finalAddress) {
-            cart.forEach(cartItem => {
-                window.db.ref('products').once('value').then((snapshot) => {
-                    if(snapshot.exists()) {
-                        let prods = snapshot.val();
-                        Object.keys(prods).forEach(pKey => {
-                            if(prods[pKey].name === cartItem.name) {
-                                let currentStock = parseInt(prods[pKey].stock || 10);
-                                let newStock = Math.max(0, currentStock - cartItem.qty);
-                                window.db.ref(`products/${pKey}`).update({ stock: newStock });
-                            }
-                        });
-                    }
-                });
-            });
-
-            let newOrderRef = window.db.ref('orders').push();
-            newOrderRef.set({ customerName: safeStorage.getItem('grihani_user_name') || 'Customer', customerPhone: safeStorage.getItem('grihani_user_phone') || 'N/A', customerAddress: finalAddress, paymentMode, paymentId, items: cart, total: "₹" + (totalAmountNum / 100), date: new Date().toLocaleString(), status: 'New' }).then(() => { 
-                showToast("🎉 Order Placed Successfully!"); 
-                cart = []; syncCartToCloud(); closeCart(); window.openOrdersPage(); 
-            });
-        }
-
-        function initApp() {
-            let langBtn = document.getElementById('langToggleBtn');
-            if(langBtn) langBtn.innerText = currentLang === 'en' ? '🇮🇳 HI' : '🇺🇸 EN';
-            applyLanguage(); 
-            loadCategories(); 
-            loadProducts(); 
-            loadReels(); 
-            loadBanners();
-            checkSavedLocation(); 
-            let savedPhone = safeStorage.getItem('grihani_user_phone');
-            if(savedPhone) syncUserData(savedPhone);
-        }
-
-        // Initialize immediately since script is at the bottom of the body
-        initApp();
-    </script>
 </body>
 </html>
