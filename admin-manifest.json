@@ -1,0 +1,20 @@
+{
+  "name": "Grihani Cosmetic - Admin Panel",
+  "short_name": "Grihani Admin",
+  "start_url": "./admin.html",
+  "display": "standalone",
+  "background_color": "#1e272e",
+  "theme_color": "#2c3e50",
+  "icons": [
+    {
+      "src": "logo1.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo1.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
