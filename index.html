@@ -1170,5 +1170,55 @@
             </div>
         </div>
     </div>
+    <!-- Direct Install Popup Box -->
+<div id="directInstallModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 99999; justify-content: center; align-items: center; font-family: sans-serif;">
+  <div style="background: white; padding: 25px; border-radius: 15px; text-align: center; max-width: 320px; width: 85%; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+    <img src="logo.png" alt="Grihani Cosmetic" style="width: 75px; height: 75px; border-radius: 15px; margin-bottom: 12px; object-fit: contain;">
+    <h3 style="margin: 0 0 8px 0; color: #131921; font-size: 20px;">गृहणी कॉस्मेटिक ऐप</h3>
+    <p style="font-size: 14px; color: #555; margin-bottom: 20px; line-height: 1.4;">बेहतरीन ऑफर्स और आसान शॉपिंग के लिए हमारा ऑफिशियल ऐप अपने फोन में इंस्टॉल करें।</p>
+    
+    <button id="popupInstallBtn" style="background: #ff9900; color: #131921; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 16px; width: 100%; cursor: pointer; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+      📲 अभी इंस्टॉल करें (Install App)
+    </button>
+    
+    <button onclick="document.getElementById('directInstallModal').style.display='none'" style="background: transparent; color: #777; border: none; padding: 8px; font-size: 14px; cursor: pointer; width: 100%;">
+      अभी नहीं, वेबसाइट देखें
+    </button>
+  </div>
+</div>
+
+<script>
+  let pwaInstallPrompt;
+  const installModal = document.getElementById('directInstallModal');
+  const popupBtn = document.getElementById('popupInstallBtn');
+
+  // चेक करें कि क्या लिंक में ?install=true लिखा है
+  const urlParams = new URLSearchParams(window.location.search);
+  const isDirectInstallLink = urlParams.get('install') === 'true';
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    pwaInstallPrompt = e;
+    
+    // अगर कस्टमर ?install=true वाले लिंक से आया है, तो तुरंत पॉप-अप दिखाएं
+    if (isDirectInstallLink) {
+      installModal.style.display = 'flex';
+    }
+  });
+
+  popupBtn.addEventListener('click', async () => {
+    if (pwaInstallPrompt) {
+      pwaInstallPrompt.prompt();
+      const { outcome } = await pwaInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installModal.style.display = 'none';
+      }
+      pwaInstallPrompt = null;
+    } else {
+      alert('ऐप पहले से आपके फोन में इंस्टॉल है, या फिर आप अपने ब्राउज़र के मेन्यू (तीन डॉट्स) में जाकर "Add to Home screen" पर क्लिक करें।');
+      installModal.style.display = 'none';
+    }
+  });
+</script>
 </body>
 </html>
