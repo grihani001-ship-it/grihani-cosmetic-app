@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grihani Admin Panel</title>
     
+    <!-- PWA Meta Tags & Manifest for Admin -->
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Grihani Admin">
+    <link rel="apple-touch-icon" href="logo1.png">
+    <link rel="icon" type="image/png" href="logo1.png">
+    <link rel="manifest" href="admin-manifest.json">
+
     <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -387,8 +396,9 @@
 
         /* Dashboard CSS */
         #admin-dashboard-container { display: none; width: 100%; max-width: 800px; }
-        .header-bar { width: 100%; display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header-bar { width: 100%; display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .lang-btn { background: #f1c40f; color: #1e272e; border: none; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .install-admin-btn { background: #27ae60; color: white; border: none; padding: 6px 14px; border-radius: 15px; cursor: pointer; font-size: 13px; font-weight: bold; display: none; }
         .logout-btn { background: #e74c3c; color: white; border: none; padding: 6px 15px; border-radius: 15px; cursor: pointer; font-size: 13px; font-weight: bold; }
         
         .admin-panel { width: 100%; padding: 25px; background-color: #2c3e50; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
@@ -442,7 +452,10 @@
     <!-- 2. मुख्य एडमिन डैशबोर्ड (लॉगिन के बाद दिखेगा) -->
     <div id="admin-dashboard-container">
         <div class="header-bar">
-            <button id="langToggleBtnAdmin" class="lang-btn" onclick="toggleLanguageAdmin()">🌐 हिंदी</button>
+            <div style="display: flex; gap: 8px;">
+                <button id="langToggleBtnAdmin" class="lang-btn" onclick="toggleLanguageAdmin()">🌐 हिंदी</button>
+                <button id="installAdminBtn" class="install-admin-btn">📲 Install Admin App</button>
+            </div>
             <button class="logout-btn" onclick="logoutAdmin()">लॉग आउट</button>
         </div>
         <div class="admin-panel">
@@ -482,5 +495,40 @@
             </div>
         </div>
     </div>
+
+    <!-- 3. PWA Service Worker & Install Script -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Admin SW registered'))
+                    .catch(err => console.log('Admin SW error:', err));
+            });
+        }
+
+        let deferredAdminPrompt;
+        const installAdminBtn = document.getElementById('installAdminBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredAdminPrompt = e;
+            if (installAdminBtn) {
+                installAdminBtn.style.display = 'inline-block';
+            }
+        });
+
+        if (installAdminBtn) {
+            installAdminBtn.addEventListener('click', async () => {
+                if (deferredAdminPrompt) {
+                    deferredAdminPrompt.prompt();
+                    const { outcome } = await deferredAdminPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        installAdminBtn.style.display = 'none';
+                    }
+                    deferredAdminPrompt = null;
+                }
+            });
+        }
+    </script>
 </body>
 </html>
