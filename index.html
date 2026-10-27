@@ -14,7 +14,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Grihani">
-    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="apple-touch-icon" href="logo1.png">
+    <link rel="icon" type="image/png" href="logo1.png">
     <link rel="manifest" href="manifest.json">
 
     <title>Grihani Cosmetic - Online Store</title>
@@ -916,35 +917,124 @@
         .pd-variant-group label { display: block; font-size: 13px; margin-bottom: 4px; color: #555; font-weight: bold; }
         .pd-variant-group select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d5d9d9; font-size: 16px; background:#f0f2f2;}
         
+        /* 🔥 NEW GLOWING & ATTRACTIVE WHATSAPP BUTTON 🔥 */
         .whatsapp-float {
             position: fixed;
             bottom: 25px;
-            right: 25px;
-            background-color: #25d366;
+            right: 20px;
+            background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
             color: #FFF;
             border-radius: 50px;
-            text-align: center;
-            font-size: 28px;
-            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.6);
-            z-index: 100;
+            padding: 8px 18px 8px 10px;
+            text-decoration: none;
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.7), 0 0 15px rgba(37, 211, 102, 0.5);
+            z-index: 999;
             display: -webkit-flex;
             display: flex;
             align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
+            gap: 10px;
+            border: 2.5px solid #ffffff;
             transition: all 0.3s ease;
-            animation: pulse-whatsapp 2s infinite;
+            animation: bounce-glow 2s infinite;
+            overflow: hidden;
         }
-        .whatsapp-float:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 25px rgba(37, 211, 102, 0.9);
+        
+        .whatsapp-float::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            animation: shine-sweep 3s infinite;
         }
 
-        @keyframes pulse-whatsapp {
-            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        .whatsapp-float:hover {
+            transform: scale(1.08) translateY(-3px);
+            box-shadow: 0 10px 25px rgba(37, 211, 102, 0.9), 0 0 25px rgba(37, 211, 102, 0.8);
+        }
+
+        .wa-icon-box {
+            background: #ffffff;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .wa-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ff0033;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .wa-text-box {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            line-height: 1.2;
+        }
+
+        .wa-online-status {
+            font-size: 10px;
+            color: #e8f8f5;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .wa-online-dot {
+            width: 7px;
+            height: 7px;
+            background-color: #00ff66;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 6px #00ff66;
+        }
+
+        .wa-main-text {
+            font-size: 14px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        @keyframes bounce-glow {
+            0%, 100% {
+                transform: translateY(0);
+                box-shadow: 0 5px 15px rgba(37, 211, 102, 0.6), 0 0 0 0 rgba(37, 211, 102, 0.7);
+            }
+            50% {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 25px rgba(37, 211, 102, 0.9), 0 0 0 12px rgba(37, 211, 102, 0);
+            }
+        }
+
+        @keyframes shine-sweep {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
         }
         
         @media(max-width: 768px) {
@@ -964,7 +1054,10 @@
             .products-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; padding: 8px; gap: 8px; } 
             .product-card { padding: 10px; display: -webkit-flex !important; display: flex !important; }
             .product-img { height: 130px; } 
-            .whatsapp-float { width: 50px; height: 50px; bottom: 20px; right: 20px; }
+            
+            .whatsapp-float { bottom: 18px; right: 15px; padding: 6px 14px 6px 8px; }
+            .wa-icon-box { width: 34px; height: 34px; }
+            .wa-main-text { font-size: 13px; }
 
             .account-layout { display: -webkit-flex !important; display: flex !important; flex-direction: column !important; gap: 15px !important; }
             .account-sidebar { width: 100% !important; flex: none !important; }
@@ -977,15 +1070,25 @@
 <body>
     <div class="website-container">
         
-        <a href="https://wa.me/919955400139?text=Help" class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
-            <svg viewBox="0 0 32 32" width="34" height="34" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M16 2.1C8.3 2.1 2.1 8.3 2.1 16c0 2.5.7 4.9 1.9 6.9L2 29l6.3-1.6c1.9 1.1 4.2 1.7 6.6 1.7 7.7 0 13.9-6.2 13.9-13.9S23.7 2.1 16 2.1zm0 25.4c-2.1 0-4.2-.6-6-1.6l-.4-.2-4.5 1.2 1.2-4.4-.3-.4c-1.2-1.9-1.8-4.1-1.8-6.3 0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 11.9-12 11.9zm6.6-8.9c-.4-.2-2.1-1.1-2.5-1.2-.3-.1-.6-.2-.8.2-.2.4-.9 1.2-1.1 1.4-.2.2-.5.3-.9.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.4-1.4-1.6-1.8-.2-.4 0-.5.2-.7.2-.2.4-.6-.7.2-.2.4-.4.6.1-.3 0-.5-.1-.7-.2-.4-1.1-2.5-1.4-3.5-.4-1-.7-.8-.9-.8-.2 0-.5 0-.7 0s-.6.1-.9.5c-.3.4-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.7c.2.3 2.5 3.9 6.1 5.4.9.4 1.5.6 2.1.8.9.3 1.7.2 2.3.1.7-.1 2.1-.9 2.4-1.7.3-.8.3-1.5.2-1.7-.2-.1-.5-.2-.9-.4z"/></svg>
+        <!-- 🔥 ATTRACTIVE GLOWING WHATSAPP BUTTON 🔥 -->
+        <a href="https://wa.me/919955400139?text=नमस्ते%20गृहणी%20कॉस्मेटिक,%20मुझे%20शॉपिंग%20में%20मदद%20चाहिए" class="whatsapp-float" target="_blank" title="Chat on WhatsApp">
+            <div class="wa-icon-box">
+                <span class="wa-badge">1</span>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="#25d366" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12 0 2.125.556 4.119 1.529 5.852l-1.529 5.584 5.736-1.504c1.678.918 3.6 1.443 5.645 1.443 6.627 0 12-5.373 12-12s-5.373-11.375-11.381-11.375z"/>
+                </svg>
+            </div>
+            <div class="wa-text-box">
+                <span class="wa-online-status"><span class="wa-online-dot"></span> Online</span>
+                <span class="wa-main-text">Chat with Us</span>
+            </div>
         </a>
 
         <!-- HEADER -->
         <header class="amz-header">
             <div class="amz-nav-top">
                 <div class="amz-logo" onclick="closeCart(); closeOrdersPage();">
-                    <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
+                    <img src="logo1.png" alt="Logo" onerror="this.src='logo.png'">
                     <span>Grihani</span>
                 </div>
                 
@@ -1170,55 +1273,56 @@
             </div>
         </div>
     </div>
+
     <!-- Direct Install Popup Box -->
-<div id="directInstallModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 99999; justify-content: center; align-items: center; font-family: sans-serif;">
-  <div style="background: white; padding: 25px; border-radius: 15px; text-align: center; max-width: 320px; width: 85%; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
-    <img src="logo.png" alt="Grihani Cosmetic" style="width: 75px; height: 75px; border-radius: 15px; margin-bottom: 12px; object-fit: contain;">
-    <h3 style="margin: 0 0 8px 0; color: #131921; font-size: 20px;">गृहणी कॉस्मेटिक ऐप</h3>
-    <p style="font-size: 14px; color: #555; margin-bottom: 20px; line-height: 1.4;">बेहतरीन ऑफर्स और आसान शॉपिंग के लिए हमारा ऑफिशियल ऐप अपने फोन में इंस्टॉल करें।</p>
-    
-    <button id="popupInstallBtn" style="background: #ff9900; color: #131921; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 16px; width: 100%; cursor: pointer; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-      📲 अभी इंस्टॉल करें (Install App)
-    </button>
-    
-    <button onclick="document.getElementById('directInstallModal').style.display='none'" style="background: transparent; color: #777; border: none; padding: 8px; font-size: 14px; cursor: pointer; width: 100%;">
-      अभी नहीं, वेबसाइट देखें
-    </button>
-  </div>
-</div>
+    <div id="directInstallModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 99999; justify-content: center; align-items: center; font-family: sans-serif;">
+      <div style="background: white; padding: 25px; border-radius: 15px; text-align: center; max-width: 320px; width: 85%; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+        <img src="logo1.png" alt="Grihani Cosmetic" onerror="this.src='logo.png'" style="width: 75px; height: 75px; border-radius: 15px; margin-bottom: 12px; object-fit: contain;">
+        <h3 style="margin: 0 0 8px 0; color: #131921; font-size: 20px;">गृहणी कॉस्मेटिक ऐप</h3>
+        <p style="font-size: 14px; color: #555; margin-bottom: 20px; line-height: 1.4;">बेहतरीन ऑफर्स और आसान शॉपिंग के लिए हमारा ऑफिशियल ऐप अपने फोन में इंस्टॉल करें।</p>
+        
+        <button id="popupInstallBtn" style="background: #ff9900; color: #131921; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 16px; width: 100%; cursor: pointer; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+          📲 अभी इंस्टॉल करें (Install App)
+        </button>
+        
+        <button onclick="document.getElementById('directInstallModal').style.display='none'" style="background: transparent; color: #777; border: none; padding: 8px; font-size: 14px; cursor: pointer; width: 100%;">
+          अभी नहीं, वेबसाइट देखें
+        </button>
+      </div>
+    </div>
 
-<script>
-  let pwaInstallPrompt;
-  const installModal = document.getElementById('directInstallModal');
-  const popupBtn = document.getElementById('popupInstallBtn');
+    <script>
+      let pwaInstallPrompt;
+      const installModal = document.getElementById('directInstallModal');
+      const popupBtn = document.getElementById('popupInstallBtn');
 
-  // चेक करें कि क्या लिंक में ?install=true लिखा है
-  const urlParams = new URLSearchParams(window.location.search);
-  const isDirectInstallLink = urlParams.get('install') === 'true';
+      // चेक करें कि क्या लिंक में ?install=true लिखा है
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDirectInstallLink = urlParams.get('install') === 'true';
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    pwaInstallPrompt = e;
-    
-    // अगर कस्टमर ?install=true वाले लिंक से आया है, तो तुरंत पॉप-अप दिखाएं
-    if (isDirectInstallLink) {
-      installModal.style.display = 'flex';
-    }
-  });
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        pwaInstallPrompt = e;
+        
+        // अगर कस्टमर ?install=true वाले लिंक से आया है, तो तुरंत पॉप-अप दिखाएं
+        if (isDirectInstallLink) {
+          installModal.style.display = 'flex';
+        }
+      });
 
-  popupBtn.addEventListener('click', async () => {
-    if (pwaInstallPrompt) {
-      pwaInstallPrompt.prompt();
-      const { outcome } = await pwaInstallPrompt.userChoice;
-      if (outcome === 'accepted') {
-        installModal.style.display = 'none';
-      }
-      pwaInstallPrompt = null;
-    } else {
-      alert('ऐप पहले से आपके फोन में इंस्टॉल है, या फिर आप अपने ब्राउज़र के मेन्यू (तीन डॉट्स) में जाकर "Add to Home screen" पर क्लिक करें।');
-      installModal.style.display = 'none';
-    }
-  });
-</script>
+      popupBtn.addEventListener('click', async () => {
+        if (pwaInstallPrompt) {
+          pwaInstallPrompt.prompt();
+          const { outcome } = await pwaInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            installModal.style.display = 'none';
+          }
+          pwaInstallPrompt = null;
+        } else {
+          alert('ऐप पहले से आपके फोन में इंस्टॉल है, या फिर आप अपने ब्राउज़र के मेन्यू (तीन डॉट्स) में जाकर "Add to Home screen" पर क्लिक करें।');
+          installModal.style.display = 'none';
+        }
+      });
+    </script>
 </body>
 </html>
